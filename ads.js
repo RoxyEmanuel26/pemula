@@ -20,8 +20,7 @@
     //  (Tambahkan URL baru di bawah ini)
     // ==========================================
     const POPUNDER_SCRIPTS = [
-        'https://latherachelesscatastrophe.com/e2/d3/56/e2d356aca9584a647a64631eb3463720.js',
-        'https://latherachelesscatastrophe.com/a2/92/18/a29218ac83917d59f19c700bc4e955f0.js',
+        'https://latherachelesscatastrophe.com/82/3a/53/823a539aed3a6b6cf63dd24e0841a5a8.js',
         // Tambahkan popunder baru di sini:
         // 'https://example.com/popunder3.js',
         // 'https://example.com/popunder4.js',
@@ -32,7 +31,7 @@
     //  (Tambahkan URL baru di bawah ini)
     // ==========================================
     const SOCIALBAR_SCRIPTS = [
-        'https://latherachelesscatastrophe.com/fd/f7/a9/fdf7a973cb967e980f7e25db2aa04a1c.js',
+        'https://latherachelesscatastrophe.com/2e/8f/2c/2e8f2cceff3c29c61d52f01b432d2e09.js',
         // Tambahkan social bar baru di sini:
         // 'https://example.com/socialbar2.js',
     ];

@@ -1,12 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Referensi Elemen DOM
-    const sliderWrapper = document.getElementById('slider-wrapper');
-    const dots = document.querySelectorAll('.dot');
-    const closeAdBtn = document.getElementById('close-ad');
-    const adPopup = document.getElementById('ad-popup');
+    // Referensi Elemen DOM (nama netral, anti-adblock)
+    const galleryTrack = document.getElementById('gallery-track');
+    const indicators = document.querySelectorAll('.indicator');
+    const dismissBtn = document.getElementById('dismiss-modal');
+    const modalLayer = document.getElementById('content-modal');
     
     let currentIndex = 0;
-    const totalSlides = dots.length;
+    const totalSlides = indicators.length;
     
     // Fitur Gestur Swipe (Touch)
     let startX = 0;
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoSlideTimer = null;
 
     function startAutoSlide() {
-        stopAutoSlide(); // pastikan tidak dobel
+        stopAutoSlide();
         autoSlideTimer = setInterval(() => {
             goToSlide(currentIndex + 1);
         }, AUTO_SLIDE_INTERVAL);
@@ -33,100 +33,94 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Reset timer setiap kali user interaksi manual
     function resetAutoSlide() {
         stopAutoSlide();
         startAutoSlide();
     }
 
-    // Untuk memastikan body tidak bisa discroll saat popup terbuka
+    // Untuk memastikan body tidak bisa discroll saat modal terbuka
     document.body.classList.add('no-scroll');
 
     // Fungsi utama untuk berpindah slide
     function goToSlide(index) {
         if (index < 0) {
-            index = totalSlides - 1; // Looping ke akhir
+            index = totalSlides - 1;
         } else if (index >= totalSlides) {
-            index = 0; // Looping ke awal
+            index = 0;
         }
         
-        // Pindahkan Wrapper Slider dengan CSS transform
-        sliderWrapper.style.transform = `translateX(-${index * 100}%)`;
+        galleryTrack.style.transform = `translateX(-${index * 100}%)`;
         
-        // Perbarui state Pagination Dots
-        dots.forEach(dot => dot.classList.remove('active'));
-        dots[index].classList.add('active');
+        indicators.forEach(ind => ind.classList.remove('active'));
+        indicators[index].classList.add('active');
         
         currentIndex = index;
     }
 
-    // Event Listener untuk setiap Dot
-    dots.forEach((dot) => {
-        dot.addEventListener('click', (e) => {
+    // Event Listener untuk setiap Indicator
+    indicators.forEach((ind) => {
+        ind.addEventListener('click', (e) => {
             const index = parseInt(e.target.getAttribute('data-index'), 10);
             goToSlide(index);
-            resetAutoSlide(); // reset timer saat user klik dot
+            resetAutoSlide();
         });
     });
 
-    // Menutup Modal Iklan
-    function closeBanner() {
-        adPopup.classList.add('hidden');
-        adPopup.setAttribute('aria-hidden', 'true');
+    // Menutup Modal
+    function closeModal() {
+        modalLayer.classList.add('hidden');
+        modalLayer.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('no-scroll');
-        stopAutoSlide(); // hentikan auto-slide saat ditutup
+        stopAutoSlide();
     }
 
-    closeAdBtn.addEventListener('click', closeBanner);
+    dismissBtn.addEventListener('click', closeModal);
 
-    // Opsi: Tutup banner ketika klik di luar kotak iklan (di overlay blur)
-    adPopup.addEventListener('click', (e) => {
-        if (e.target === adPopup) {
-            closeBanner();
+    // Tutup modal ketika klik di luar kartu
+    modalLayer.addEventListener('click', (e) => {
+        if (e.target === modalLayer) {
+            closeModal();
         }
     });
 
     // Event Listener untuk Touch (Gestur Geser / Swipe) di Handphone
     if (window.PointerEvent) {
-        // Modern browsers
-        sliderWrapper.addEventListener('pointerdown', (e) => {
+        galleryTrack.addEventListener('pointerdown', (e) => {
             startX = e.clientX;
             isSwiping = true;
-            sliderWrapper.setPointerCapture(e.pointerId);
-            stopAutoSlide(); // pause saat user mulai swipe
+            galleryTrack.setPointerCapture(e.pointerId);
+            stopAutoSlide();
         });
         
-        sliderWrapper.addEventListener('pointermove', (e) => {
+        galleryTrack.addEventListener('pointermove', (e) => {
             if (!isSwiping) return;
             endX = e.clientX;
         });
 
-        sliderWrapper.addEventListener('pointerup', (e) => {
+        galleryTrack.addEventListener('pointerup', (e) => {
             if (!isSwiping) return;
-            sliderWrapper.releasePointerCapture(e.pointerId);
+            galleryTrack.releasePointerCapture(e.pointerId);
             handleSwipeEnd();
         });
     } else {
-        // Fallback older touch devices
-        sliderWrapper.addEventListener('touchstart', (e) => {
+        galleryTrack.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
             isSwiping = true;
-            stopAutoSlide(); // pause saat user mulai swipe
+            stopAutoSlide();
         }, { passive: true });
 
-        sliderWrapper.addEventListener('touchmove', (e) => {
+        galleryTrack.addEventListener('touchmove', (e) => {
             if (!isSwiping) return;
             endX = e.touches[0].clientX;
         }, { passive: true });
 
-        sliderWrapper.addEventListener('touchend', () => {
+        galleryTrack.addEventListener('touchend', () => {
             if (!isSwiping) return;
             handleSwipeEnd();
         });
     }
 
     function handleSwipeEnd() {
-        // Tentukan arah swipe (threshold minimal 30px)
         const diffX = startX - endX;
         
         if (Math.abs(diffX) > 30 && endX !== 0) {
@@ -139,11 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         endX = 0;
         isSwiping = false;
-        resetAutoSlide(); // lanjut auto-slide setelah swipe selesai
+        resetAutoSlide();
     }
 
     // Cegah image dragging bawaan browser agar swipe lancar
-    const images = sliderWrapper.querySelectorAll('img');
+    const images = galleryTrack.querySelectorAll('img');
     images.forEach(img => {
         img.addEventListener('dragstart', (e) => e.preventDefault());
     });

@@ -6,3 +6,4 @@
 # assets/*.webp
 # assets/*.svg
 # assets/*.gif
+.env

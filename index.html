@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artikel Modern & Ringan</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Latar Belakang Artikel -->
+    <article class="content">
+        <h1>Pentingnya Website Ringan di Era Digital</h1>
+        <p class="meta">Ditulis pada 12 Maret 2026 | Oleh Redaksi</p>
+
+        <p>Di dunia yang serba cepat, kecepatan akses website menjadi faktor penentu utama pengalaman pengguna. Website
+            yang memuat dengan cepat tidak hanya meningkatkan kepuasan pengunjung tetapi juga berdampak positif pada
+            peringkat mesin pencari (SEO).</p>
+
+        <h2>Mengapa Website Ringan Itu Penting?</h2>
+        <p>Sebagian besar pengguna akan meninggalkan halaman jika tidak termuat dalam waktu tiga detik. Hal ini
+            menunjukkan betapa krusialnya mengoptimalkan ukuran aset seperti gambar, script, dan stylesheet. Menggunakan
+            format gambar modern, melakukan minifikasi CSS dan JS, serta menghindari pustaka eksternal yang berat adalah
+            beberapa langkah efektif.</p>
+
+        <blockquote>
+            "Kecepatan adalah fitur terpenting yang sering kali dilupakan dalam pengembangan web modern."
+        </blockquote>
+
+        <h2>Desain Minimalis dan Efisien</h2>
+        <p>Desain minimalis bukan berarti membosankan. Penggunaan tipografi yang baik, ruang putih (whitespace) yang
+            proporsional, serta animasi halus yang dirender oleh GPU (melalui CSS transform dan opacity) dapat
+            menciptakan kesan premium tanpa mengorbankan performa.</p>
+
+        <p>Dalam contoh ini, kita menggunakan Vanilla JavaScript dan CSS murni untuk membangun antarmuka interaktif.
+            Tidak ada framework besar yang dilibatkan, memastikan ukuran halaman tetap di bawah puluhan kilobyte.</p>
+
+        <p>Dengan menerapkan prinsip-prinsip ini, pengembang dapat memastikan aksesibilitas yang lebih baik bagi seluruh
+            pengguna, termasuk mereka yang memiliki koneksi internet lambat atau perangkat berspesifikasi rendah.</p>
+    </article>
+
+    <!-- Overlay Iklan (Kotak di Tengah) -->
+    <div class="ad-overlay" id="ad-popup" aria-hidden="false">
+        <div class="ad-box">
+            <!-- Tombol Tutup -->
+            <button class="close-btn" id="close-ad" aria-label="Tutup Banner">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </button>
+
+            <!-- Teks di atas Gambar -->
+            <div class="ad-text-header">
+                <p class="ad-teks1" id="ad-teks1">Teks 1 - Judul Iklan</p>
+                <p class="ad-teks2" id="ad-teks2">Teks 2 - Deskripsi Singkat</p>
+            </div>
+
+            <!-- Slider Gambar (7 gambar) -->
+            <div class="slider-container">
+                <div class="slider-wrapper" id="slider-wrapper">
+                    <img src="assets/image1.jpg" alt="Preview Gambar 1" class="slide">
+                    <img src="assets/image2.jpg" alt="Preview Gambar 2" class="slide">
+                    <img src="assets/image3.jpg" alt="Preview Gambar 3" class="slide">
+                    <img src="assets/image4.jpg" alt="Preview Gambar 4" class="slide">
+                    <img src="assets/image5.jpg" alt="Preview Gambar 5" class="slide">
+                    <img src="assets/image6.jpg" alt="Preview Gambar 6" class="slide">
+                    <img src="assets/image7.jpg" alt="Preview Gambar 7" class="slide">
+                </div>
+            </div>
+
+            <!-- Pagination Dots (7 dots) -->
+            <div class="pagination">
+                <span class="dot active" data-index="0" aria-label="Slide 1"></span>
+                <span class="dot" data-index="1" aria-label="Slide 2"></span>
+                <span class="dot" data-index="2" aria-label="Slide 3"></span>
+                <span class="dot" data-index="3" aria-label="Slide 4"></span>
+                <span class="dot" data-index="4" aria-label="Slide 5"></span>
+                <span class="dot" data-index="5" aria-label="Slide 6"></span>
+                <span class="dot" data-index="6" aria-label="Slide 7"></span>
+            </div>
+
+            <!-- Tombol Download & Watch Now -->
+            <div class="btn-group">
+                <button class="download-btn" id="btn-download">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    DOWNLOAD
+                </button>
+                <button class="watch-btn" id="btn-watch">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    WATCH NOW
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Utama -->
+    <script src="script.js"></script>
+
+    <!-- Script Iklan (file terpisah agar rapi) -->
+    <script src="ads.js"></script>
+
+</body>
+
+</html>

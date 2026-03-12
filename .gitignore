@@ -1,0 +1,8 @@
+# Abaikan semua file gambar di folder assets
+# Gambar akan di-upload manual dan tidak perlu masuk ke Git
+# assets/*.jpg
+# assets/*.jpeg
+# assets/*.png
+# assets/*.webp
+# assets/*.svg
+# assets/*.gif

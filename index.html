@@ -2,948 +2,112 @@
 <html lang="id">
 
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>kumpulenak - Cosplay Gallery</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: #0a0a0a;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #fff;
-            min-height: 100vh;
-        }
-
-        /* ===== HEADER ===== */
-        .header {
-            background-color: #e8a800;
-            padding: 10px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .header-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-        }
-
-        .logo {
-            font-size: 22px;
-            font-weight: 900;
-            color: #008800;
-            text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-            white-space: nowrap;
-            letter-spacing: -1px;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 5px;
-            flex-shrink: 0;
-        }
-
-        .nav-tab {
-            background: none;
-            border: none;
-            color: #333;
-            font-weight: 700;
-            font-size: 14px;
-            padding: 6px 16px;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .nav-tab:hover {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-tab.active {
-            background: rgba(0, 0, 0, 0.15);
-            color: #000;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .search-box input {
-            border: none;
-            border-radius: 10px;
-            padding: 7px 14px;
-            font-size: 13px;
-            outline: none;
-            background: #fff;
-            color: #333;
-            width: 120px;
-            transition: width 0.3s;
-        }
-
-        .search-box input:focus {
-            width: 180px;
-        }
-
-        .search-box button {
-            background: #fff;
-            border: none;
-            border-radius: 10px;
-            padding: 7px 12px;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .search-icon {
-            cursor: pointer;
-            font-size: 16px;
-            color: #333;
-        }
-
-        /* ===== BANNER ===== */
-        .banner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 15px 10px 5px;
-        }
-
-        .banner-img {
-            width: 100%;
-            height: 120px;
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #e8a800;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        /* ===== MAIN CONTENT ===== */
-        .main-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 10px;
-        }
-
-        .content-wrapper {
-            background: #e8a800;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .section-label {
-            text-align: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* ===== CARD GRID ===== */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        .card {
-            background: transparent;
-            cursor: pointer;
-            transition: transform 0.2s;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-
-        .card:hover {
-            transform: scale(1.02);
-        }
-
-        .card-img-wrapper {
-            width: 100%;
-            aspect-ratio: 3 / 4;
-            overflow: hidden;
-            border-radius: 4px;
-            position: relative;
-        }
-
-        .card-img-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            transition: transform 0.3s;
-        }
-
-        .card:hover .card-img-wrapper img {
-            transform: scale(1.05);
-        }
-
-        .card-meta {
-            padding: 6px 2px 0;
-        }
-
-        .card-date-views {
-            display: flex;
-            gap: 10px;
-            font-size: 11px;
-            color: #fff;
-            margin-bottom: 3px;
-        }
-
-        .card-date-views span {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .card-title {
-            font-size: 12px;
-            color: #fff;
-            line-height: 1.4;
-            font-weight: 600;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        /* ===== PAGINATION ===== */
-        .pagination {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 20px 0 5px;
-        }
-
-        .page-btn {
-            background: #fff;
-            border: none;
-            border-radius: 12px;
-            width: 30px;
-            height: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 700;
-            color: #e8a800;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .page-btn:hover {
-            background: #ffd000;
-        }
-
-        .page-btn.active {
-            background: #008800;
-            color: #fff;
-        }
-
-        .page-btn.disabled {
-            background: rgba(255, 255, 255, 0.3);
-            color: rgba(255, 255, 255, 0.4);
-            cursor: default;
-        }
-
-        .page-info {
-            background: #fff;
-            border-radius: 12px;
-            padding: 2px 10px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #e8a800;
-        }
-
-        /* ===== AD SPACE ===== */
-        .ad-space {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            border-radius: 4px;
-            height: 60px;
-            margin: 15px auto 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #555;
-            font-size: 12px;
-        }
-
-        /* ===== FOOTER ===== */
-        .footer {
-            background: #e8a800;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin: 15px auto 30px;
-            max-width: 1200px;
-        }
-
-        .footer a {
-            color: #0066cc;
-            text-decoration: none;
-            font-size: 13px;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-
-        .footer p {
-            font-size: 12px;
-            color: #333;
-            margin-top: 5px;
-        }
-
-        /* ===== VERIFY BUTTON ===== */
-        .verify-btn {
-            display: block;
-            max-width: 500px;
-            margin: 15px auto;
-            background: linear-gradient(135deg, #ff6b35, #f7c948);
-            color: #fff;
-            text-align: center;
-            padding: 14px 20px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
-            line-height: 1.5;
-            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
-            transition: all 0.3s;
-            animation: pulse 2s infinite;
-        }
-
-        .verify-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6);
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 4px 25px rgba(255, 107, 53, 0.7);
-            }
-        }
-
-        /* ===== MODAL ===== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-overlay.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: #1a1a1a;
-            border-radius: 12px;
-            max-width: 600px;
-            width: 100%;
-            padding: 25px;
-            position: relative;
-            animation: modalIn 0.3s ease;
-        }
-
-        @keyframes modalIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: #999;
-            font-size: 28px;
-            cursor: pointer;
-        }
-
-        .modal-close:hover {
-            color: #fff;
-        }
-
-        .modal-content h2 {
-            color: #e8a800;
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-
-        .modal-card-list {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            max-height: 60vh;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .modal-card-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .modal-card-list::-webkit-scrollbar-thumb {
-            background: #e8a800;
-            border-radius: 3px;
-        }
-
-        .modal-item {
-            background: #2a2a2a;
-            border-radius: 8px;
-            padding: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
-            text-decoration: none;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .modal-item:hover {
-            background: #3a3a3a;
-        }
-
-        .modal-item-icon {
-            width: 40px;
-            height: 40px;
-            background: #e8a800;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        .modal-item-text {
-            font-size: 13px;
-            font-weight: 600;
-            line-height: 1.3;
-        }
-
-        .modal-item-text small {
-            display: block;
-            color: #999;
-            font-weight: 400;
-            font-size: 11px;
-            margin-top: 3px;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .header-inner {
-                flex-wrap: wrap;
-            }
-
-            .nav-tabs {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                padding-top: 5px;
-            }
-
-            .search-box {
-                order: 2;
-            }
-
-            .search-box input {
-                width: 100px;
-            }
-
-            .search-box input:focus {
-                width: 140px;
-            }
-
-            .card-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-
-            .card-title {
-                font-size: 11px;
-            }
-
-            .modal-card-list {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .card-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 6px;
-            }
-
-            .content-wrapper {
-                padding: 10px 8px;
-            }
-
-            .logo {
-                font-size: 18px;
-            }
-
-            .nav-tab {
-                font-size: 12px;
-                padding: 5px 10px;
-            }
-        }
-
-        /* ===== EDIT MODE ===== */
-        .edit-indicator {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #e8a800;
-            color: #333;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            z-index: 999;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .edit-indicator.show {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card.edit-mode .card-img-wrapper {
-            outline: 3px dashed #ff0000;
-            outline-offset: 2px;
-        }
-
-        .edit-hint {
-            display: none;
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            background: rgba(255, 0, 0, 0.8);
-            color: #fff;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            z-index: 5;
-        }
-
-        .edit-mode .edit-hint {
-            display: block;
-        }
-    </style>
+    <title>Artikel Modern & Ringan</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <!-- HEADER -->
-    <header class="header">
-        <div class="header-inner">
-            <div class="logo" onclick="window.location.reload()">kumpulenak</div>
-            <nav class="nav-tabs">
-                <button class="nav-tab active" data-tab="popular">popular</button>
-                <button class="nav-tab" data-tab="cosplay">cosplay</button>
-                <button class="nav-tab" data-tab="album">album</button>
-            </nav>
-            <div class="search-box">
-                <input type="text" placeholder="search" id="searchInput">
-                <button onclick="performSearch()"></button>
-            </div>
-            <!-- <span class="search-icon" title="Settings" onclick="toggleEditMode()">⚙️</span> -->
-        </div>
-    </header>
-
-    <!-- VERIFY BUTTON -->
-    <a href="https://glamournakedemployee.com/bxj9v8xs?key=bbcc03541721fe595f6d0a199086c628" class="verify-btn"
-        id="verifyBtn">
+    <a href="https://glamournakedemployee.com/bxj9v8xs?key=bbcc03541721fe595f6d0a199086c628" class="open-multi"
+        id="btn-open-multi">
         🔗 VERIFYING <br> Download (21mb) & Watching (2:11)
     </a>
 
-    <!-- BANNER -->
-    <div class="banner">
-        <div class="banner-img">📸 kumpulenak — Premium Cosplay Gallery</div>
-    </div>
+    <!-- Latar Belakang Artikel ok-->
+    <article class="content">
+        <h1>Top 5 Smartphone Photography Tips and Tricks for 2026</h1>
+        <p class="meta">Written on March 12, 2026 | By Editorial Team</p>
 
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
-        <div class="content-wrapper">
-            <div class="section-label" id="sectionLabel">cosplay</div>
-            <div class="card-grid" id="cardGrid">
-                <!-- Cards will be injected by JS -->
-            </div>
-
-            <!-- PAGINATION -->
-            <div class="pagination" id="pagination">
-                <!-- Pagination injected by JS -->
-            </div>
-
-            <!-- AD SPACE -->
-            <div class="ad-space">
-                📢 Advertisement Space
-            </div>
+        <!-- Native Banner Ad -->
+        <div style="text-align: center; margin: 20px 0;">
+            <script async="async" data-cfasync="false"
+                src="https://pl28946642.profitablecpmratenetwork.com/6cb54e644c5d730255dd0b42a09c8caa/invoke.js"></script>
+            <div id="container-6cb54e644c5d730255dd0b42a09c8caa"></div>
         </div>
-    </main>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <a href="#">how to download</a>
-        <p>All resources are shared by their respective owners.</p>
-    </footer>
+        <p>Smartphones now capture over 92% of all photographs taken【49†L98-L102】. In fact, the average person uses
+            their phone to take a photo about six times each day【49†L102-L105】. With mobile cameras becoming our default
+            photography tool, mastering a few simple techniques can turn ordinary snapshots into stunning images. The
+            tips below will help you make the most of your phone’s lenses and modes to take sharper, more creative
+            photos.</p>
 
-    <!-- MODAL for editing -->
-    <div class="modal-overlay" id="editModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-            <h2>✏️ Edit Card</h2>
-            <form id="editForm" onsubmit="saveCard(event)">
-                <input type="hidden" id="editIndex">
-                <div style="margin-bottom:12px;">
-                    <label style="display:block;font-size:12px;color:#999;margin-bottom:4px;">Card Name / Title</label>
-                    <input type="text" id="editName"
-                        style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#222;color:#fff;font-size:14px;">
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="display:block;font-size:12px;color:#999;margin-bottom:4px;">Link URL</label>
-                    <input type="text" id="editLink"
-                        style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#222;color:#fff;font-size:14px;">
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="display:block;font-size:12px;color:#999;margin-bottom:4px;">Image URL</label>
-                    <input type="text" id="editImage"
-                        style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#222;color:#fff;font-size:14px;">
-                </div>
-                <button type="submit"
-                    style="width:100%;padding:12px;background:#e8a800;border:none;border-radius:8px;font-size:14px;font-weight:700;color:#333;cursor:pointer;">
-                    💾 Save Changes
-                </button>
-            </form>
+        <blockquote>"If your pictures aren’t good enough, you’re not close enough." – Robert Capa【46†L151-L154】
+        </blockquote>
+
+        <h2>Don’t Hesitate to Zoom for Macro Shots</h2>
+        <p>Most phones automatically switch to a macro mode when you get very close to a subject, but you can take it
+            further by using digital zoom. Adding a bit of zoom “enhances the framing of the shot” without sacrificing
+            closeness【34†L840-L847】【50†L853-L856】. In practice, this means you can tightly fill the frame with your
+            subject and avoid having to literally touch the lens to the object. As one expert notes, a slight digital
+            zoom “still get[s] very close” to the subject without the lens casting shadows or glare on it【50†L853-L856】.
+            In other words, zooming in just a little can give you a cleaner, better-composed macro photo.</p>
+
+        <h2>Use Your Telephoto Lens for Parallax Effects</h2>
+        <p>For scenes where you want more background blur or a dramatic effect, switch to your phone’s telephoto (zoom)
+            lens. By default we tend to use the main wide camera, but the telephoto lens “can do a number of things,
+            like giving sprawling cityscapes a parallax effect or filling more of the frame with a
+            subject”【50†L897-L905】. In practical terms, zooming in around 5× to 10× will exaggerate the
+            foreground-background separation. This makes portraits especially striking (the background blurs more) and
+            also “fills in more of the scene” for landscapes【50†L897-L905】. In short, don’t be afraid to zoom in far
+            when your phone offers it – you’ll often get a more professional look with extra depth and focus.</p>
+
+        <h2>Maximize Night Mode for Long-Exposure Detail</h2>
+        <p>When shooting in low light or at night, take advantage of your camera’s long-exposure modes. Most phones
+            automatically enter a “night mode” that uses a slower shutter speed. Some even offer an extended mode: for
+            example, the iPhone 17 Pro has a “night mode max” that holds the shutter open up to 30
+            seconds【50†L940-L948】. By mounting your phone on a tripod (or holding it very steady) during these
+            ultra-long exposures, you can “draw out way more detail” in dark scenes【50†L978-L981】. In practice, this
+            means that street lights, stars, or dim interiors will look much clearer and more vivid. The key is to keep
+            the camera still and let the phone gather light – the results can be dramatically better than a quick
+            snapshot.</p>
+
+        <h2>Experiment with Vertical Panoramas</h2>
+        <p>We usually pan side-to-side for panoramas, but try shooting a panorama by moving the phone up and down
+            instead. This vertical panorama technique turns tall scenes (like skyscrapers or trees) into creative
+            compositions【50†L997-L1004】. The result can look almost surreal – imagine capturing a building so tall that
+            the image wraps around it in an “Inception-esque” distortion【50†L1000-L1005】. For best results, keep the
+            framing tight so distant edges don’t warp too much. With practice, vertical panoramas let you showcase
+            height and depth in a way standard photos can’t. </p>
+
+        <h2>Flip Your Phone for a New Perspective</h2>
+        <p>Finally, don’t overlook composition tricks. One technique is to flip your phone upside down (so the lens is
+            near the bottom) and shoot from a lower angle. This simple change can make ordinary subjects look dramatic
+            and symmetrical【43†L1047-L1054】. For example, holding the phone low and flipped can turn a simple railing or
+            walkway into an abstract pattern. As a Tom’s Guide editor demonstrated, flipping the camera “gives it a more
+            abstract, symmetrical feel” and a more dramatic look overall【43†L1047-L1054】. In short, shooting with the
+            lens closer to the ground – even by inverting the phone – can yield surprisingly artistic results.</p>
+
+        <p>By applying these tips and tricks, you’ll be well on your way to taking more impressive photos with your
+            phone. Whether you’re a casual shooter or a budding mobile photographer, these techniques leverage the full
+            power of modern phone cameras to improve composition, clarity, and creativity.</p>
+
+        <!-- Banner 300x250 Ad -->
+        <div style="text-align: center; margin: 20px 0;">
+            <script>
+                atOptions = {
+                    'key': 'ac030fa023c7db2ca8b74d28f66aaccb',
+                    'format': 'iframe',
+                    'height': 250,
+                    'width': 300,
+                    'params': {}
+                };
+            </script>
+            <script src="https://www.highperformanceformat.com/ac030fa023c7db2ca8b74d28f66aaccb/invoke.js"></script>
         </div>
-    </div>
 
-    <!-- EDIT INDICATOR -->
-    <div class="edit-indicator" id="editIndicator">
-        ⚙️ Edit Mode ON — Click any card to edit
-    </div>
+    </article>
 
-    <script>
-        // ===== CARD DATA — CUSTOMIZE HERE =====
-        let cards = [
-            {
-                name: "王子same是老头er – 02[27MB-11photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1da5b9e30-b1b9-4c7f-a259-0993aee929e6.png",
-                link: "https://example.com/card1",
-                date: "04/14",
-                views: "1658"
-            },
-            {
-                name: "钛合金TITI – 杀戮都市兔女郎[206MB-31photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/192a7fd7d-64e2-48f5-97aa-4fd6bdd57128.png",
-                link: "https://example.com/card2",
-                date: "04/14",
-                views: "3254"
-            },
-            {
-                name: "ChuChu[ARTGRAVIA]IC – – 【誕生日記念】原くじ D賞 神里綾華...",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1adbdab33-3460-4298-8c8e-05684247a745.png",
-                link: "https://example.com/card3",
-                date: "04/14",
-                views: "5461"
-            },
-            {
-                name: "屿鱼 – 碧蓝航线 花园赛车服[375MB-82photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1a8d05c76-6e70-4b6e-8d5e-2f199cac28e6.png",
-                link: "https://example.com/card4",
-                date: "04/14",
-                views: "3984"
-            },
-            {
-                name: "西园寺南歌 – Mogador nurse – Azur Lane[110MB-23photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1ae507557-e1fa-4aed-89ee-40a83b59e1b8.png",
-                link: "https://example.com/card5",
-                date: "04/14",
-                views: "2236"
-            },
-            {
-                name: "南鸽 西园寺南歌 碧蓝航线 怨仇[46MB-15photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/187e2f59b-382f-4cf1-b765-3e6eb265201b.png",
-                link: "https://example.com/card6",
-                date: "04/14",
-                views: "1790"
-            },
-            {
-                name: "千反田鹿子 新世纪福音战士 绫波丽花嫁[391MB-52photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1fcf10589-636f-4561-bb96-6c88501838e6.png",
-                link: "https://example.com/card7",
-                date: "04/14",
-                views: "3251"
-            },
-            {
-                name: "星澜星澜澜叫澜妹呀 魔女[275MB-48photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/18c89bdf5-c14c-46c1-a021-8e7af089f9d7.png",
-                link: "https://example.com/card8",
-                date: "04/14",
-                views: "3680"
-            },
-            {
-                name: "钛合金TITI 野兽公主[301MB-41photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/11bdd82fb-a01c-4559-8bba-b4683c40e1e6.png",
-                link: "https://example.com/card9",
-                date: "04/14",
-                views: "2174"
-            },
-            {
-                name: "云溪溪 & 奈汐酱nice 香颂[1009MB-100photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1d42ad0ff-a677-4294-9f86-d26e626735c1.png",
-                link: "https://example.com/card10",
-                date: "04/14",
-                views: "3289"
-            },
-            {
-                name: "纸悦Etsu_ko Nikke胜利女神 索拉[329MB-57photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/143821c17-8f50-4951-9bbf-6acf7fdc15c5.png",
-                link: "https://example.com/card11",
-                date: "04/14",
-                views: "2557"
-            },
-            {
-                name: "萨隆苦囚 – 碧蓝航线白凤[77MB-16photos]",
-                image: "https://image.qwenlm.ai/public_source/7bf26709-5b06-4960-b7cc-d8afa2fa25c7/1301ea0b7-4e8e-43c7-9c32-65564b5f3ddc.png",
-                link: "https://example.com/card12",
-                date: "04/14",
-                views: "1955"
-            }
-        ];
+    <!-- Script Utama -->
+    <script src="script.js"></script>
 
-        // ===== STATE =====
-        let editMode = false;
-        let currentTab = 'cosplay';
-        const itemsPerPage = 12;
+    <!-- Script Iklan (file terpisah agar rapi) -->
+    <script src="ads.js"></script>
 
-        // ===== RENDER CARDS =====
-        function renderCards() {
-            const grid = document.getElementById('cardGrid');
-            grid.innerHTML = '';
 
-            cards.forEach((card, idx) => {
-                const cardEl = document.createElement('a');
-                cardEl.className = 'card' + (editMode ? ' edit-mode' : '');
-                cardEl.href = editMode ? 'javascript:void(0)' : card.link;
-                cardEl.target = editMode ? '' : '_blank';
-                cardEl.rel = editMode ? '' : 'noopener noreferrer';
 
-                if (editMode) {
-                    cardEl.onclick = function (e) {
-                        e.preventDefault();
-                        openEditModal(idx);
-                    };
-                }
-
-                cardEl.innerHTML = `
-                    <div class="card-img-wrapper">
-                        <div class="edit-hint">✏️ Edit</div>
-                        <img src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.style.background='linear-gradient(135deg,#333,#555)';this.style.minHeight='200px';">
-                    </div>
-                    <div class="card-meta">
-                        <div class="card-date-views">
-                            <span>📅 ${card.date}</span>
-                            <span>👁 ${card.views}</span>
-                        </div>
-                        <div class="card-title">${card.name}</div>
-                    </div>
-                `;
-
-                grid.appendChild(cardEl);
-            });
-        }
-
-        // ===== PAGINATION =====
-        function renderPagination() {
-            const pag = document.getElementById('pagination');
-            const totalPages = Math.ceil(cards.length / itemsPerPage);
-            const currentPage = 1;
-
-            let html = `<button class="page-btn disabled" onclick="return false;">‹</button>`;
-
-            for (let i = 1; i <= totalPages; i++) {
-                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-            }
-
-            html += `<span class="page-info">${cards.length.toLocaleString()}</span>`;
-            html += `<button class="page-btn disabled" onclick="return false;">›</button>`;
-
-            pag.innerHTML = html;
-        }
-
-        function goToPage(page) {
-            // For demo, just show all cards. In production, implement real pagination.
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // ===== TAB SWITCHING =====
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', function () {
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                currentTab = this.dataset.tab;
-                document.getElementById('sectionLabel').textContent = currentTab;
-
-                // Simulate different content per tab
-                if (currentTab === 'popular') {
-                    cards.sort((a, b) => parseInt(b.views) - parseInt(a.views));
-                } else if (currentTab === 'album') {
-                    cards.sort((a, b) => a.name.localeCompare(b.name));
-                }
-                renderCards();
-            });
-        });
-
-        // ===== SEARCH =====
-        function performSearch() {
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (!query) {
-                renderCards();
-                return;
-            }
-
-            const filtered = cards.filter(card =>
-                card.name.toLowerCase().includes(query)
-            );
-
-            const grid = document.getElementById('cardGrid');
-            grid.innerHTML = '';
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#fff;font-size:16px;">No results found for "${query}"</div>`;
-                return;
-            }
-
-            filtered.forEach((card, idx) => {
-                const cardEl = document.createElement('a');
-                cardEl.className = 'card';
-                cardEl.href = card.link;
-                cardEl.target = '_blank';
-                cardEl.rel = 'noopener noreferrer';
-
-                cardEl.innerHTML = `
-                    <div class="card-img-wrapper">
-                        <img src="${card.image}" alt="${card.name}" loading="lazy">
-                    </div>
-                    <div class="card-meta">
-                        <div class="card-date-views">
-                            <span>📅 ${card.date}</span>
-                            <span>👁 ${card.views}</span>
-                        </div>
-                        <div class="card-title">${card.name}</div>
-                    </div>
-                `;
-                grid.appendChild(cardEl);
-            });
-        }
-
-        document.getElementById('searchInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') performSearch();
-        });
-
-        // ===== EDIT MODE =====
-        function toggleEditMode() {
-            editMode = !editMode;
-            const indicator = document.getElementById('editIndicator');
-            indicator.classList.toggle('show', editMode);
-            renderCards();
-        }
-
-        function openEditModal(idx) {
-            const modal = document.getElementById('editModal');
-            document.getElementById('editIndex').value = idx;
-            document.getElementById('editName').value = cards[idx].name;
-            document.getElementById('editLink').value = cards[idx].link;
-            document.getElementById('editImage').value = cards[idx].image;
-            modal.classList.add('show');
-        }
-
-        function closeModal() {
-            document.getElementById('editModal').classList.remove('show');
-        }
-
-        function saveCard(e) {
-            e.preventDefault();
-            const idx = parseInt(document.getElementById('editIndex').value);
-            cards[idx].name = document.getElementById('editName').value;
-            cards[idx].link = document.getElementById('editLink').value;
-            cards[idx].image = document.getElementById('editImage').value;
-
-            // Save to localStorage for persistence
-            localStorage.setItem('cardData', JSON.stringify(cards));
-
-            closeModal();
-            renderCards();
-        }
-
-        // Close modal on overlay click
-        document.getElementById('editModal').addEventListener('click', function (e) {
-            if (e.target === this) closeModal();
-        });
-
-        // ===== LOAD SAVED DATA =====
-        function loadSavedData() {
-            const saved = localStorage.getItem('cardData');
-            if (saved) {
-                try {
-                    cards = JSON.parse(saved);
-                } catch (e) {
-                    console.error('Failed to load saved data');
-                }
-            }
-        }
-
-        // ===== INIT =====
-        loadSavedData();
-        renderCards();
-        renderPagination();
-    </script>
 
 </body>
 

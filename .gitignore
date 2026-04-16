@@ -1,6 +1,7 @@
 # File-file yang tidak perlu di-upload ke Git
 node_modules/
 .env
+config.js
 output.log
 
 # (Jangan ignore folder assets, biarkan Git meng-upload gambar agar Vercel bisa membacanya otomatis!)

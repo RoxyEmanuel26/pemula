@@ -140,8 +140,8 @@ let DATA_SOURCE = "api";
 //  Setiap tab punya parameter API sendiri
 // =====================================================
 const TAB_CONFIG = {
-    popular:  { order: 'most-popular', query: 'all' },
-    viral:    { order: 'latest', query: 'all' },
+    popular: { order: 'most-popular', query: 'all' },
+    viral: { order: 'latest', query: 'all' },
     kategori: { order: 'top-weekly', query: 'all' }
 };
 
@@ -149,46 +149,46 @@ const TAB_CONFIG = {
 //  VIRAL TAGS — Daftar tag/keyword untuk tab "viral"
 // =====================================================
 const VIRAL_TAGS = [
-  { label: '🇮🇩 Indo', query: 'indonesia' },
-  { label: '👩 Cewe', query: 'cewe' },
-  { label: '🔥 Viral', query: 'viral' },
-  { label: '📱 Bokep Indo', query: 'bokep indo' },
-  { label: '🎓 Mahasiswi', query: 'mahasiswi' },
-  { label: '💑 Pasutri', query: 'pasutri' },
-  { label: '🏠 Rumahan', query: 'rumahan' },
-  { label: '📸 Hijab', query: 'hijab' },
-  { label: '🌙 Malam', query: 'malam' },
-  { label: '💃 Goyang', query: 'goyang' },
-  { label: '🎥 Live', query: 'live streaming' },
-  { label: '⭐ Artis', query: 'artis indo' },
-  { label: '🏖️ Pantai', query: 'pantai' },
-  { label: '🏨 Hotel', query: 'hotel' },
-  { label: '📲 TikTok', query: 'tiktok viral' },
-  { label: '💋 Hot', query: 'hot indo' }
+    { label: '🇮🇩 Indo', query: 'indonesia' },
+    { label: '👩 Cewe', query: 'cewe' },
+    { label: '🔥 Viral', query: 'viral' },
+    { label: '📱 Bokep Indo', query: 'bokep indo' },
+    { label: '🎓 Mahasiswi', query: 'mahasiswi' },
+    { label: '💑 Pasutri', query: 'pasutri' },
+    { label: '🏠 Rumahan', query: 'rumahan' },
+    { label: '📸 Hijab', query: 'hijab' },
+    { label: '🌙 Malam', query: 'malam' },
+    { label: '💃 Goyang', query: 'goyang' },
+    { label: '🎥 Live', query: 'live streaming' },
+    { label: '⭐ Artis', query: 'artis indo' },
+    { label: '🏖️ Pantai', query: 'pantai' },
+    { label: '🏨 Hotel', query: 'hotel' },
+    { label: '📲 TikTok', query: 'tiktok viral' },
+    { label: '💋 Hot', query: 'hot indo' }
 ];
 
 // =====================================================
 //  KATEGORI LIST — Daftar semua kategori video
 // =====================================================
 const KATEGORI_LIST = [
-  { label: '🔥 Most Popular', query: 'all', order: 'most-popular', icon: '🔥' },
-  { label: '🆕 Terbaru', query: 'all', order: 'latest', icon: '🆕' },
-  { label: '📈 Top Minggu Ini', query: 'all', order: 'top-weekly', icon: '📈' },
-  { label: '📅 Top Bulan Ini', query: 'all', order: 'top-monthly', icon: '📅' },
-  { label: '🇮🇩 Indonesia', query: 'indonesia', order: 'most-popular', icon: '🇮🇩' },
-  { label: '👩 Cewek', query: 'girl', order: 'most-popular', icon: '👩' },
-  { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' },
-  { label: '🎌 Japan', query: 'japanese', order: 'most-popular', icon: '🎌' },
-  { label: '🇰🇷 Korea', query: 'korean', order: 'most-popular', icon: '🇰🇷' },
-  { label: '🏠 Amateur', query: 'amateur', order: 'most-popular', icon: '🏠' },
-  { label: '🎓 Student', query: 'student', order: 'most-popular', icon: '🎓' },
-  { label: '💑 Couple', query: 'couple', order: 'most-popular', icon: '💑' },
-  { label: '📸 Hijab', query: 'hijab', order: 'most-popular', icon: '📸' },
-  { label: '⭐ Celebrity', query: 'celebrity', order: 'most-popular', icon: '⭐' },
-  { label: '🏖️ Outdoor', query: 'outdoor', order: 'most-popular', icon: '🏖️' },
-  { label: '💃 Dance', query: 'dance', order: 'most-popular', icon: '💃' },
-  { label: '🎥 Live Cam', query: 'live cam', order: 'latest', icon: '🎥' },
-  { label: '💋 Mature', query: 'mature', order: 'most-popular', icon: '💋' }
+    { label: '🔥 Most Popular', query: 'all', order: 'most-popular', icon: '🔥' },
+    { label: '🆕 Terbaru', query: 'all', order: 'latest', icon: '🆕' },
+    { label: '📈 Top Minggu Ini', query: 'all', order: 'top-weekly', icon: '📈' },
+    { label: '📅 Top Bulan Ini', query: 'all', order: 'top-monthly', icon: '📅' },
+    { label: '🇮🇩 Indonesia', query: 'indonesia', order: 'most-popular', icon: '🇮🇩' },
+    { label: '👩 Cewek', query: 'girl', order: 'most-popular', icon: '👩' },
+    { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' },
+    { label: '🎌 Japan', query: 'japanese', order: 'most-popular', icon: '🎌' },
+    { label: '🇰🇷 Korea', query: 'korean', order: 'most-popular', icon: '🇰🇷' },
+    { label: '🏠 Amateur', query: 'amateur', order: 'most-popular', icon: '🏠' },
+    { label: '🎓 Student', query: 'student', order: 'most-popular', icon: '🎓' },
+    { label: '💑 Couple', query: 'couple', order: 'most-popular', icon: '💑' },
+    { label: '📸 Hijab', query: 'hijab', order: 'most-popular', icon: '📸' },
+    { label: '⭐ Celebrity', query: 'celebrity', order: 'most-popular', icon: '⭐' },
+    { label: '🏖️ Outdoor', query: 'outdoor', order: 'most-popular', icon: '🏖️' },
+    { label: '💃 Dance', query: 'dance', order: 'most-popular', icon: '💃' },
+    { label: '🎥 Live Cam', query: 'live cam', order: 'latest', icon: '🎥' },
+    { label: '💋 Mature', query: 'mature', order: 'most-popular', icon: '💋' }
 ];
 
 // =====================================================
@@ -448,15 +448,15 @@ function renderSkeletons(count) {
         skeleton.style.animationDelay = (i * 0.05) + 's';
         skeleton.innerHTML =
             '<div class="card-img-wrapper">' +
-                '<div class="img-skeleton"></div>' +
+            '<div class="img-skeleton"></div>' +
             '</div>' +
             '<div class="card-meta">' +
-                '<div class="card-date-views">' +
-                    '<span class="skeleton-text" style="width:50px;height:12px;"></span>' +
-                    '<span class="skeleton-text" style="width:60px;height:12px;"></span>' +
-                '</div>' +
-                '<div class="skeleton-text" style="width:100%;height:14px;margin-top:4px;"></div>' +
-                '<div class="skeleton-text" style="width:70%;height:14px;margin-top:4px;"></div>' +
+            '<div class="card-date-views">' +
+            '<span class="skeleton-text" style="width:50px;height:12px;"></span>' +
+            '<span class="skeleton-text" style="width:60px;height:12px;"></span>' +
+            '</div>' +
+            '<div class="skeleton-text" style="width:100%;height:14px;margin-top:4px;"></div>' +
+            '<div class="skeleton-text" style="width:70%;height:14px;margin-top:4px;"></div>' +
             '</div>';
         grid.appendChild(skeleton);
     }
@@ -474,18 +474,18 @@ function renderEmptyState(message) {
     const grid = document.getElementById('cardGrid');
     grid.innerHTML =
         '<div class="empty-state">' +
-            '<svg class="empty-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-                '<circle cx="60" cy="60" r="50" stroke="#e8a800" stroke-width="2" stroke-dasharray="8 4" opacity="0.4"/>' +
-                '<path d="M45 55 C45 45, 75 45, 75 55" stroke="#e8a800" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.6"/>' +
-                '<circle cx="48" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
-                '<circle cx="72" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
-                '<path d="M40 72 Q60 62, 80 72" stroke="#e8a800" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>' +
-            '</svg>' +
-            '<p class="empty-message">' + escapeHTML(message) + '</p>' +
-            (isSearchActive
-                ? '<button class="empty-btn" onclick="clearSearch()">🔄 Reset Pencarian</button>'
-                : '<button class="empty-btn" onclick="retryLoad()">🔄 Coba Lagi</button>'
-            ) +
+        '<svg class="empty-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<circle cx="60" cy="60" r="50" stroke="#e8a800" stroke-width="2" stroke-dasharray="8 4" opacity="0.4"/>' +
+        '<path d="M45 55 C45 45, 75 45, 75 55" stroke="#e8a800" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.6"/>' +
+        '<circle cx="48" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
+        '<circle cx="72" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
+        '<path d="M40 72 Q60 62, 80 72" stroke="#e8a800" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>' +
+        '</svg>' +
+        '<p class="empty-message">' + escapeHTML(message) + '</p>' +
+        (isSearchActive
+            ? '<button class="empty-btn" onclick="clearSearch()">🔄 Reset Pencarian</button>'
+            : '<button class="empty-btn" onclick="retryLoad()">🔄 Coba Lagi</button>'
+        ) +
         '</div>';
 
     // Sembunyikan pagination saat state kosong
@@ -504,9 +504,9 @@ function renderAPIError(message) {
     const grid = document.getElementById('cardGrid');
     grid.innerHTML =
         '<div class="error-state">' +
-            '<span class="error-icon">⚠️</span>' +
-            '<p class="error-message">' + escapeHTML(message) + '</p>' +
-            '<button class="error-btn" onclick="retryLoad()">🔄 Coba Lagi</button>' +
+        '<span class="error-icon">⚠️</span>' +
+        '<p class="error-message">' + escapeHTML(message) + '</p>' +
+        '<button class="error-btn" onclick="retryLoad()">🔄 Coba Lagi</button>' +
         '</div>';
 
     // Sembunyikan pagination saat error
@@ -542,7 +542,7 @@ function renderViralTags(activeQuery) {
         filterBar.className = 'viral-filter-bar';
 
         var allBtn = '<button class="viral-filter-btn' + (!activeQuery || activeQuery === 'all' ? ' active' : '') + '" onclick="filterViralTab(\'all\')">🌐 Semua</button>';
-        var tagBtns = VIRAL_TAGS.map(function(tag) {
+        var tagBtns = VIRAL_TAGS.map(function (tag) {
             var isActive = activeQuery === tag.query;
             return '<button class="viral-filter-btn' + (isActive ? ' active' : '') + '" onclick="filterViralTab(\'' + escapeHTML(tag.query) + '\')">' + tag.label + '</button>';
         }).join('');
@@ -554,7 +554,7 @@ function renderViralTags(activeQuery) {
     } else {
         // Update state active pada filter bar yang sudah ada
         var targetQuery = activeQuery || 'all';
-        existingBar.querySelectorAll('.viral-filter-btn').forEach(function(btn) {
+        existingBar.querySelectorAll('.viral-filter-btn').forEach(function (btn) {
             btn.classList.remove('active');
             var match = btn.getAttribute('onclick').match(/'([^']+)'/);
             if (match && match[1] === targetQuery) {
@@ -604,12 +604,12 @@ function renderKategoriGrid() {
     document.getElementById('pagination').innerHTML = '';
 
     var html = '<div class="kategori-grid">';
-    KATEGORI_LIST.forEach(function(kat) {
+    KATEGORI_LIST.forEach(function (kat) {
         html += '<button class="kategori-card-btn" onclick="loadFromKategori(\'' +
             escapeHTML(kat.query) + '\',\'' + escapeHTML(kat.order) + '\')">' +
             '<span class="kategori-icon">' + kat.icon + '</span>' +
             '<span class="kategori-label">' + escapeHTML(kat.label) + '</span>' +
-        '</button>';
+            '</button>';
     });
     html += '</div>';
     grid.innerHTML = html;
@@ -632,7 +632,7 @@ function loadFromKategori(query, order) {
     window._tempTabOverride = { order: order, query: query };
 
     // Update visual tab aktif ke "popular"
-    document.querySelectorAll('.nav-tab').forEach(function(t) {
+    document.querySelectorAll('.nav-tab').forEach(function (t) {
         t.classList.remove('active');
         if (t.dataset.tab === 'popular') t.classList.add('active');
     });
@@ -700,21 +700,21 @@ function createCardElement(card, idx) {
 
     cardEl.innerHTML =
         '<div class="card-img-wrapper">' +
-            '<div class="img-skeleton"></div>' +
-            editHint +
-            featuredBadge +
-            durationBadge +
-            ratingBadge +
-            '<img src="' + escapeHTML(card.image) + '" alt="' + escapeHTML(card.name) + '" loading="lazy" ' +
-                'onload="handleImageLoad(this)" ' +
-                'onerror="this.style.background=\'linear-gradient(135deg,#333,#555)\';this.style.minHeight=\'200px\';this.classList.add(\'loaded\');">' +
+        '<div class="img-skeleton"></div>' +
+        editHint +
+        featuredBadge +
+        durationBadge +
+        ratingBadge +
+        '<img src="' + escapeHTML(card.image) + '" alt="' + escapeHTML(card.name) + '" loading="lazy" ' +
+        'onload="handleImageLoad(this)" ' +
+        'onerror="this.style.background=\'linear-gradient(135deg,#333,#555)\';this.style.minHeight=\'200px\';this.classList.add(\'loaded\');">' +
         '</div>' +
         '<div class="card-meta">' +
-            '<div class="card-date-views">' +
-                '<span>📅 ' + escapeHTML(card.date) + '</span>' +
-                '<span class="card-views" data-views="' + escapeHTML(card.views) + '">👁 ' + escapeHTML(card.views) + '</span>' +
-            '</div>' +
-            '<div class="card-title">' + escapeHTML(card.name) + '</div>' +
+        '<div class="card-date-views">' +
+        '<span>📅 ' + escapeHTML(card.date) + '</span>' +
+        '<span class="card-views" data-views="' + escapeHTML(card.views) + '">👁 ' + escapeHTML(card.views) + '</span>' +
+        '</div>' +
+        '<div class="card-title">' + escapeHTML(card.name) + '</div>' +
         '</div>';
 
     return cardEl;
@@ -734,15 +734,15 @@ function renderCardsToGrid(cardsToRender) {
     }
 
     // Urutkan featured cards ke depan
-    var sorted = cardsToRender.slice().sort(function(a, b) {
+    var sorted = cardsToRender.slice().sort(function (a, b) {
         if (a.featured && !b.featured) return -1;
         if (!a.featured && b.featured) return 1;
         return 0;
     });
 
-    sorted.forEach(function(card, sortedIdx) {
+    sorted.forEach(function (card, sortedIdx) {
         // Cari index asli card ini di currentDisplayCards
-        var originalIdx = currentDisplayCards.findIndex(function(c) {
+        var originalIdx = currentDisplayCards.findIndex(function (c) {
             return c.name === card.name && c.image === card.image;
         });
         var cardEl = createCardElement(card, originalIdx !== -1 ? originalIdx : sortedIdx);
@@ -846,18 +846,18 @@ function loadLocalData() {
     // Filter pencarian lokal
     if (isSearchActive && currentQuery) {
         var q = currentQuery.toLowerCase();
-        dataToUse = dataToUse.filter(function(card) {
+        dataToUse = dataToUse.filter(function (card) {
             return card.name.toLowerCase().includes(q);
         });
     }
 
     // Sort berdasarkan tab aktif
     if (currentTab === 'popular') {
-        dataToUse.sort(function(a, b) {
+        dataToUse.sort(function (a, b) {
             return parseInt(String(b.views).replace(/\D/g, '') || 0) - parseInt(String(a.views).replace(/\D/g, '') || 0);
         });
     } else if (currentTab === 'kategori') {
-        dataToUse.sort(function(a, b) {
+        dataToUse.sort(function (a, b) {
             return a.name.localeCompare(b.name);
         });
     }
@@ -974,7 +974,7 @@ function goToPage(page) {
 function initTabSwitching() {
     var navTabs = document.getElementById('navTabs');
 
-    navTabs.addEventListener('click', function(e) {
+    navTabs.addEventListener('click', function (e) {
         var tab = e.target.closest('.nav-tab');
         if (!tab) return;
 
@@ -983,7 +983,7 @@ function initTabSwitching() {
         if (oldBar) oldBar.remove();
 
         // Hapus kelas active dari semua tab
-        navTabs.querySelectorAll('.nav-tab').forEach(function(t) {
+        navTabs.querySelectorAll('.nav-tab').forEach(function (t) {
             t.classList.remove('active');
         });
 
@@ -1038,7 +1038,7 @@ function initTabSwitching() {
     var activeTab = navTabs.querySelector('.nav-tab.active');
     if (activeTab) {
         // Jalankan setelah layout dihitung
-        requestAnimationFrame(function() {
+        requestAnimationFrame(function () {
             updateTabIndicator(activeTab);
         });
     }
@@ -1071,18 +1071,18 @@ function updateTabIndicator(activeTab) {
 function initSearch() {
     var searchInput = document.getElementById('searchInput');
 
-    searchInput.addEventListener('input', function() {
+    searchInput.addEventListener('input', function () {
         updateSearchClearBtn();
 
         // Debounce 400ms
         if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function() {
+        debounceTimer = setTimeout(function () {
             performSearch();
         }, 400);
     });
 
     // Event Enter untuk search langsung
-    searchInput.addEventListener('keypress', function(e) {
+    searchInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             if (debounceTimer) clearTimeout(debounceTimer);
             performSearch();
@@ -1187,12 +1187,12 @@ function closePlayerModal() {
 }
 
 // Event: tutup player modal saat klik overlay
-document.getElementById('playerModal').addEventListener('click', function(e) {
+document.getElementById('playerModal').addEventListener('click', function (e) {
     if (e.target === this) closePlayerModal();
 });
 
 // Event: tutup player modal saat klik tombol close
-document.getElementById('playerCloseBtn').addEventListener('click', function() {
+document.getElementById('playerCloseBtn').addEventListener('click', function () {
     closePlayerModal();
 });
 
@@ -1208,7 +1208,7 @@ document.getElementById('playerCloseBtn').addEventListener('click', function() {
 function initCardGridDelegation() {
     var grid = document.getElementById('cardGrid');
 
-    grid.addEventListener('click', function(e) {
+    grid.addEventListener('click', function (e) {
         var cardEl = e.target.closest('.card');
         if (!cardEl) return;
 
@@ -1342,7 +1342,7 @@ function saveCard(e) {
     } else {
         // Update card yang ada (update di array lokal)
         // Cari card asli di array cards berdasarkan nama
-        var originalIdx = cards.findIndex(function(c) {
+        var originalIdx = cards.findIndex(function (c) {
             return c.name === currentDisplayCards[idx].name && c.image === currentDisplayCards[idx].image;
         });
         if (originalIdx !== -1) {
@@ -1375,7 +1375,7 @@ function deleteCard() {
     if (!confirm('Yakin ingin menghapus "' + card.name + '"?')) return;
 
     // Cari dan hapus dari array cards lokal
-    var originalIdx = cards.findIndex(function(c) {
+    var originalIdx = cards.findIndex(function (c) {
         return c.name === card.name && c.image === card.image;
     });
     if (originalIdx !== -1) {
@@ -1421,7 +1421,7 @@ function importCards(event) {
     if (!file) return;
 
     var reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             var imported = JSON.parse(e.target.result);
             if (!Array.isArray(imported)) {
@@ -1465,7 +1465,7 @@ document.addEventListener('keydown', function (e) {
 //  Naikkan angka ini setiap kali Anda mengubah cards di atas
 //  agar localStorage lama otomatis di-reset
 // =====================================================
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 
 // =====================================================
 //  LOAD SAVED DATA
@@ -1509,7 +1509,7 @@ function initBackToTop() {
     var btn = document.getElementById('backToTop');
     if (!btn) return;
 
-    window.addEventListener('scroll', function() {
+    window.addEventListener('scroll', function () {
         if (window.scrollY > 300) {
             btn.classList.add('show');
         } else {
@@ -1537,8 +1537,8 @@ function initViewCounterAnimation() {
     var viewElements = document.querySelectorAll('.card-views[data-views]');
     if (!viewElements.length) return;
 
-    var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
             if (entry.isIntersecting) {
                 var el = entry.target;
 
@@ -1576,7 +1576,7 @@ function initViewCounterAnimation() {
         });
     }, { threshold: 0.3 });
 
-    viewElements.forEach(function(el) {
+    viewElements.forEach(function (el) {
         if (el.dataset.animated !== 'true') {
             observer.observe(el);
         }
@@ -1586,7 +1586,7 @@ function initViewCounterAnimation() {
 // =====================================================
 //  RESIZE HANDLER — Update tab indicator saat resize
 // =====================================================
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
     var activeTab = document.querySelector('.nav-tab.active');
     if (activeTab) updateTabIndicator(activeTab);
 }, { passive: true });

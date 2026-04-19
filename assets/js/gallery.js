@@ -1333,12 +1333,6 @@ window.addEventListener('resize', function () {
     scriptAds.src = 'assets/js/ads.js';
     scriptAds.defer = true;
     document.body.appendChild(scriptAds);
-
-    // Load style.css — styling untuk modal overlay script.js
-    var linkCSS = document.createElement('link');
-    linkCSS.rel = 'stylesheet';
-    linkCSS.href = 'assets/css/style.css';
-    document.head.appendChild(linkCSS);
 })();
 
 // =====================================================

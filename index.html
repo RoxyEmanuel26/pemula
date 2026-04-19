@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -30,15 +30,32 @@
         <div class="header-inner">
             <div class="logo" onclick="window.location='/'">kumpulenak</div>
             <span class="admin-badge" id="adminBadge">🔧 ADMIN</span>
-            <nav class="nav-tabs">
+
+            <!-- Tombol admin: Add, Export, Import (hanya visible untuk admin) -->
+            <div class="admin-actions" id="adminActions">
+                <button class="admin-btn" id="btnAddCard" onclick="openAddModal()" title="Tambah Card Baru">➕ Add</button>
+                <button class="admin-btn" id="btnExportJSON" onclick="exportCards()" title="Export Data ke JSON">📤 Export</button>
+                <label class="admin-btn" id="btnImportJSON" title="Import Data dari JSON">
+                    📥 Import
+                    <input type="file" id="importFileInput" accept=".json" onchange="importCards(event)" style="display:none;">
+                </label>
+            </div>
+
+            <nav class="nav-tabs" id="navTabs">
+                <div class="nav-tab-indicator" id="tabIndicator"></div>
                 <button class="nav-tab active" data-tab="popular">popular</button>
                 <button class="nav-tab" data-tab="cosplay">cosplay</button>
                 <button class="nav-tab" data-tab="album">album</button>
             </nav>
-            <div class="search-box">
+
+            <div class="search-box" id="searchBox">
                 <input type="text" placeholder="search..." id="searchInput" autocomplete="off">
-                <button onclick="performSearch()" aria-label="Search">🔍</button>
+                <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearch()" title="Hapus pencarian">&times;</button>
+                <button class="search-submit-btn" onclick="performSearch()" aria-label="Search">🔍</button>
             </div>
+
+            <!-- Toggle Dark/Light Mode -->
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
         </div>
     </header>
 
@@ -107,12 +124,12 @@
     <div class="modal-overlay" id="editModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeEditModal()">&times;</button>
-            <h2>✏️ Edit Card</h2>
+            <h2 id="editModalTitle">✏️ Edit Card</h2>
             <form id="editForm" onsubmit="saveCard(event)">
                 <input type="hidden" id="editIndex">
                 <div class="form-group">
-                    <label class="form-label">Card Name / Title</label>
-                    <input type="text" id="editName" class="form-input" placeholder="Enter card name...">
+                    <label class="form-label">Card Name / Title <span class="required">*</span></label>
+                    <input type="text" id="editName" class="form-input" placeholder="Enter card name..." required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Link URL</label>
@@ -130,8 +147,47 @@
                     <label class="form-label">Views</label>
                     <input type="text" id="editViews" class="form-input" placeholder="1234">
                 </div>
-                <button type="submit" class="form-submit">💾 Save Changes</button>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select id="editCategory" class="form-input">
+                        <option value="popular">Popular</option>
+                        <option value="cosplay">Cosplay</option>
+                        <option value="album">Album</option>
+                    </select>
+                </div>
+                <div class="form-group form-check-group">
+                    <label class="form-check-label">
+                        <input type="checkbox" id="editFeatured" class="form-check-input">
+                        <span>⭐ Featured (Pin ke posisi pertama)</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="form-submit">💾 Save Changes</button>
+                    <button type="button" class="form-delete" id="btnDeleteCard" onclick="deleteCard()">🗑 Delete</button>
+                </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ===== VIDEO PLAYER MODAL ===== -->
+    <div class="player-overlay" id="playerModal">
+        <div class="player-content">
+            <button class="player-close" id="playerCloseBtn">&times;</button>
+            <div class="player-iframe-wrapper">
+                <iframe id="playerIframe" src="" width="100%" height="400" frameborder="0" allowfullscreen
+                    allow="autoplay; encrypted-media"></iframe>
+            </div>
+            <div class="player-info">
+                <h3 class="player-title" id="playerTitle"></h3>
+                <div class="player-meta">
+                    <span id="playerDuration">⏱ --:--</span>
+                    <span id="playerViews">👁 0</span>
+                    <span id="playerDate">📅 ----</span>
+                </div>
+                <a class="player-open-tab" id="playerOpenTab" href="#" target="_blank" rel="noopener noreferrer">
+                    🔗 Buka di Tab Baru
+                </a>
+            </div>
         </div>
     </div>
 
@@ -139,6 +195,9 @@
     <div class="edit-indicator" id="editIndicator">
         ⚙️ Edit Mode ON — Click any card to edit
     </div>
+
+    <!-- ===== BACK TO TOP BUTTON ===== -->
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Kembali ke atas">⬆</button>
 
     <!-- Config (rahasia, tidak di-upload ke GitHub) -->
     <script src="config.js"></script>

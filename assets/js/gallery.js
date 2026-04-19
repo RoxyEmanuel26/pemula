@@ -4,9 +4,15 @@
  * ==========================================================
  *  File ini menangani:
  *  - Deteksi admin via URL path
- *  - Render kartu cosplay
- *  - Pagination, Search, Tab switching
- *  - Edit mode (admin only)
+ *  - Render kartu dari API / data lokal
+ *  - Pagination yang berfungsi penuh
+ *  - Search dinamis dengan debounce
+ *  - Tab switching ke API
+ *  - Video player modal
+ *  - Edit mode (admin only) + Add/Delete/Export/Import
+ *  - Dark/Light mode toggle
+ *  - Loading, error, empty states
+ *  - In-memory cache, AbortController, XSS escape
  *  - Conditional loading script.js & ads.js
  * ==========================================================
  */
@@ -20,7 +26,7 @@ const ADMIN_SECRET = (typeof CONFIG !== 'undefined' && CONFIG.ADMIN_SECRET) ? CO
 const isAdmin = window.location.search === '?' + ADMIN_SECRET;
 
 // =====================================================
-//  CARD DATA — Data kartu cosplay
+//  CARD DATA — Data kartu lokal (fallback)
 // =====================================================
 let cards = [
     {
@@ -110,19 +116,107 @@ let cards = [
 ];
 
 // =====================================================
-//  STATE
+//  STATE — Variabel state global
 // =====================================================
-let editMode = isAdmin; // Auto-enable edit mode for admin
-let currentTab = 'popular';
-const itemsPerPage = 22;
+let editMode = isAdmin;           // Auto-enable edit mode untuk admin
+let currentTab = 'popular';       // Tab aktif saat ini
+let currentPage = 1;              // Halaman aktif saat ini
+const itemsPerPage = 24;          // Jumlah item per halaman
+let currentQuery = '';            // Keyword pencarian saat ini
+let isSearchActive = false;       // Apakah sedang dalam mode pencarian
+let isLoading = false;            // Apakah sedang memuat data
+let totalPagesFromAPI = 1;        // Total halaman dari response API
+let currentDisplayCards = [];     // Array card yang sedang ditampilkan
+let debounceTimer = null;         // Timer untuk debounce search
+
+/**
+ * Sumber data: "api" untuk fetch dari Eporner API, "local" untuk data lokal
+ * @type {"api"|"local"}
+ */
+let DATA_SOURCE = "api";
+
+// =====================================================
+//  KONFIGURASI TAB → PARAMETER API
+//  Setiap tab punya parameter API sendiri
+// =====================================================
+const TAB_CONFIG = {
+    popular: { order: 'most-popular', query: 'all' },
+    cosplay: { order: 'latest', query: 'all' },
+    album:   { order: 'top-weekly', query: 'all' }
+};
+
+// =====================================================
+//  CACHE STORE — In-memory cache untuk response API
+//  Key: "{tab}_{page}_{query}", expire 5 menit
+// =====================================================
+const cacheStore = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 menit dalam ms
+
+// =====================================================
+//  ABORT CONTROLLER — Untuk membatalkan request yang belum selesai
+// =====================================================
+let currentAbortController = null;
+
+// =====================================================
+//  FUNGSI UTILITAS
+// =====================================================
+
+/**
+ * Escape string HTML untuk mencegah XSS attack
+ * @param {string} str - String yang akan di-escape
+ * @returns {string} String yang sudah aman dari XSS
+ */
+function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(str)));
+    return div.innerHTML;
+}
+
+/**
+ * Baca cookie berdasarkan nama
+ * @param {string} name - Nama cookie
+ * @returns {string|null} Nilai cookie atau null jika tidak ditemukan
+ */
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : null;
+}
+
+/**
+ * Set cookie dengan expire date
+ * @param {string} name - Nama cookie
+ * @param {string} value - Nilai cookie
+ * @param {number} days - Jumlah hari sebelum expire
+ */
+function setCookie(name, value, days) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+}
+
+/**
+ * Log pesan ke console dengan prefix [kumpulenak]
+ * @param {string} message - Pesan yang akan dilog
+ * @param {*} [data] - Data tambahan (opsional)
+ */
+function kLog(message, data) {
+    if (data !== undefined) {
+        console.log('[kumpulenak] ' + message, data);
+    } else {
+        console.log('[kumpulenak] ' + message);
+    }
+}
 
 // =====================================================
 //  ADMIN UI SETUP
 // =====================================================
 if (isAdmin) {
+    kLog('Admin mode aktif');
     document.getElementById('adminBadge').classList.add('show');
     document.getElementById('editIndicator').classList.add('show');
     document.getElementById('verifyBtn').style.display = 'none';
+    document.getElementById('adminActions').classList.add('show');
 
     // Sembunyikan banner iklan statis
     document.querySelectorAll('.ad-space').forEach(function (el) {
@@ -131,8 +225,56 @@ if (isAdmin) {
 }
 
 // =====================================================
+//  DARK/LIGHT MODE — Toggle tema gelap dan terang
+// =====================================================
+
+/**
+ * Inisialisasi tema berdasarkan cookie yang tersimpan
+ * Default: dark mode
+ */
+function initTheme() {
+    const savedTheme = getCookie('kumpulenak_theme');
+    const theme = savedTheme || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeIcon(theme);
+    kLog('Tema diinisialisasi:', theme);
+}
+
+/**
+ * Toggle tema antara dark dan light
+ */
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    setCookie('kumpulenak_theme', next, 30);
+    updateThemeIcon(next);
+    kLog('Tema diganti ke:', next);
+}
+
+/**
+ * Update ikon tombol tema sesuai tema aktif
+ * @param {string} theme - Tema yang aktif ("dark" atau "light")
+ */
+function updateThemeIcon(theme) {
+    const btn = document.getElementById('themeToggle');
+    if (btn) {
+        btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+}
+
+// Jalankan inisialisasi tema saat halaman dimuat
+initTheme();
+
+// =====================================================
 //  IMAGE LAZY LOAD HELPER
 // =====================================================
+
+/**
+ * Handler ketika gambar selesai dimuat
+ * Hapus skeleton dan tampilkan gambar
+ * @param {HTMLImageElement} img - Element gambar yang sudah loaded
+ */
 function handleImageLoad(img) {
     img.classList.add('loaded');
     const skeleton = img.parentElement.querySelector('.img-skeleton');
@@ -140,177 +282,956 @@ function handleImageLoad(img) {
 }
 
 // =====================================================
-//  RENDER CARDS
+//  EPORNER API v2 — Integrasi fetch data dari API
 // =====================================================
-function renderCards() {
-    const grid = document.getElementById('cardGrid');
-    grid.innerHTML = '';
 
-    cards.forEach((card, idx) => {
-        const cardEl = document.createElement('a');
-        cardEl.className = 'card' + (editMode ? ' edit-mode' : '');
-        cardEl.href = editMode ? 'javascript:void(0)' : card.link;
-        cardEl.target = editMode ? '' : '_blank';
-        cardEl.rel = editMode ? '' : 'noopener noreferrer';
+/**
+ * Fetch data video dari Eporner API v2
+ * @param {string} query - Keyword pencarian (default: "all")
+ * @param {number} page - Nomor halaman (default: 1)
+ * @param {string} order - Urutan sorting (default: "most-popular")
+ * @returns {Promise<Object|null>} Response API atau null jika gagal
+ */
+async function fetchFromAPI(query, page, order) {
+    // Buat cache key
+    const cacheKey = currentTab + '_' + page + '_' + (query || 'all');
 
-        if (editMode) {
-            cardEl.onclick = function (e) {
-                e.preventDefault();
-                openEditModal(idx);
-            };
+    // Cek cache terlebih dahulu
+    if (cacheStore[cacheKey] && (Date.now() - cacheStore[cacheKey].timestamp < CACHE_DURATION)) {
+        kLog('Menggunakan cache untuk:', cacheKey);
+        return cacheStore[cacheKey].data;
+    }
+
+    // Batalkan request sebelumnya jika masih berjalan
+    if (currentAbortController) {
+        currentAbortController.abort();
+        kLog('Request sebelumnya dibatalkan');
+    }
+
+    // Buat AbortController baru
+    currentAbortController = new AbortController();
+    const signal = currentAbortController.signal;
+
+    // Bangun URL API
+    const params = new URLSearchParams({
+        query: query || 'all',
+        per_page: String(itemsPerPage),
+        page: String(page),
+        thumbsize: 'big',
+        order: order || 'most-popular',
+        gay: '0',
+        lq: '1',
+        format: 'json'
+    });
+
+    const apiUrl = 'https://www.eporner.com/api/v2/video/search/?' + params.toString();
+    kLog('Fetching API:', apiUrl);
+
+    try {
+        // Fetch dengan timeout 10 detik
+        const response = await Promise.race([
+            fetch(apiUrl, { signal: signal }),
+            new Promise(function (_, reject) {
+                setTimeout(function () {
+                    reject(new Error('Timeout: Request melebihi 10 detik'));
+                }, 10000);
+            })
+        ]);
+
+        if (!response.ok) {
+            throw new Error('HTTP Error: ' + response.status);
         }
 
-        cardEl.innerHTML = `
-            <div class="card-img-wrapper">
-                <div class="img-skeleton"></div>
-                <div class="edit-hint">✏️ Edit</div>
-                <img src="${card.image}" alt="${card.name}" loading="lazy"
-                     onload="handleImageLoad(this)"
-                     onerror="this.style.background='linear-gradient(135deg,#333,#555)';this.style.minHeight='200px';this.classList.add('loaded');">
-            </div>
-            <div class="card-meta">
-                <div class="card-date-views">
-                    <span>📅 ${card.date}</span>
-                    <span>👁 ${card.views}</span>
-                </div>
-                <div class="card-title">${card.name}</div>
-            </div>
-        `;
+        const data = await response.json();
 
-        grid.appendChild(cardEl);
-    });
+        // Simpan ke cache
+        cacheStore[cacheKey] = {
+            data: data,
+            timestamp: Date.now()
+        };
+
+        kLog('API response diterima, total video:', data.total_count);
+        return data;
+
+    } catch (error) {
+        // Jangan log error jika request dibatalkan secara sengaja
+        if (error.name === 'AbortError') {
+            kLog('Request dibatalkan oleh user');
+            return null;
+        }
+        kLog('API error:', error.message);
+        throw error;
+    }
+}
+
+/**
+ * Konversi format video dari API ke format card internal
+ * @param {Object} video - Objek video dari response API
+ * @returns {Object} Objek card dalam format internal
+ */
+function mapAPIVideoToCard(video) {
+    return {
+        name: video.title || 'Untitled',
+        image: (video.default_thumb && video.default_thumb.src) ? video.default_thumb.src : '',
+        link: video.url || '#',
+        date: video.added ? video.added.slice(0, 10) : '',
+        views: video.views ? video.views.toLocaleString('id-ID') : '0',
+        length: video.length_min || '',
+        embedUrl: video.embed || '',
+        videoId: video.id || '',
+        rate: video.rate || ''
+    };
 }
 
 // =====================================================
-//  PAGINATION
+//  RENDER SKELETONS — Loading state
 // =====================================================
-function renderPagination() {
-    const pag = document.getElementById('pagination');
-    const totalPages = Math.ceil(cards.length / itemsPerPage);
-    const currentPage = 1;
 
-    let html = `<button class="page-btn disabled" onclick="return false;">‹</button>`;
+/**
+ * Render N card skeleton ke grid sebagai loading placeholder
+ * Skeleton memiliki layout yang sama persis dengan card asli
+ * @param {number} count - Jumlah skeleton yang akan ditampilkan
+ */
+function renderSkeletons(count) {
+    const grid = document.getElementById('cardGrid');
+    grid.innerHTML = '';
 
-    for (let i = 1; i <= totalPages; i++) {
-        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    for (let i = 0; i < count; i++) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'card skeleton-card';
+        skeleton.style.animationDelay = (i * 0.05) + 's';
+        skeleton.innerHTML =
+            '<div class="card-img-wrapper">' +
+                '<div class="img-skeleton"></div>' +
+            '</div>' +
+            '<div class="card-meta">' +
+                '<div class="card-date-views">' +
+                    '<span class="skeleton-text" style="width:50px;height:12px;"></span>' +
+                    '<span class="skeleton-text" style="width:60px;height:12px;"></span>' +
+                '</div>' +
+                '<div class="skeleton-text" style="width:100%;height:14px;margin-top:4px;"></div>' +
+                '<div class="skeleton-text" style="width:70%;height:14px;margin-top:4px;"></div>' +
+            '</div>';
+        grid.appendChild(skeleton);
+    }
+}
+
+// =====================================================
+//  RENDER EMPTY STATE — Tidak ada hasil
+// =====================================================
+
+/**
+ * Tampilkan state kosong saat tidak ada hasil pencarian atau API kosong
+ * @param {string} message - Pesan yang ditampilkan
+ */
+function renderEmptyState(message) {
+    const grid = document.getElementById('cardGrid');
+    grid.innerHTML =
+        '<div class="empty-state">' +
+            '<svg class="empty-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<circle cx="60" cy="60" r="50" stroke="#e8a800" stroke-width="2" stroke-dasharray="8 4" opacity="0.4"/>' +
+                '<path d="M45 55 C45 45, 75 45, 75 55" stroke="#e8a800" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.6"/>' +
+                '<circle cx="48" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
+                '<circle cx="72" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
+                '<path d="M40 72 Q60 62, 80 72" stroke="#e8a800" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>' +
+            '</svg>' +
+            '<p class="empty-message">' + escapeHTML(message) + '</p>' +
+            (isSearchActive
+                ? '<button class="empty-btn" onclick="clearSearch()">🔄 Reset Pencarian</button>'
+                : '<button class="empty-btn" onclick="retryLoad()">🔄 Coba Lagi</button>'
+            ) +
+        '</div>';
+
+    // Sembunyikan pagination saat state kosong
+    document.getElementById('pagination').innerHTML = '';
+}
+
+// =====================================================
+//  RENDER API ERROR — Error state
+// =====================================================
+
+/**
+ * Tampilkan state error saat API gagal
+ * @param {string} message - Pesan error yang ditampilkan
+ */
+function renderAPIError(message) {
+    const grid = document.getElementById('cardGrid');
+    grid.innerHTML =
+        '<div class="error-state">' +
+            '<span class="error-icon">⚠️</span>' +
+            '<p class="error-message">' + escapeHTML(message) + '</p>' +
+            '<button class="error-btn" onclick="retryLoad()">🔄 Coba Lagi</button>' +
+        '</div>';
+
+    // Sembunyikan pagination saat error
+    document.getElementById('pagination').innerHTML = '';
+}
+
+/**
+ * Coba muat ulang data setelah error
+ */
+function retryLoad() {
+    kLog('Retry load data...');
+    currentPage = 1;
+    loadAndRender();
+}
+
+// =====================================================
+//  RENDER CARDS — Render kartu ke grid
+// =====================================================
+
+/**
+ * Render satu card element dari data card
+ * @param {Object} card - Objek card
+ * @param {number} idx - Index card dalam array
+ * @returns {HTMLElement} Element card yang siap di-append
+ */
+function createCardElement(card, idx) {
+    const cardEl = document.createElement('a');
+    cardEl.className = 'card' + (editMode ? ' edit-mode' : '');
+    cardEl.dataset.index = idx;
+
+    // Jika admin → klik buka edit modal
+    // Jika punya embedUrl → klik buka player modal
+    // Jika tidak → buka link biasa
+    if (editMode) {
+        cardEl.href = 'javascript:void(0)';
+    } else if (card.embedUrl) {
+        cardEl.href = 'javascript:void(0)';
+    } else {
+        cardEl.href = card.link || '#';
+        cardEl.target = '_blank';
+        cardEl.rel = 'noopener noreferrer';
     }
 
-    html += `<span class="page-info">${cards.length.toLocaleString()}</span>`;
-    html += `<button class="page-btn disabled" onclick="return false;">›</button>`;
+    // Badge durasi (kiri bawah gambar)
+    var durationBadge = '';
+    if (card.length) {
+        durationBadge = '<span class="badge-duration">' + escapeHTML(card.length) + '</span>';
+    }
+
+    // Badge rating (kanan bawah gambar)
+    var ratingBadge = '';
+    if (card.rate) {
+        ratingBadge = '<span class="badge-rating">⭐ ' + escapeHTML(String(card.rate)) + '</span>';
+    }
+
+    // Badge featured (kiri atas gambar)
+    var featuredBadge = '';
+    if (card.featured) {
+        featuredBadge = '<span class="badge-featured">⭐ Featured</span>';
+    }
+
+    // Edit hint (untuk admin)
+    var editHint = editMode ? '<div class="edit-hint">✏️ Edit</div>' : '';
+
+    cardEl.innerHTML =
+        '<div class="card-img-wrapper">' +
+            '<div class="img-skeleton"></div>' +
+            editHint +
+            featuredBadge +
+            durationBadge +
+            ratingBadge +
+            '<img src="' + escapeHTML(card.image) + '" alt="' + escapeHTML(card.name) + '" loading="lazy" ' +
+                'onload="handleImageLoad(this)" ' +
+                'onerror="this.style.background=\'linear-gradient(135deg,#333,#555)\';this.style.minHeight=\'200px\';this.classList.add(\'loaded\');">' +
+        '</div>' +
+        '<div class="card-meta">' +
+            '<div class="card-date-views">' +
+                '<span>📅 ' + escapeHTML(card.date) + '</span>' +
+                '<span class="card-views" data-views="' + escapeHTML(card.views) + '">👁 ' + escapeHTML(card.views) + '</span>' +
+            '</div>' +
+            '<div class="card-title">' + escapeHTML(card.name) + '</div>' +
+        '</div>';
+
+    return cardEl;
+}
+
+/**
+ * Render cards ke grid dari array currentDisplayCards
+ * Menggunakan slice berdasarkan currentPage dan itemsPerPage untuk data lokal
+ */
+function renderCardsToGrid(cardsToRender) {
+    const grid = document.getElementById('cardGrid');
+    grid.innerHTML = '';
+
+    if (!cardsToRender || cardsToRender.length === 0) {
+        renderEmptyState('Tidak ada konten yang ditemukan');
+        return;
+    }
+
+    // Urutkan featured cards ke depan
+    var sorted = cardsToRender.slice().sort(function(a, b) {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        return 0;
+    });
+
+    sorted.forEach(function(card, idx) {
+        var cardEl = createCardElement(card, idx);
+        grid.appendChild(cardEl);
+    });
+
+    // Inisialisasi IntersectionObserver untuk animasi view counter
+    initViewCounterAnimation();
+    kLog('Rendered ' + sorted.length + ' cards ke grid');
+}
+
+// =====================================================
+//  LOAD AND RENDER — Fungsi utama untuk memuat dan menampilkan data
+// =====================================================
+
+/**
+ * Fungsi utama: muat data (dari API atau lokal) lalu render ke grid
+ * Ini dipanggil saat: init, ganti tab, ganti halaman, search
+ */
+async function loadAndRender() {
+    if (isLoading) return;
+    isLoading = true;
+
+    // Tampilkan skeleton loading
+    renderSkeletons(itemsPerPage);
+    kLog('Memuat data... Tab: ' + currentTab + ', Page: ' + currentPage + ', Query: ' + currentQuery);
+
+    if (DATA_SOURCE === 'api') {
+        try {
+            var config = TAB_CONFIG[currentTab] || TAB_CONFIG.popular;
+            var queryToUse = isSearchActive && currentQuery ? currentQuery : config.query;
+            var orderToUse = config.order;
+
+            var apiResponse = await fetchFromAPI(queryToUse, currentPage, orderToUse);
+
+            // Jika request dibatalkan, hentikan
+            if (apiResponse === null) {
+                isLoading = false;
+                return;
+            }
+
+            // Konversi data API ke format card
+            if (apiResponse.videos && apiResponse.videos.length > 0) {
+                currentDisplayCards = apiResponse.videos.map(mapAPIVideoToCard);
+                totalPagesFromAPI = apiResponse.total_pages || 1;
+
+                renderCardsToGrid(currentDisplayCards);
+
+                // Render pagination hanya jika bukan mode search
+                if (!isSearchActive) {
+                    renderPagination(totalPagesFromAPI);
+                } else {
+                    // Saat search aktif, tetap tampilkan pagination untuk hasil search
+                    renderPagination(totalPagesFromAPI);
+                }
+            } else {
+                renderEmptyState('Tidak ada video ditemukan' + (currentQuery ? ' untuk "' + escapeHTML(currentQuery) + '"' : ''));
+            }
+
+        } catch (error) {
+            kLog('Gagal fetch API, fallback ke data lokal:', error.message);
+
+            // Fallback ke data lokal
+            fallbackToLocal();
+            renderAPIError('Gagal memuat dari server. Menggunakan data lokal. (' + error.message + ')');
+        }
+    } else {
+        // Mode lokal
+        loadLocalData();
+    }
+
+    isLoading = false;
+}
+
+/**
+ * Fallback ke data lokal saat API gagal
+ * Menampilkan card dari array cards lokal
+ */
+function fallbackToLocal() {
+    DATA_SOURCE = 'local';
+    loadLocalData();
+    // Tampilkan info bahwa menggunakan data lokal
+    kLog('Menggunakan data lokal sebagai fallback');
+}
+
+/**
+ * Muat dan render data dari array lokal
+ */
+function loadLocalData() {
+    var dataToUse = cards.slice();
+
+    // Filter pencarian lokal
+    if (isSearchActive && currentQuery) {
+        var q = currentQuery.toLowerCase();
+        dataToUse = dataToUse.filter(function(card) {
+            return card.name.toLowerCase().includes(q);
+        });
+    }
+
+    // Sort berdasarkan tab aktif
+    if (currentTab === 'popular') {
+        dataToUse.sort(function(a, b) {
+            return parseInt(String(b.views).replace(/\D/g, '') || 0) - parseInt(String(a.views).replace(/\D/g, '') || 0);
+        });
+    } else if (currentTab === 'album') {
+        dataToUse.sort(function(a, b) {
+            return a.name.localeCompare(b.name);
+        });
+    }
+
+    // Hitung total halaman lokal
+    var totalPages = Math.ceil(dataToUse.length / itemsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    // Slice untuk pagination lokal
+    var startIdx = (currentPage - 1) * itemsPerPage;
+    var endIdx = startIdx + itemsPerPage;
+    currentDisplayCards = dataToUse.slice(startIdx, endIdx);
+
+    renderCardsToGrid(currentDisplayCards);
+    renderPagination(totalPages);
+}
+
+// =====================================================
+//  PAGINATION — Navigasi halaman
+// =====================================================
+
+/**
+ * Render tombol pagination berdasarkan total halaman
+ * @param {number} totalPages - Total jumlah halaman
+ */
+function renderPagination(totalPages) {
+    var pag = document.getElementById('pagination');
+    if (!totalPages || totalPages <= 0) totalPages = 1;
+
+    var html = '';
+
+    // Tombol Previous (‹)
+    if (currentPage <= 1) {
+        html += '<button class="page-btn disabled" disabled>‹</button>';
+    } else {
+        html += '<button class="page-btn" onclick="goToPage(' + (currentPage - 1) + ')">‹</button>';
+    }
+
+    // Tentukan range halaman yang ditampilkan
+    var startPage = 1;
+    var endPage = totalPages;
+    var maxVisible = 5;
+
+    if (totalPages > maxVisible) {
+        startPage = Math.max(1, currentPage - 2);
+        endPage = Math.min(totalPages, startPage + maxVisible - 1);
+        if (endPage - startPage < maxVisible - 1) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+    }
+
+    // Tombol halaman pertama + ellipsis
+    if (startPage > 1) {
+        html += '<button class="page-btn" onclick="goToPage(1)">1</button>';
+        if (startPage > 2) {
+            html += '<span class="page-ellipsis">…</span>';
+        }
+    }
+
+    // Tombol halaman
+    for (var i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            html += '<button class="page-btn active">' + i + '</button>';
+        } else {
+            html += '<button class="page-btn" onclick="goToPage(' + i + ')">' + i + '</button>';
+        }
+    }
+
+    // Tombol halaman terakhir + ellipsis
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += '<span class="page-ellipsis">…</span>';
+        }
+        html += '<button class="page-btn" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
+    }
+
+    // Info halaman
+    html += '<span class="page-info">Halaman ' + currentPage + ' dari ' + totalPages + '</span>';
+
+    // Tombol Next (›)
+    if (currentPage >= totalPages) {
+        html += '<button class="page-btn disabled" disabled>›</button>';
+    } else {
+        html += '<button class="page-btn" onclick="goToPage(' + (currentPage + 1) + ')">›</button>';
+    }
 
     pag.innerHTML = html;
 }
 
+/**
+ * Navigasi ke halaman tertentu
+ * @param {number} page - Nomor halaman tujuan
+ */
 function goToPage(page) {
+    if (page < 1 || page === currentPage || isLoading) return;
+    currentPage = page;
+    kLog('Berpindah ke halaman:', page);
+
+    // Scroll ke atas content
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Muat ulang data
+    loadAndRender();
 }
 
 // =====================================================
-//  TAB SWITCHING
+//  TAB SWITCHING — Ganti tab navigasi
 // =====================================================
-document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.addEventListener('click', function () {
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        currentTab = this.dataset.tab;
+
+/**
+ * Inisialisasi event listener tab
+ * Menggunakan event delegation pada nav-tabs container
+ */
+function initTabSwitching() {
+    var navTabs = document.getElementById('navTabs');
+
+    navTabs.addEventListener('click', function(e) {
+        var tab = e.target.closest('.nav-tab');
+        if (!tab) return;
+
+        // Hapus kelas active dari semua tab
+        navTabs.querySelectorAll('.nav-tab').forEach(function(t) {
+            t.classList.remove('active');
+        });
+
+        // Set tab aktif
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
         document.getElementById('sectionLabel').textContent = currentTab;
 
-        if (currentTab === 'popular') {
-            cards.sort((a, b) => parseInt(b.views) - parseInt(a.views));
-        } else if (currentTab === 'album') {
-            cards.sort((a, b) => a.name.localeCompare(b.name));
+        // Update posisi tab indicator
+        updateTabIndicator(tab);
+
+        // Reset state
+        currentPage = 1;
+        isSearchActive = false;
+        currentQuery = '';
+        document.getElementById('searchInput').value = '';
+        updateSearchClearBtn();
+
+        kLog('Tab diganti ke:', currentTab);
+
+        // Reset data source ke API
+        DATA_SOURCE = 'api';
+
+        // Muat ulang dari API
+        loadAndRender();
+    });
+
+    // Inisialisasi posisi tab indicator
+    var activeTab = navTabs.querySelector('.nav-tab.active');
+    if (activeTab) {
+        // Jalankan setelah layout dihitung
+        requestAnimationFrame(function() {
+            updateTabIndicator(activeTab);
+        });
+    }
+}
+
+/**
+ * Update posisi sliding pill indicator pada tab yang aktif
+ * @param {HTMLElement} activeTab - Element tab yang aktif
+ */
+function updateTabIndicator(activeTab) {
+    var indicator = document.getElementById('tabIndicator');
+    if (!indicator || !activeTab) return;
+
+    var navTabs = document.getElementById('navTabs');
+    var navRect = navTabs.getBoundingClientRect();
+    var tabRect = activeTab.getBoundingClientRect();
+
+    indicator.style.width = tabRect.width + 'px';
+    indicator.style.transform = 'translateX(' + (tabRect.left - navRect.left - navTabs.clientLeft) + 'px)';
+    indicator.style.opacity = '1';
+}
+
+// =====================================================
+//  SEARCH — Pencarian dinamis dengan debounce
+// =====================================================
+
+/**
+ * Debounce search: tunggu 400ms setelah user berhenti mengetik
+ */
+function initSearch() {
+    var searchInput = document.getElementById('searchInput');
+
+    searchInput.addEventListener('input', function() {
+        updateSearchClearBtn();
+
+        // Debounce 400ms
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() {
+            performSearch();
+        }, 400);
+    });
+
+    // Event Enter untuk search langsung
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            performSearch();
         }
-        renderCards();
     });
-});
+}
 
-// =====================================================
-//  SEARCH
-// =====================================================
+/**
+ * Lakukan pencarian berdasarkan keyword di search input
+ * Jika API mode, fetch dari API; jika lokal, filter array
+ */
 function performSearch() {
-    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    var input = document.getElementById('searchInput');
+    var query = input.value.trim();
+
     if (!query) {
-        renderCards();
+        // Jika kosong, reset ke tampilan default
+        isSearchActive = false;
+        currentQuery = '';
+        currentPage = 1;
+        DATA_SOURCE = 'api'; // Reset ke API
+        loadAndRender();
         return;
     }
 
-    const filtered = cards.filter(card =>
-        card.name.toLowerCase().includes(query)
-    );
+    isSearchActive = true;
+    currentQuery = query;
+    currentPage = 1;
 
-    const grid = document.getElementById('cardGrid');
-    grid.innerHTML = '';
-
-    if (filtered.length === 0) {
-        grid.innerHTML = `<div class="no-results">
-            <span class="emoji">🔍</span>
-            No results found for "<strong>${query}</strong>"
-        </div>`;
-        return;
-    }
-
-    filtered.forEach((card, idx) => {
-        const cardEl = document.createElement('a');
-        cardEl.className = 'card';
-        cardEl.href = card.link;
-        cardEl.target = '_blank';
-        cardEl.rel = 'noopener noreferrer';
-
-        cardEl.innerHTML = `
-            <div class="card-img-wrapper">
-                <div class="img-skeleton"></div>
-                <img src="${card.image}" alt="${card.name}" loading="lazy"
-                     onload="handleImageLoad(this)"
-                     onerror="this.style.background='linear-gradient(135deg,#333,#555)';this.style.minHeight='200px';this.classList.add('loaded');">
-            </div>
-            <div class="card-meta">
-                <div class="card-date-views">
-                    <span>📅 ${card.date}</span>
-                    <span>👁 ${card.views}</span>
-                </div>
-                <div class="card-title">${card.name}</div>
-            </div>
-        `;
-        grid.appendChild(cardEl);
-    });
+    kLog('Mencari:', query);
+    loadAndRender();
 }
 
-document.getElementById('searchInput').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') performSearch();
+/**
+ * Hapus pencarian dan kembali ke tampilan default
+ */
+function clearSearch() {
+    var input = document.getElementById('searchInput');
+    input.value = '';
+    isSearchActive = false;
+    currentQuery = '';
+    currentPage = 1;
+    updateSearchClearBtn();
+
+    DATA_SOURCE = 'api';
+    loadAndRender();
+    kLog('Pencarian direset');
+}
+
+/**
+ * Tampilkan/sembunyikan tombol clear (×) di search box
+ */
+function updateSearchClearBtn() {
+    var input = document.getElementById('searchInput');
+    var clearBtn = document.getElementById('searchClearBtn');
+    if (clearBtn) {
+        clearBtn.style.display = input.value.trim() ? 'block' : 'none';
+    }
+}
+
+// =====================================================
+//  VIDEO PLAYER MODAL
+// =====================================================
+
+/**
+ * Buka video player modal
+ * @param {Object} card - Objek card yang berisi embedUrl dan info lainnya
+ */
+function openPlayerModal(card) {
+    var modal = document.getElementById('playerModal');
+    var iframe = document.getElementById('playerIframe');
+    var title = document.getElementById('playerTitle');
+    var duration = document.getElementById('playerDuration');
+    var views = document.getElementById('playerViews');
+    var date = document.getElementById('playerDate');
+    var openTab = document.getElementById('playerOpenTab');
+
+    iframe.src = card.embedUrl;
+    title.textContent = card.name || 'Untitled';
+    duration.textContent = '⏱ ' + (card.length || '--:--');
+    views.textContent = '👁 ' + (card.views || '0');
+    date.textContent = '📅 ' + (card.date || '----');
+    openTab.href = card.link || '#';
+
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    kLog('Player modal dibuka:', card.name);
+}
+
+/**
+ * Tutup video player modal dan hentikan video
+ */
+function closePlayerModal() {
+    var modal = document.getElementById('playerModal');
+    var iframe = document.getElementById('playerIframe');
+
+    // Hentikan video dengan menghapus src
+    iframe.src = '';
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    kLog('Player modal ditutup');
+}
+
+// Event: tutup player modal saat klik overlay
+document.getElementById('playerModal').addEventListener('click', function(e) {
+    if (e.target === this) closePlayerModal();
+});
+
+// Event: tutup player modal saat klik tombol close
+document.getElementById('playerCloseBtn').addEventListener('click', function() {
+    closePlayerModal();
 });
 
 // =====================================================
-//  EDIT MODE (Admin Only)
+//  EVENT DELEGATION — Klik card pada #cardGrid
+//  Untuk menghindari duplikasi event listener saat re-render
 // =====================================================
-function openEditModal(idx) {
-    const modal = document.getElementById('editModal');
-    document.getElementById('editIndex').value = idx;
-    document.getElementById('editName').value = cards[idx].name;
-    document.getElementById('editLink').value = cards[idx].link;
-    document.getElementById('editImage').value = cards[idx].image;
-    document.getElementById('editDate').value = cards[idx].date;
-    document.getElementById('editViews').value = cards[idx].views;
-    modal.classList.add('show');
+
+/**
+ * Setup event delegation pada grid card
+ * Menangani klik card untuk: edit modal (admin), player modal (visitor+embedUrl), atau buka link
+ */
+function initCardGridDelegation() {
+    var grid = document.getElementById('cardGrid');
+
+    grid.addEventListener('click', function(e) {
+        var cardEl = e.target.closest('.card');
+        if (!cardEl) return;
+
+        var idx = parseInt(cardEl.dataset.index);
+        if (isNaN(idx) || !currentDisplayCards[idx]) return;
+        var card = currentDisplayCards[idx];
+
+        // Admin mode → buka edit modal
+        if (editMode) {
+            e.preventDefault();
+            openEditModal(idx);
+            return;
+        }
+
+        // Punya embedUrl → buka player modal
+        if (card.embedUrl) {
+            e.preventDefault();
+            openPlayerModal(card);
+            return;
+        }
+
+        // Tidak punya embedUrl → biarkan <a> href bekerja normal
+    });
 }
 
+// =====================================================
+//  EDIT MODE — Admin Only (Edit, Add, Delete, Export, Import)
+// =====================================================
+
+/**
+ * Buka edit modal dengan data card yang dipilih
+ * @param {number} idx - Index card dalam array currentDisplayCards
+ */
+function openEditModal(idx) {
+    var modal = document.getElementById('editModal');
+    var card = currentDisplayCards[idx];
+    if (!card) return;
+
+    document.getElementById('editModalTitle').textContent = '✏️ Edit Card';
+    document.getElementById('editIndex').value = idx;
+    document.getElementById('editName').value = card.name || '';
+    document.getElementById('editLink').value = card.link || '';
+    document.getElementById('editImage').value = card.image || '';
+    document.getElementById('editDate').value = card.date || '';
+    document.getElementById('editViews').value = card.views || '';
+    document.getElementById('editCategory').value = card.category || 'popular';
+    document.getElementById('editFeatured').checked = !!card.featured;
+
+    // Tampilkan tombol delete (untuk edit, bukan add)
+    document.getElementById('btnDeleteCard').style.display = 'inline-flex';
+
+    modal.classList.add('show');
+    kLog('Edit modal dibuka untuk card:', card.name);
+}
+
+/**
+ * Buka modal untuk menambah card baru
+ */
+function openAddModal() {
+    var modal = document.getElementById('editModal');
+
+    document.getElementById('editModalTitle').textContent = '➕ Add New Card';
+    document.getElementById('editIndex').value = '-1'; // -1 berarti tambah baru
+    document.getElementById('editName').value = '';
+    document.getElementById('editLink').value = '';
+    document.getElementById('editImage').value = '';
+    document.getElementById('editDate').value = '';
+    document.getElementById('editViews').value = '0';
+    document.getElementById('editCategory').value = 'popular';
+    document.getElementById('editFeatured').checked = false;
+
+    // Sembunyikan tombol delete (tidak relevan untuk add)
+    document.getElementById('btnDeleteCard').style.display = 'none';
+
+    modal.classList.add('show');
+    kLog('Add modal dibuka');
+}
+
+/**
+ * Tutup edit/add modal
+ */
 function closeEditModal() {
     document.getElementById('editModal').classList.remove('show');
 }
 
+/**
+ * Simpan perubahan card (dari edit atau add modal)
+ * @param {Event} e - Submit event dari form
+ */
 function saveCard(e) {
     e.preventDefault();
-    const idx = parseInt(document.getElementById('editIndex').value);
-    cards[idx].name = document.getElementById('editName').value;
-    cards[idx].link = document.getElementById('editLink').value;
-    cards[idx].image = document.getElementById('editImage').value;
-    cards[idx].date = document.getElementById('editDate').value;
-    cards[idx].views = document.getElementById('editViews').value;
+    var idx = parseInt(document.getElementById('editIndex').value);
+    var name = document.getElementById('editName').value.trim();
+    var link = document.getElementById('editLink').value.trim();
+    var image = document.getElementById('editImage').value.trim();
+    var date = document.getElementById('editDate').value.trim();
+    var views = document.getElementById('editViews').value.trim();
+    var category = document.getElementById('editCategory').value;
+    var featured = document.getElementById('editFeatured').checked;
 
-    // Save to localStorage for persistence
+    // Validasi: nama wajib diisi
+    if (!name) {
+        alert('Nama card wajib diisi!');
+        return;
+    }
+
+    // Validasi: URL harus dimulai dengan http/https (jika diisi)
+    if (link && !link.match(/^https?:\/\//i)) {
+        alert('Link URL harus dimulai dengan http:// atau https://');
+        return;
+    }
+    if (image && !image.match(/^https?:\/\//i)) {
+        alert('Image URL harus dimulai dengan http:// atau https://');
+        return;
+    }
+
+    var cardData = {
+        name: name,
+        link: link,
+        image: image,
+        date: date,
+        views: views,
+        category: category,
+        featured: featured
+    };
+
+    if (idx === -1) {
+        // Tambah card baru
+        cards.unshift(cardData);
+        kLog('Card baru ditambahkan:', name);
+    } else {
+        // Update card yang ada (update di array lokal)
+        // Cari card asli di array cards berdasarkan nama
+        var originalIdx = cards.findIndex(function(c) {
+            return c.name === currentDisplayCards[idx].name && c.image === currentDisplayCards[idx].image;
+        });
+        if (originalIdx !== -1) {
+            cards[originalIdx] = Object.assign(cards[originalIdx], cardData);
+        }
+        kLog('Card diupdate:', name);
+    }
+
+    // Simpan ke localStorage untuk persistence
     localStorage.setItem('cardData', JSON.stringify(cards));
 
     closeEditModal();
-    renderCards();
+
+    // Re-render
+    if (DATA_SOURCE === 'local') {
+        loadLocalData();
+    } else {
+        loadAndRender();
+    }
+}
+
+/**
+ * Hapus card dari array dan re-render
+ */
+function deleteCard() {
+    var idx = parseInt(document.getElementById('editIndex').value);
+    if (idx < 0 || !currentDisplayCards[idx]) return;
+
+    var card = currentDisplayCards[idx];
+    if (!confirm('Yakin ingin menghapus "' + card.name + '"?')) return;
+
+    // Cari dan hapus dari array cards lokal
+    var originalIdx = cards.findIndex(function(c) {
+        return c.name === card.name && c.image === card.image;
+    });
+    if (originalIdx !== -1) {
+        cards.splice(originalIdx, 1);
+    }
+
+    // Simpan ke localStorage
+    localStorage.setItem('cardData', JSON.stringify(cards));
+
+    closeEditModal();
+    kLog('Card dihapus:', card.name);
+
+    if (DATA_SOURCE === 'local') {
+        loadLocalData();
+    } else {
+        loadAndRender();
+    }
+}
+
+/**
+ * Export array cards sebagai file JSON
+ */
+function exportCards() {
+    var dataStr = JSON.stringify(cards, null, 2);
+    var blob = new Blob([dataStr], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'kumpulenak_cards_' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    kLog('Cards exported sebagai JSON');
+}
+
+/**
+ * Import cards dari file JSON
+ * @param {Event} event - Change event dari input file
+ */
+function importCards(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var imported = JSON.parse(e.target.result);
+            if (!Array.isArray(imported)) {
+                alert('File JSON harus berisi array!');
+                return;
+            }
+            cards = imported;
+            localStorage.setItem('cardData', JSON.stringify(cards));
+            kLog('Cards imported dari file:', file.name + ' (' + imported.length + ' cards)');
+
+            // Switch ke lokal dan render ulang
+            DATA_SOURCE = 'local';
+            currentPage = 1;
+            loadLocalData();
+        } catch (err) {
+            alert('Gagal membaca file JSON: ' + err.message);
+            kLog('Import error:', err.message);
+        }
+    };
+    reader.readAsText(file);
+
+    // Reset input agar bisa import file yang sama berulang kali
+    event.target.value = '';
 }
 
 // Close modal on overlay click
@@ -320,7 +1241,10 @@ document.getElementById('editModal').addEventListener('click', function (e) {
 
 // Close modal on Escape key
 document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeEditModal();
+    if (e.key === 'Escape') {
+        closeEditModal();
+        closePlayerModal();
+    }
 });
 
 // =====================================================
@@ -333,26 +1257,126 @@ const DATA_VERSION = 3;
 // =====================================================
 //  LOAD SAVED DATA
 // =====================================================
+
+/**
+ * Muat data card yang tersimpan di localStorage
+ * Jika versi data berbeda, reset dan gunakan data baru dari kode
+ */
 function loadSavedData() {
-    const savedVersion = localStorage.getItem('cardDataVersion');
+    var savedVersion = localStorage.getItem('cardDataVersion');
 
     // Jika versi berbeda, hapus data lama dan pakai data baru dari kode
     if (savedVersion !== String(DATA_VERSION)) {
         localStorage.removeItem('cardData');
         localStorage.setItem('cardDataVersion', DATA_VERSION);
-        console.log('[gallery.js] Data version updated → using fresh card data.');
+        kLog('Data version updated → menggunakan data card baru');
         return;
     }
 
-    const saved = localStorage.getItem('cardData');
+    var saved = localStorage.getItem('cardData');
     if (saved) {
         try {
             cards = JSON.parse(saved);
+            kLog('Data card dimuat dari localStorage (' + cards.length + ' items)');
         } catch (e) {
-            console.error('Failed to load saved data');
+            kLog('Gagal memuat data tersimpan:', e.message);
         }
     }
 }
+
+// =====================================================
+//  BACK TO TOP BUTTON
+// =====================================================
+
+/**
+ * Inisialisasi tombol Back to Top
+ * Muncul setelah scroll 300px dari atas
+ */
+function initBackToTop() {
+    var btn = document.getElementById('backToTop');
+    if (!btn) return;
+
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 300) {
+            btn.classList.add('show');
+        } else {
+            btn.classList.remove('show');
+        }
+    }, { passive: true });
+}
+
+/**
+ * Smooth scroll ke atas halaman
+ */
+function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// =====================================================
+//  VIEW COUNTER ANIMATION — IntersectionObserver
+// =====================================================
+
+/**
+ * Inisialisasi animasi counter views saat card masuk viewport
+ * Angka views akan count up dari 0 ke nilai sebenarnya dalam 1 detik
+ */
+function initViewCounterAnimation() {
+    var viewElements = document.querySelectorAll('.card-views[data-views]');
+    if (!viewElements.length) return;
+
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var el = entry.target;
+
+                // Hanya animasikan sekali
+                if (el.dataset.animated === 'true') return;
+                el.dataset.animated = 'true';
+
+                var rawViews = el.dataset.views || '0';
+                // Parse angka dari string (hapus titik, koma, spasi)
+                var targetNum = parseInt(String(rawViews).replace(/\D/g, '') || '0');
+
+                if (targetNum <= 0) return;
+
+                var startTime = null;
+                var duration = 1000; // 1 detik
+
+                function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    var progress = Math.min((timestamp - startTime) / duration, 1);
+                    // Easing: ease-out
+                    var easedProgress = 1 - Math.pow(1 - progress, 3);
+                    var currentVal = Math.floor(easedProgress * targetNum);
+                    el.textContent = '👁 ' + currentVal.toLocaleString('id-ID');
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        el.textContent = '👁 ' + rawViews;
+                    }
+                }
+
+                requestAnimationFrame(animate);
+                observer.unobserve(el);
+            }
+        });
+    }, { threshold: 0.3 });
+
+    viewElements.forEach(function(el) {
+        if (el.dataset.animated !== 'true') {
+            observer.observe(el);
+        }
+    });
+}
+
+// =====================================================
+//  RESIZE HANDLER — Update tab indicator saat resize
+// =====================================================
+window.addEventListener('resize', function() {
+    var activeTab = document.querySelector('.nav-tab.active');
+    if (activeTab) updateTabIndicator(activeTab);
+}, { passive: true });
 
 // =====================================================
 //  CONDITIONAL SCRIPT LOADING
@@ -361,27 +1385,48 @@ function loadSavedData() {
 // =====================================================
 if (!isAdmin) {
     // Load script.js — modal overlay + monetisasi
-    const scriptMain = document.createElement('script');
+    var scriptMain = document.createElement('script');
     scriptMain.src = 'assets/js/script.js';
     scriptMain.defer = true;
     document.body.appendChild(scriptMain);
 
     // Load ads.js — popunder + social bar
-    const scriptAds = document.createElement('script');
+    var scriptAds = document.createElement('script');
     scriptAds.src = 'assets/js/ads.js';
     scriptAds.defer = true;
     document.body.appendChild(scriptAds);
 
     // Load style.css — styling untuk modal overlay script.js
-    const linkCSS = document.createElement('link');
+    var linkCSS = document.createElement('link');
     linkCSS.rel = 'stylesheet';
     linkCSS.href = 'assets/css/style.css';
     document.head.appendChild(linkCSS);
 }
 
 // =====================================================
-//  INIT
+//  INIT — Inisialisasi semua komponen
 // =====================================================
-loadSavedData();
-renderCards();
-renderPagination();
+(function init() {
+    kLog('Inisialisasi kumpulenak gallery...');
+
+    // Muat data tersimpan dari localStorage
+    loadSavedData();
+
+    // Setup event delegation untuk card grid
+    initCardGridDelegation();
+
+    // Setup tab switching
+    initTabSwitching();
+
+    // Setup search
+    initSearch();
+    updateSearchClearBtn();
+
+    // Setup back to top
+    initBackToTop();
+
+    // Muat dan render data pertama kali
+    loadAndRender();
+
+    kLog('Inisialisasi selesai. Admin mode: ' + isAdmin);
+})();

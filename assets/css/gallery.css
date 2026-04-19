@@ -9,8 +9,6 @@
  *  - Video Player Modal
  *  - Pagination
  *  - Footer
- *  - Edit Modal (Admin)
- *  - Admin Actions
  *  - Search (clear button)
  *  - Back to Top Button
  *  - Skeleton, Empty, Error States
@@ -165,59 +163,6 @@ body {
 
 .logo:hover {
     transform: scale(1.05);
-}
-
-/* ===== ADMIN BADGE ===== */
-.admin-badge {
-    display: none;
-    background: #ff3333;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 6px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    animation: badgePulse 2s ease-in-out infinite;
-}
-
-.admin-badge.show {
-    display: inline-flex;
-}
-
-@keyframes badgePulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-/* ===== ADMIN ACTIONS (Add, Export, Import) ===== */
-.admin-actions {
-    display: none;
-    align-items: center;
-    gap: 6px;
-}
-
-.admin-actions.show {
-    display: flex;
-}
-
-.admin-btn {
-    background: rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    color: #000;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 5px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.admin-btn:hover {
-    background: rgba(0, 0, 0, 0.25);
-    transform: translateY(-1px);
 }
 
 /* ===== NAV TABS — Dengan sliding pill indicator ===== */
@@ -821,37 +766,8 @@ body {
     margin-top: 6px;
 }
 
-/* ===== EDIT MODAL ===== */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
 
-.modal-overlay.show {
-    display: flex;
-}
-
-.modal-content {
-    background: var(--modal-bg);
-    border-radius: 16px;
-    max-width: 500px;
-    width: 100%;
-    padding: 30px;
-    position: relative;
-    animation: modalIn 0.3s ease;
-    border: 1px solid rgba(232, 168, 0, 0.2);
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
+/* Animasi modal masuk */
 @keyframes modalIn {
     from {
         opacity: 0;
@@ -861,131 +777,6 @@ body {
         opacity: 1;
         transform: scale(1) translateY(0);
     }
-}
-
-.modal-close {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    background: none;
-    border: none;
-    color: #666;
-    font-size: 28px;
-    cursor: pointer;
-    transition: color 0.2s;
-    line-height: 1;
-}
-
-.modal-close:hover {
-    color: var(--text);
-}
-
-.modal-content h2 {
-    color: #e8a800;
-    font-size: 18px;
-    margin-bottom: 20px;
-}
-
-.form-group {
-    margin-bottom: 14px;
-}
-
-.form-label {
-    display: block;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-
-.form-label .required {
-    color: #ff3333;
-}
-
-.form-input {
-    width: 100%;
-    padding: 11px 14px;
-    border: 1px solid var(--input-border);
-    border-radius: 10px;
-    background: var(--input-bg);
-    color: var(--text);
-    font-size: 14px;
-    font-family: inherit;
-    transition: border-color 0.2s;
-    outline: none;
-}
-
-.form-input:focus {
-    border-color: #e8a800;
-    box-shadow: 0 0 0 3px rgba(232, 168, 0, 0.1);
-}
-
-/* Checkbox group */
-.form-check-group {
-    margin-top: 8px;
-}
-
-.form-check-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--text);
-}
-
-.form-check-input {
-    width: 18px;
-    height: 18px;
-    accent-color: #e8a800;
-    cursor: pointer;
-}
-
-/* Form actions (save + delete buttons) */
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.form-submit {
-    flex: 1;
-    padding: 13px;
-    background: linear-gradient(135deg, #e8a800, #d49a00);
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #000;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-}
-
-.form-submit:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(232, 168, 0, 0.3);
-}
-
-.form-delete {
-    padding: 13px 18px;
-    background: linear-gradient(135deg, #ff4444, #cc3333);
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.form-delete:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(255, 68, 68, 0.3);
 }
 
 /* ===== VIDEO PLAYER MODAL ===== */
@@ -1099,65 +890,6 @@ body {
     box-shadow: 0 4px 12px rgba(232, 168, 0, 0.3);
 }
 
-/* ===== ADMIN / EDIT MODE ===== */
-.edit-indicator {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #e8a800, #d49a00);
-    color: #000;
-    padding: 12px 22px;
-    border-radius: 14px;
-    font-size: 13px;
-    font-weight: 700;
-    z-index: 999;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    align-items: center;
-    gap: 8px;
-    animation: slideUp 0.5s ease;
-}
-
-.edit-indicator.show {
-    display: flex;
-}
-
-@keyframes slideUp {
-    from { transform: translateY(100px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.card.edit-mode {
-    position: relative;
-}
-
-.card.edit-mode .card-img-wrapper {
-    outline: 3px dashed #ff3333;
-    outline-offset: 2px;
-}
-
-.card.edit-mode:hover .card-img-wrapper {
-    outline-color: #e8a800;
-}
-
-.edit-hint {
-    display: none;
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    background: rgba(232, 168, 0, 0.95);
-    color: #000;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 6px;
-    z-index: 5;
-    pointer-events: none;
-}
-
-.edit-mode .edit-hint {
-    display: block;
-}
 
 /* ===== NO RESULTS & EMPTY STATE ===== */
 .no-results,
@@ -1302,12 +1034,6 @@ body {
         flex-wrap: wrap;
     }
 
-    .admin-actions {
-        order: 5;
-        width: 100%;
-        justify-content: center;
-        padding-top: 6px;
-    }
 }
 
 /* Tablet portrait */
@@ -1417,10 +1143,6 @@ body {
         padding: 10px 8px 4px;
     }
 
-    .admin-btn {
-        font-size: 10px;
-        padding: 4px 8px;
-    }
 
     .page-info {
         font-size: 11px;

@@ -3,13 +3,11 @@
  *  GALLERY.JS — Logika utama halaman gallery kumpulenak
  * ==========================================================
  *  File ini menangani:
- *  - Deteksi admin via URL path
  *  - Render kartu dari API / data lokal
  *  - Pagination yang berfungsi penuh
  *  - Search dinamis dengan debounce
  *  - Tab switching ke API
  *  - Video player modal
- *  - Edit mode (admin only) + Add/Delete/Export/Import
  *  - Dark/Light mode toggle
  *  - Loading, error, empty states
  *  - In-memory cache, AbortController, XSS escape
@@ -18,12 +16,11 @@
  */
 
 // =====================================================
-//  ADMIN DETECTION
-//  Secret disimpan di config.js (jangan upload ke GitHub!)
-//  Akses admin via: url.com/?secretkamu
+//  ADMIN FLAG — Dimatikan permanen (admin mode dihapus)
+//  Variabel ini dipertahankan agar referensi di kode
+//  tetap valid tanpa error
 // =====================================================
-const ADMIN_SECRET = (typeof CONFIG !== 'undefined' && CONFIG.ADMIN_SECRET) ? CONFIG.ADMIN_SECRET : '';
-const isAdmin = window.location.search === '?' + ADMIN_SECRET;
+const isAdmin = false;
 
 // =====================================================
 //  CARD DATA — Data kartu lokal (fallback)
@@ -118,7 +115,6 @@ let cards = [
 // =====================================================
 //  STATE — Variabel state global
 // =====================================================
-let editMode = isAdmin;           // Auto-enable edit mode untuk admin
 let currentTab = 'popular';       // Tab aktif saat ini
 let currentPage = 1;              // Halaman aktif saat ini
 const itemsPerPage = 24;          // Jumlah item per halaman
@@ -252,22 +248,6 @@ function kLog(message, data) {
     } else {
         console.log('[kumpulenak] ' + message);
     }
-}
-
-// =====================================================
-//  ADMIN UI SETUP
-// =====================================================
-if (isAdmin) {
-    kLog('Admin mode aktif');
-    document.getElementById('adminBadge').classList.add('show');
-    document.getElementById('editIndicator').classList.add('show');
-    document.getElementById('verifyBtn').style.display = 'none';
-    document.getElementById('adminActions').classList.add('show');
-
-    // Sembunyikan banner iklan statis
-    document.querySelectorAll('.ad-space').forEach(function (el) {
-        el.style.display = 'none';
-    });
 }
 
 // =====================================================
@@ -628,7 +608,7 @@ function loadFromKategori(query, order) {
     currentQuery = query;
     DATA_SOURCE = 'api';
 
-    // PERBAIKAN: Jangan mutasi TAB_CONFIG, gunakan variabel override sementara
+    // Jangan mutasi TAB_CONFIG, gunakan variabel override sementara
     window._tempTabOverride = { order: order, query: query };
 
     // Update visual tab aktif ke "popular"
@@ -661,15 +641,12 @@ function loadFromKategori(query, order) {
  */
 function createCardElement(card, idx) {
     const cardEl = document.createElement('a');
-    cardEl.className = 'card' + (editMode ? ' edit-mode' : '');
+    cardEl.className = 'card';
     cardEl.dataset.index = idx;
 
-    // Jika admin → klik buka edit modal
-    // Jika punya embedUrl → klik buka player modal
+    // Punya embedUrl → klik buka player modal
     // Jika tidak → buka link biasa
-    if (editMode) {
-        cardEl.href = 'javascript:void(0)';
-    } else if (card.embedUrl) {
+    if (card.embedUrl) {
         cardEl.href = 'javascript:void(0)';
     } else {
         cardEl.href = card.link || '#';
@@ -689,20 +666,9 @@ function createCardElement(card, idx) {
         ratingBadge = '<span class="badge-rating">⭐ ' + escapeHTML(String(card.rate)) + '</span>';
     }
 
-    // Badge featured (kiri atas gambar)
-    var featuredBadge = '';
-    if (card.featured) {
-        featuredBadge = '<span class="badge-featured">⭐ Featured</span>';
-    }
-
-    // Edit hint (untuk admin)
-    var editHint = editMode ? '<div class="edit-hint">✏️ Edit</div>' : '';
-
     cardEl.innerHTML =
         '<div class="card-img-wrapper">' +
         '<div class="img-skeleton"></div>' +
-        editHint +
-        featuredBadge +
         durationBadge +
         ratingBadge +
         '<img src="' + escapeHTML(card.image) + '" alt="' + escapeHTML(card.name) + '" loading="lazy" ' +
@@ -733,25 +699,14 @@ function renderCardsToGrid(cardsToRender) {
         return;
     }
 
-    // Urutkan featured cards ke depan
-    var sorted = cardsToRender.slice().sort(function (a, b) {
-        if (a.featured && !b.featured) return -1;
-        if (!a.featured && b.featured) return 1;
-        return 0;
-    });
-
-    sorted.forEach(function (card, sortedIdx) {
-        // Cari index asli card ini di currentDisplayCards
-        var originalIdx = currentDisplayCards.findIndex(function (c) {
-            return c.name === card.name && c.image === card.image;
-        });
-        var cardEl = createCardElement(card, originalIdx !== -1 ? originalIdx : sortedIdx);
+    cardsToRender.forEach(function (card, idx) {
+        var cardEl = createCardElement(card, idx);
         grid.appendChild(cardEl);
     });
 
     // Inisialisasi IntersectionObserver untuk animasi view counter
     initViewCounterAnimation();
-    kLog('Rendered ' + sorted.length + ' cards ke grid');
+    kLog('Rendered ' + cardsToRender.length + ' cards ke grid');
 }
 
 // =====================================================
@@ -800,13 +755,8 @@ async function loadAndRender() {
 
                 renderCardsToGrid(currentDisplayCards);
 
-                // Render pagination hanya jika bukan mode search
-                if (!isSearchActive) {
-                    renderPagination(totalPagesFromAPI);
-                } else {
-                    // Saat search aktif, tetap tampilkan pagination untuk hasil search
-                    renderPagination(totalPagesFromAPI);
-                }
+                // Render pagination
+                renderPagination(totalPagesFromAPI);
             } else {
                 renderEmptyState('Tidak ada video ditemukan' + (currentQuery ? ' untuk "' + escapeHTML(currentQuery) + '"' : ''));
             }
@@ -1203,7 +1153,7 @@ document.getElementById('playerCloseBtn').addEventListener('click', function () 
 
 /**
  * Setup event delegation pada grid card
- * Menangani klik card untuk: edit modal (admin), player modal (visitor+embedUrl), atau buka link
+ * Menangani klik card untuk: player modal (embedUrl) atau buka link
  */
 function initCardGridDelegation() {
     var grid = document.getElementById('cardGrid');
@@ -1216,13 +1166,6 @@ function initCardGridDelegation() {
         if (isNaN(idx) || !currentDisplayCards[idx]) return;
         var card = currentDisplayCards[idx];
 
-        // Admin mode → buka edit modal
-        if (editMode) {
-            e.preventDefault();
-            openEditModal(idx);
-            return;
-        }
-
         // Punya embedUrl → buka player modal
         if (card.embedUrl) {
             e.preventDefault();
@@ -1234,268 +1177,12 @@ function initCardGridDelegation() {
     });
 }
 
-// =====================================================
-//  EDIT MODE — Admin Only (Edit, Add, Delete, Export, Import)
-// =====================================================
-
-/**
- * Buka edit modal dengan data card yang dipilih
- * @param {number} idx - Index card dalam array currentDisplayCards
- */
-function openEditModal(idx) {
-    var modal = document.getElementById('editModal');
-    var card = currentDisplayCards[idx];
-    if (!card) return;
-
-    document.getElementById('editModalTitle').textContent = '✏️ Edit Card';
-    document.getElementById('editIndex').value = idx;
-    document.getElementById('editName').value = card.name || '';
-    document.getElementById('editLink').value = card.link || '';
-    document.getElementById('editImage').value = card.image || '';
-    document.getElementById('editDate').value = card.date || '';
-    document.getElementById('editViews').value = card.views || '';
-    document.getElementById('editCategory').value = card.category || 'popular';
-    document.getElementById('editFeatured').checked = !!card.featured;
-
-    // Tampilkan tombol delete (untuk edit, bukan add)
-    document.getElementById('btnDeleteCard').style.display = 'inline-flex';
-
-    modal.classList.add('show');
-    kLog('Edit modal dibuka untuk card:', card.name);
-}
-
-/**
- * Buka modal untuk menambah card baru
- */
-function openAddModal() {
-    var modal = document.getElementById('editModal');
-
-    document.getElementById('editModalTitle').textContent = '➕ Add New Card';
-    document.getElementById('editIndex').value = '-1'; // -1 berarti tambah baru
-    document.getElementById('editName').value = '';
-    document.getElementById('editLink').value = '';
-    document.getElementById('editImage').value = '';
-    document.getElementById('editDate').value = '';
-    document.getElementById('editViews').value = '0';
-    document.getElementById('editCategory').value = 'popular';
-    document.getElementById('editFeatured').checked = false;
-
-    // Sembunyikan tombol delete (tidak relevan untuk add)
-    document.getElementById('btnDeleteCard').style.display = 'none';
-
-    modal.classList.add('show');
-    kLog('Add modal dibuka');
-}
-
-/**
- * Tutup edit/add modal
- */
-function closeEditModal() {
-    document.getElementById('editModal').classList.remove('show');
-}
-
-/**
- * Simpan perubahan card (dari edit atau add modal)
- * @param {Event} e - Submit event dari form
- */
-function saveCard(e) {
-    e.preventDefault();
-    var idx = parseInt(document.getElementById('editIndex').value);
-    var name = document.getElementById('editName').value.trim();
-    var link = document.getElementById('editLink').value.trim();
-    var image = document.getElementById('editImage').value.trim();
-    var date = document.getElementById('editDate').value.trim();
-    var views = document.getElementById('editViews').value.trim();
-    var category = document.getElementById('editCategory').value;
-    var featured = document.getElementById('editFeatured').checked;
-
-    // Validasi: nama wajib diisi
-    if (!name) {
-        alert('Nama card wajib diisi!');
-        return;
-    }
-
-    // Validasi: URL harus dimulai dengan http/https (jika diisi)
-    if (link && !link.match(/^https?:\/\//i)) {
-        alert('Link URL harus dimulai dengan http:// atau https://');
-        return;
-    }
-    if (image && !image.match(/^https?:\/\//i)) {
-        alert('Image URL harus dimulai dengan http:// atau https://');
-        return;
-    }
-
-    var cardData = {
-        name: name,
-        link: link,
-        image: image,
-        date: date,
-        views: views,
-        category: category,
-        featured: featured
-    };
-
-    if (idx === -1) {
-        // Tambah card baru
-        cards.unshift(cardData);
-        kLog('Card baru ditambahkan:', name);
-    } else {
-        // Update card yang ada (update di array lokal)
-        // Cari card asli di array cards berdasarkan nama
-        var originalIdx = cards.findIndex(function (c) {
-            return c.name === currentDisplayCards[idx].name && c.image === currentDisplayCards[idx].image;
-        });
-        if (originalIdx !== -1) {
-            cards[originalIdx] = Object.assign(cards[originalIdx], cardData);
-        }
-        kLog('Card diupdate:', name);
-    }
-
-    // Simpan ke localStorage untuk persistence
-    localStorage.setItem('cardData', JSON.stringify(cards));
-
-    closeEditModal();
-
-    // Re-render
-    if (DATA_SOURCE === 'local') {
-        loadLocalData();
-    } else {
-        loadAndRender();
-    }
-}
-
-/**
- * Hapus card dari array dan re-render
- */
-function deleteCard() {
-    var idx = parseInt(document.getElementById('editIndex').value);
-    if (idx < 0 || !currentDisplayCards[idx]) return;
-
-    var card = currentDisplayCards[idx];
-    if (!confirm('Yakin ingin menghapus "' + card.name + '"?')) return;
-
-    // Cari dan hapus dari array cards lokal
-    var originalIdx = cards.findIndex(function (c) {
-        return c.name === card.name && c.image === card.image;
-    });
-    if (originalIdx !== -1) {
-        cards.splice(originalIdx, 1);
-    }
-
-    // Simpan ke localStorage
-    localStorage.setItem('cardData', JSON.stringify(cards));
-
-    closeEditModal();
-    kLog('Card dihapus:', card.name);
-
-    if (DATA_SOURCE === 'local') {
-        loadLocalData();
-    } else {
-        loadAndRender();
-    }
-}
-
-/**
- * Export array cards sebagai file JSON
- */
-function exportCards() {
-    var dataStr = JSON.stringify(cards, null, 2);
-    var blob = new Blob([dataStr], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'kumpulenak_cards_' + new Date().toISOString().slice(0, 10) + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    kLog('Cards exported sebagai JSON');
-}
-
-/**
- * Import cards dari file JSON
- * @param {Event} event - Change event dari input file
- */
-function importCards(event) {
-    var file = event.target.files[0];
-    if (!file) return;
-
-    var reader = new FileReader();
-    reader.onload = function (e) {
-        try {
-            var imported = JSON.parse(e.target.result);
-            if (!Array.isArray(imported)) {
-                alert('File JSON harus berisi array!');
-                return;
-            }
-            cards = imported;
-            localStorage.setItem('cardData', JSON.stringify(cards));
-            kLog('Cards imported dari file:', file.name + ' (' + imported.length + ' cards)');
-
-            // Switch ke lokal dan render ulang
-            DATA_SOURCE = 'local';
-            currentPage = 1;
-            loadLocalData();
-        } catch (err) {
-            alert('Gagal membaca file JSON: ' + err.message);
-            kLog('Import error:', err.message);
-        }
-    };
-    reader.readAsText(file);
-
-    // Reset input agar bisa import file yang sama berulang kali
-    event.target.value = '';
-}
-
-// Close modal on overlay click
-document.getElementById('editModal').addEventListener('click', function (e) {
-    if (e.target === this) closeEditModal();
-});
-
-// Close modal on Escape key
+// Close player modal on Escape key
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-        closeEditModal();
         closePlayerModal();
     }
 });
-
-// =====================================================
-//  DATA VERSION
-//  Naikkan angka ini setiap kali Anda mengubah cards di atas
-//  agar localStorage lama otomatis di-reset
-// =====================================================
-const DATA_VERSION = 4;
-
-// =====================================================
-//  LOAD SAVED DATA
-// =====================================================
-
-/**
- * Muat data card yang tersimpan di localStorage
- * Jika versi data berbeda, reset dan gunakan data baru dari kode
- */
-function loadSavedData() {
-    var savedVersion = localStorage.getItem('cardDataVersion');
-
-    // Jika versi berbeda, hapus data lama dan pakai data baru dari kode
-    if (savedVersion !== String(DATA_VERSION)) {
-        localStorage.removeItem('cardData');
-        localStorage.setItem('cardDataVersion', DATA_VERSION);
-        kLog('Data version updated → menggunakan data card baru');
-        return;
-    }
-
-    var saved = localStorage.getItem('cardData');
-    if (saved) {
-        try {
-            cards = JSON.parse(saved);
-            kLog('Data card dimuat dari localStorage (' + cards.length + ' items)');
-        } catch (e) {
-            kLog('Gagal memuat data tersimpan:', e.message);
-        }
-    }
-}
 
 // =====================================================
 //  BACK TO TOP BUTTON
@@ -1593,9 +1280,8 @@ window.addEventListener('resize', function () {
 
 // =====================================================
 //  CLICK REDIRECT — Buka link random setiap 2 menit sekali
-//  Hanya aktif untuk visitor (bukan admin)
 // =====================================================
-if (!isAdmin) {
+(function () {
     var _rdLinks = [
         'https://omg10.com/4/10806721',
         'https://omg10.com/4/10806736',
@@ -1629,21 +1315,20 @@ if (!isAdmin) {
             window.open(url, '_blank');
         }
     });
-}
+})();
 
 // =====================================================
 //  CONDITIONAL SCRIPT LOADING
-//  Hanya muat script.js dan ads.js untuk visitor biasa
-//  Admin tidak akan melihat modal overlay atau iklan
+//  Muat script.js dan ads.js untuk semua visitor
 // =====================================================
-if (!isAdmin) {
+(function () {
     // Load script.js — modal overlay + monetisasi
     var scriptMain = document.createElement('script');
     scriptMain.src = 'assets/js/script.js';
     scriptMain.defer = true;
     document.body.appendChild(scriptMain);
 
-    // Load ads.js — popunder + social bar
+    // Load ads.js — popunder + social bar + banner
     var scriptAds = document.createElement('script');
     scriptAds.src = 'assets/js/ads.js';
     scriptAds.defer = true;
@@ -1654,16 +1339,13 @@ if (!isAdmin) {
     linkCSS.rel = 'stylesheet';
     linkCSS.href = 'assets/css/style.css';
     document.head.appendChild(linkCSS);
-}
+})();
 
 // =====================================================
 //  INIT — Inisialisasi semua komponen
 // =====================================================
 (function init() {
     kLog('Inisialisasi kumpulenak gallery...');
-
-    // Muat data tersimpan dari localStorage
-    loadSavedData();
 
     // Setup event delegation untuk card grid
     initCardGridDelegation();
@@ -1681,5 +1363,5 @@ if (!isAdmin) {
     // Muat dan render data pertama kali
     loadAndRender();
 
-    kLog('Inisialisasi selesai. Admin mode: ' + isAdmin);
+    kLog('Inisialisasi selesai.');
 })();

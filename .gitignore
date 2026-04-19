@@ -5,9 +5,6 @@
 # Dependensi Node.js
 node_modules/
 
-# File rahasia (secret admin key)
-config.js
-
 # File output/temporary
 result.txt
 output.log
@@ -26,3 +23,5 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
+
+# Catatan: config.js sudah tidak digunakan (admin mode dihapus)

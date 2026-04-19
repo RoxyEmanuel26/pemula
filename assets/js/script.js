@@ -1,17 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================
-    //  CEK ADMIN — Jangan jalankan monetisasi di halaman admin
-    //  Samakan nilai ini dengan ADMIN_SECRET di .env
-    // ==========================================
-    const ADMIN_SECRET = 'editadmin';
-    const currentPath = window.location.pathname.replace(/^\/|\/$/g, '');
-    if (currentPath === ADMIN_SECRET) {
-        console.log('[script.js] Admin mode detected — monetization disabled.');
-        return; // Keluar, jangan inject modal atau jalankan monetisasi
-    }
-
-    // ==========================================
     //  INJEKSI HTML KOTAK KONTEN UTAMA (MODAL)
     // ==========================================
     const modalHTML = `

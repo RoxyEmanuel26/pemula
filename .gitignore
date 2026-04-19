@@ -23,5 +23,3 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
-
-# Catatan: config.js sudah tidak digunakan (admin mode dihapus)

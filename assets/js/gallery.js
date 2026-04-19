@@ -16,13 +16,6 @@
  */
 
 // =====================================================
-//  ADMIN FLAG — Dimatikan permanen (admin mode dihapus)
-//  Variabel ini dipertahankan agar referensi di kode
-//  tetap valid tanpa error
-// =====================================================
-const isAdmin = false;
-
-// =====================================================
 //  CARD DATA — Data kartu lokal (fallback)
 // =====================================================
 let cards = [

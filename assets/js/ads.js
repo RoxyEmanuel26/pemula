@@ -2,8 +2,7 @@
  * =============================================
  *  ADS.JS — Script Iklan Eksternal
  * =============================================
- *  File ini HANYA dimuat untuk visitor non-admin
- *  (dimuat secara conditional oleh gallery.js)
+ *  Dimuat oleh gallery.js untuk semua pengunjung
  *
  *  Jenis iklan yang dimuat:
  *  1. Banner Ads — inject ke #adBannerHeader dan #adBannerContent

@@ -22,10 +22,10 @@
     var BANNER_ADS = [
         {
             containerId: 'adBannerHeader',
-            key: '2e8603e8d49f282cb2b6c51077745034',
+            key: 'cffac27f60f026f84e02386788c1a06b',
             format: 'iframe',
-            height: 50,
-            width: 320
+            height: 90,
+            width: 728
         },
         {
             containerId: 'adBannerContent',

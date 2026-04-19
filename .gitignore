@@ -1,7 +1,28 @@
-# File-file yang tidak perlu di-upload ke Git
-node_modules/
-.env
-config.js
-output.log
+# =============================================
+# .gitignore — kumpulenak project
+# =============================================
 
-# (Jangan ignore folder assets, biarkan Git meng-upload gambar agar Vercel bisa membacanya otomatis!)
+# Dependensi Node.js
+node_modules/
+
+# File rahasia (secret admin key)
+config.js
+
+# File output/temporary
+result.txt
+output.log
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/

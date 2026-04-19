@@ -140,10 +140,56 @@ let DATA_SOURCE = "api";
 //  Setiap tab punya parameter API sendiri
 // =====================================================
 const TAB_CONFIG = {
-    popular: { order: 'most-popular', query: 'all' },
-    cosplay: { order: 'latest', query: 'all' },
-    album:   { order: 'top-weekly', query: 'all' }
+    popular:  { order: 'most-popular', query: 'all' },
+    viral:    { order: 'latest', query: 'all' },
+    kategori: { order: 'top-weekly', query: 'all' }
 };
+
+// =====================================================
+//  VIRAL TAGS — Daftar tag/keyword untuk tab "viral"
+// =====================================================
+const VIRAL_TAGS = [
+  { label: '🇮🇩 Indo', query: 'indonesia' },
+  { label: '👩 Cewe', query: 'cewe' },
+  { label: '🔥 Viral', query: 'viral' },
+  { label: '📱 Bokep Indo', query: 'bokep indo' },
+  { label: '🎓 Mahasiswi', query: 'mahasiswi' },
+  { label: '💑 Pasutri', query: 'pasutri' },
+  { label: '🏠 Rumahan', query: 'rumahan' },
+  { label: '📸 Hijab', query: 'hijab' },
+  { label: '🌙 Malam', query: 'malam' },
+  { label: '💃 Goyang', query: 'goyang' },
+  { label: '🎥 Live', query: 'live streaming' },
+  { label: '⭐ Artis', query: 'artis indo' },
+  { label: '🏖️ Pantai', query: 'pantai' },
+  { label: '🏨 Hotel', query: 'hotel' },
+  { label: '📲 TikTok', query: 'tiktok viral' },
+  { label: '💋 Hot', query: 'hot indo' }
+];
+
+// =====================================================
+//  KATEGORI LIST — Daftar semua kategori video
+// =====================================================
+const KATEGORI_LIST = [
+  { label: '🔥 Most Popular', query: 'all', order: 'most-popular', icon: '🔥' },
+  { label: '🆕 Terbaru', query: 'all', order: 'latest', icon: '🆕' },
+  { label: '📈 Top Minggu Ini', query: 'all', order: 'top-weekly', icon: '📈' },
+  { label: '📅 Top Bulan Ini', query: 'all', order: 'top-monthly', icon: '📅' },
+  { label: '🇮🇩 Indonesia', query: 'indonesia', order: 'most-popular', icon: '🇮🇩' },
+  { label: '👩 Cewek', query: 'girl', order: 'most-popular', icon: '👩' },
+  { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' },
+  { label: '🎌 Japan', query: 'japanese', order: 'most-popular', icon: '🎌' },
+  { label: '🇰🇷 Korea', query: 'korean', order: 'most-popular', icon: '🇰🇷' },
+  { label: '🏠 Amateur', query: 'amateur', order: 'most-popular', icon: '🏠' },
+  { label: '🎓 Student', query: 'student', order: 'most-popular', icon: '🎓' },
+  { label: '💑 Couple', query: 'couple', order: 'most-popular', icon: '💑' },
+  { label: '📸 Hijab', query: 'hijab', order: 'most-popular', icon: '📸' },
+  { label: '⭐ Celebrity', query: 'celebrity', order: 'most-popular', icon: '⭐' },
+  { label: '🏖️ Outdoor', query: 'outdoor', order: 'most-popular', icon: '🏖️' },
+  { label: '💃 Dance', query: 'dance', order: 'most-popular', icon: '💃' },
+  { label: '🎥 Live Cam', query: 'live cam', order: 'latest', icon: '🎥' },
+  { label: '💋 Mature', query: 'mature', order: 'most-popular', icon: '💋' }
+];
 
 // =====================================================
 //  CACHE STORE — In-memory cache untuk response API
@@ -477,6 +523,100 @@ function retryLoad() {
 }
 
 // =====================================================
+//  VIRAL TAGS — Render grid tag/keyword untuk tab "viral"
+// =====================================================
+
+/**
+ * Render grid tag viral ke cardGrid
+ * Menampilkan tombol-tombol keyword yang bisa diklik untuk search
+ */
+function renderViralTags() {
+    var grid = document.getElementById('cardGrid');
+    document.getElementById('pagination').innerHTML = '';
+
+    var html = '<div class="viral-tags-grid">';
+    VIRAL_TAGS.forEach(function(tag) {
+        html += '<button class="viral-tag-btn" onclick="searchFromTag(\'' + escapeHTML(tag.query) + '\')">' + tag.label + '</button>';
+    });
+    html += '</div>';
+    grid.innerHTML = html;
+}
+
+/**
+ * Dipanggil saat user klik salah satu viral tag
+ * Set search query dan pindah ke tab popular untuk tampilkan hasil
+ * @param {string} query - Keyword pencarian dari tag
+ */
+function searchFromTag(query) {
+    document.getElementById('searchInput').value = query;
+    isSearchActive = true;
+    currentQuery = query;
+    currentPage = 1;
+    currentTab = 'popular'; // Switch ke tab popular untuk tampilkan hasil
+    DATA_SOURCE = 'api';
+
+    // Update visual tab aktif ke "popular"
+    document.querySelectorAll('.nav-tab').forEach(function(t) {
+        t.classList.remove('active');
+        if (t.dataset.tab === 'popular') t.classList.add('active');
+    });
+
+    updateSearchClearBtn();
+    loadAndRender();
+}
+
+// =====================================================
+//  KATEGORI GRID — Render grid kategori untuk tab "kategori"
+// =====================================================
+
+/**
+ * Render grid kategori ke cardGrid
+ * Menampilkan card-card kategori yang bisa diklik
+ */
+function renderKategoriGrid() {
+    var grid = document.getElementById('cardGrid');
+    document.getElementById('pagination').innerHTML = '';
+
+    var html = '<div class="kategori-grid">';
+    KATEGORI_LIST.forEach(function(kat) {
+        html += '<button class="kategori-card-btn" onclick="loadFromKategori(\'' +
+            escapeHTML(kat.query) + '\',\'' + escapeHTML(kat.order) + '\')">' +
+            '<span class="kategori-icon">' + kat.icon + '</span>' +
+            '<span class="kategori-label">' + escapeHTML(kat.label) + '</span>' +
+        '</button>';
+    });
+    html += '</div>';
+    grid.innerHTML = html;
+}
+
+/**
+ * Dipanggil saat user klik salah satu kategori
+ * Set search query dan order, lalu pindah ke tab popular untuk tampilkan hasil
+ * @param {string} query - Keyword pencarian dari kategori
+ * @param {string} order - Urutan sorting dari kategori
+ */
+function loadFromKategori(query, order) {
+    currentTab = 'popular';
+    currentPage = 1;
+    isSearchActive = true;
+    currentQuery = query;
+    DATA_SOURCE = 'api';
+
+    // Override TAB_CONFIG popular sementara dengan order dari kategori yang dipilih
+    TAB_CONFIG['popular'] = { order: order, query: query };
+
+    // Update visual tab aktif ke "popular"
+    document.querySelectorAll('.nav-tab').forEach(function(t) {
+        t.classList.remove('active');
+        if (t.dataset.tab === 'popular') t.classList.add('active');
+    });
+
+    document.getElementById('searchInput').value = query;
+    updateSearchClearBtn();
+    loadAndRender();
+}
+
+// =====================================================
 //  RENDER CARDS — Render kartu ke grid
 // =====================================================
 
@@ -670,7 +810,7 @@ function loadLocalData() {
         dataToUse.sort(function(a, b) {
             return parseInt(String(b.views).replace(/\D/g, '') || 0) - parseInt(String(a.views).replace(/\D/g, '') || 0);
         });
-    } else if (currentTab === 'album') {
+    } else if (currentTab === 'kategori') {
         dataToUse.sort(function(a, b) {
             return a.name.localeCompare(b.name);
         });
@@ -800,7 +940,10 @@ function initTabSwitching() {
         // Set tab aktif
         tab.classList.add('active');
         currentTab = tab.dataset.tab;
-        document.getElementById('sectionLabel').textContent = currentTab;
+
+        // Mapping label yang lebih cantik untuk section label
+        var labelMap = { popular: 'popular', viral: 'viral 🔥', kategori: 'semua kategori' };
+        document.getElementById('sectionLabel').textContent = labelMap[currentTab] || currentTab;
 
         // Update posisi tab indicator
         updateTabIndicator(tab);
@@ -813,6 +956,12 @@ function initTabSwitching() {
         updateSearchClearBtn();
 
         kLog('Tab diganti ke:', currentTab);
+
+        // Tab khusus "viral": tampilkan grid tag, bukan fetch video
+        if (currentTab === 'viral') { renderViralTags(); return; }
+
+        // Tab khusus "kategori": tampilkan grid kategori, bukan fetch video
+        if (currentTab === 'kategori') { renderKategoriGrid(); return; }
 
         // Reset data source ke API
         DATA_SOURCE = 'api';

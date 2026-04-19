@@ -1478,23 +1478,22 @@ body {
     }
 }
 
-/* ===== VIRAL TAGS GRID ===== */
-.viral-tags-grid {
-    grid-column: 1 / -1;
+/* ===== VIRAL FILTER BAR ===== */
+.viral-filter-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px 0 20px;
-    justify-content: center;
+    gap: 8px;
+    padding: 12px 0 16px;
+    justify-content: flex-start;
 }
 
-.viral-tag-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--text);
-    font-size: 13px;
+.viral-filter-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-secondary);
+    font-size: 12px;
     font-weight: 600;
-    padding: 8px 16px;
+    padding: 6px 14px;
     border-radius: 999px;
     cursor: pointer;
     font-family: inherit;
@@ -1502,17 +1501,27 @@ body {
     white-space: nowrap;
 }
 
-.viral-tag-btn:hover {
+.viral-filter-btn:hover {
+    background: rgba(232, 168, 0, 0.15);
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.viral-filter-btn.active {
     background: var(--accent);
     border-color: var(--accent);
     color: #000;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(232, 168, 0, 0.4);
+    font-weight: 700;
 }
 
-[data-theme="light"] .viral-tag-btn {
+[data-theme="light"] .viral-filter-btn {
     background: rgba(0, 0, 0, 0.06);
     border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .viral-filter-btn:hover {
+    background: rgba(232, 168, 0, 0.2);
 }
 
 /* ===== KATEGORI GRID ===== */
@@ -1579,11 +1588,12 @@ body {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 8px;
     }
-    .viral-tags-grid {
-        gap: 8px;
+    .viral-filter-bar {
+        gap: 6px;
+        padding: 10px 0 12px;
     }
-    .viral-tag-btn {
-        font-size: 12px;
-        padding: 7px 12px;
+    .viral-filter-btn {
+        font-size: 11px;
+        padding: 5px 10px;
     }
 }

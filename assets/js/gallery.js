@@ -523,53 +523,72 @@ function retryLoad() {
 }
 
 // =====================================================
-//  VIRAL TAGS — Render grid tag/keyword untuk tab "viral"
+//  VIRAL TAGS — Filter bar + langsung load video
 // =====================================================
 
 /**
- * Render grid tag viral ke cardGrid
- * Menampilkan tombol-tombol keyword yang bisa diklik untuk search
+ * Render filter bar viral di atas cardGrid (di dalam content-wrapper)
+ * Filter bar berisi tombol "Semua" + semua tag dari VIRAL_TAGS
+ * @param {string} activeQuery - Query yang sedang aktif ('all' = semua)
  */
-function renderViralTags() {
-    var grid = document.getElementById('cardGrid');
-    document.getElementById('pagination').innerHTML = '';
+function renderViralTags(activeQuery) {
+    var contentWrapper = document.querySelector('.content-wrapper');
+    var existingBar = document.getElementById('viralFilterBar');
 
-    var html = '<div class="viral-tags-grid">';
-    VIRAL_TAGS.forEach(function(tag) {
-        html += '<button class="viral-tag-btn" onclick="searchFromTag(\'' + escapeHTML(tag.query) + '\')">' + tag.label + '</button>';
-    });
-    html += '</div>';
-    grid.innerHTML = html;
+    if (!existingBar) {
+        // Buat filter bar baru
+        var filterBar = document.createElement('div');
+        filterBar.id = 'viralFilterBar';
+        filterBar.className = 'viral-filter-bar';
+
+        var allBtn = '<button class="viral-filter-btn' + (!activeQuery || activeQuery === 'all' ? ' active' : '') + '" onclick="filterViralTab(\'all\')">🌐 Semua</button>';
+        var tagBtns = VIRAL_TAGS.map(function(tag) {
+            var isActive = activeQuery === tag.query;
+            return '<button class="viral-filter-btn' + (isActive ? ' active' : '') + '" onclick="filterViralTab(\'' + escapeHTML(tag.query) + '\')">' + tag.label + '</button>';
+        }).join('');
+
+        filterBar.innerHTML = allBtn + tagBtns;
+
+        // Sisipkan di awal content-wrapper (sebelum sectionLabel)
+        contentWrapper.insertBefore(filterBar, contentWrapper.firstChild);
+    } else {
+        // Update state active pada filter bar yang sudah ada
+        var targetQuery = activeQuery || 'all';
+        existingBar.querySelectorAll('.viral-filter-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+            var match = btn.getAttribute('onclick').match(/'([^']+)'/);
+            if (match && match[1] === targetQuery) {
+                btn.classList.add('active');
+            }
+        });
+    }
 }
 
 /**
- * Dipanggil saat user klik salah satu viral tag
- * Set search query dan pindah ke tab popular untuk tampilkan hasil
- * @param {string} query - Keyword pencarian dari tag
+ * Dipanggil saat user klik salah satu filter button di tab viral
+ * Filter konten tanpa pindah tab
+ * @param {string} query - Keyword filter ('all' = tampilkan semua)
  */
-function searchFromTag(query) {
-    document.getElementById('searchInput').value = query;
-    isSearchActive = true;
-    currentQuery = query;
+function filterViralTab(query) {
+    if (currentTab !== 'viral') return;
+
     currentPage = 1;
-    currentTab = 'popular'; // Switch ke tab popular untuk tampilkan hasil
+    isSearchActive = query !== 'all';
+    currentQuery = query === 'all' ? '' : query;
     DATA_SOURCE = 'api';
 
-    // Update visual tab aktif ke "popular"
-    document.querySelectorAll('.nav-tab').forEach(function(t) {
-        t.classList.remove('active');
-        if (t.dataset.tab === 'popular') t.classList.add('active');
-    });
+    // Update TAB_CONFIG viral sesuai filter
+    TAB_CONFIG['viral'] = {
+        order: 'latest',
+        query: query === 'all' ? 'all' : query
+    };
 
-    // Update section label
-    document.getElementById('sectionLabel').textContent = 'hasil pencarian: ' + query;
+    // Update tampilan filter bar (highlight tombol aktif)
+    renderViralTags(query);
 
-    // Update tab indicator position
-    var popularTab = document.querySelector('.nav-tab[data-tab="popular"]');
-    if (popularTab) updateTabIndicator(popularTab);
-
-    updateSearchClearBtn();
+    // Muat video
     loadAndRender();
+    kLog('Viral filter:', query);
 }
 
 // =====================================================
@@ -959,6 +978,10 @@ function initTabSwitching() {
         var tab = e.target.closest('.nav-tab');
         if (!tab) return;
 
+        // Hapus viral filter bar jika pindah dari tab viral
+        var oldBar = document.getElementById('viralFilterBar');
+        if (oldBar) oldBar.remove();
+
         // Hapus kelas active dari semua tab
         navTabs.querySelectorAll('.nav-tab').forEach(function(t) {
             t.classList.remove('active');
@@ -987,8 +1010,19 @@ function initTabSwitching() {
 
         kLog('Tab diganti ke:', currentTab);
 
-        // Tab khusus "viral": tampilkan grid tag, bukan fetch video
-        if (currentTab === 'viral') { renderViralTags(); return; }
+        // Tab khusus "viral": render filter bar + langsung load video
+        if (currentTab === 'viral') {
+            // Reset TAB_CONFIG viral ke default
+            TAB_CONFIG['viral'] = { order: 'latest', query: 'all' };
+            isSearchActive = false;
+            currentQuery = '';
+            DATA_SOURCE = 'api';
+
+            // Render filter bar dan langsung load video
+            renderViralTags('all');
+            loadAndRender();
+            return;
+        }
 
         // Tab khusus "kategori": tampilkan grid kategori, bukan fetch video
         if (currentTab === 'kategori') { renderKategoriGrid(); return; }

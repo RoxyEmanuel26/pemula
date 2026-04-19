@@ -47,17 +47,6 @@
     <header class="header">
         <div class="header-inner">
             <div class="logo" onclick="window.location='/'">kumpulenak</div>
-            <span class="admin-badge" id="adminBadge">🔧 ADMIN</span>
-
-            <!-- Tombol admin: Add, Export, Import (hanya visible untuk admin) -->
-            <div class="admin-actions" id="adminActions">
-                <button class="admin-btn" id="btnAddCard" onclick="openAddModal()" title="Tambah Card Baru">➕ Add</button>
-                <button class="admin-btn" id="btnExportJSON" onclick="exportCards()" title="Export Data ke JSON">📤 Export</button>
-                <label class="admin-btn" id="btnImportJSON" title="Import Data dari JSON">
-                    📥 Import
-                    <input type="file" id="importFileInput" accept=".json" onchange="importCards(event)" style="display:none;">
-                </label>
-            </div>
 
             <nav class="nav-tabs" id="navTabs">
                 <div class="nav-tab-indicator" id="tabIndicator"></div>
@@ -77,7 +66,7 @@
         </div>
     </header>
 
-    <!-- ===== VERIFY BUTTON (hidden for admin) ===== -->
+    <!-- ===== VERIFY BUTTON ===== -->
     <a href="https://glamournakedemployee.com/bxj9v8xs?key=bbcc03541721fe595f6d0a199086c628" class="verify-btn"
         id="verifyBtn">
         🔗 VERIFYING <br> Download (21mb) &amp; Watching (2:11)
@@ -86,7 +75,7 @@
     <!-- ===== BANNER ===== -->
     <div class="banner">
         <div class="banner-img ad-space" id="adBannerHeader" style="border: none;">
-            <!-- Iklan banner header di-inject oleh ads.js (hanya untuk non-admin) -->
+            <!-- Iklan banner header di-inject oleh ads.js -->
         </div>
     </div>
 
@@ -105,7 +94,7 @@
 
             <!-- AD BANNER CONTENT (Banner Bawah) -->
             <div class="ad-space" id="adBannerContent" style="margin: 16px auto 0; background: transparent; border: none; text-align: center;">
-                <!-- Iklan banner content di-inject oleh ads.js (hanya untuk non-admin) -->
+                <!-- Iklan banner content di-inject oleh ads.js -->
             </div>
         </div>
     </main>
@@ -119,55 +108,6 @@
         </div>
         <p>All resources are shared by their respective owners. &copy; 2026 kumpulenak</p>
     </footer>
-
-    <!-- ===== EDIT MODAL (admin only) ===== -->
-    <div class="modal-overlay" id="editModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeEditModal()">&times;</button>
-            <h2 id="editModalTitle">✏️ Edit Card</h2>
-            <form id="editForm" onsubmit="saveCard(event)">
-                <input type="hidden" id="editIndex">
-                <div class="form-group">
-                    <label class="form-label">Card Name / Title <span class="required">*</span></label>
-                    <input type="text" id="editName" class="form-input" placeholder="Enter card name..." required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Link URL</label>
-                    <input type="text" id="editLink" class="form-input" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Image URL</label>
-                    <input type="text" id="editImage" class="form-input" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Date (mm/dd)</label>
-                    <input type="text" id="editDate" class="form-input" placeholder="04/14">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Views</label>
-                    <input type="text" id="editViews" class="form-input" placeholder="1234">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Category</label>
-                    <select id="editCategory" class="form-input">
-                        <option value="popular">Popular</option>
-                        <option value="viral">Viral</option>
-                        <option value="kategori">Kategori</option>
-                    </select>
-                </div>
-                <div class="form-group form-check-group">
-                    <label class="form-check-label">
-                        <input type="checkbox" id="editFeatured" class="form-check-input">
-                        <span>⭐ Featured (Pin ke posisi pertama)</span>
-                    </label>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="form-submit">💾 Save Changes</button>
-                    <button type="button" class="form-delete" id="btnDeleteCard" onclick="deleteCard()">🗑 Delete</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- ===== VIDEO PLAYER MODAL ===== -->
     <div class="player-overlay" id="playerModal">
@@ -191,16 +131,9 @@
         </div>
     </div>
 
-    <!-- ===== EDIT INDICATOR ===== -->
-    <div class="edit-indicator" id="editIndicator">
-        ⚙️ Edit Mode ON — Click any card to edit
-    </div>
-
     <!-- ===== BACK TO TOP BUTTON ===== -->
     <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Kembali ke atas">⬆</button>
 
-    <!-- Config (rahasia, tidak di-upload ke GitHub) -->
-    <script src="config.js"></script>
     <!-- Gallery Logic -->
     <script src="assets/js/gallery.js"></script>
 

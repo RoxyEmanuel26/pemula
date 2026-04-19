@@ -561,6 +561,13 @@ function searchFromTag(query) {
         if (t.dataset.tab === 'popular') t.classList.add('active');
     });
 
+    // Update section label
+    document.getElementById('sectionLabel').textContent = 'hasil pencarian: ' + query;
+
+    // Update tab indicator position
+    var popularTab = document.querySelector('.nav-tab[data-tab="popular"]');
+    if (popularTab) updateTabIndicator(popularTab);
+
     updateSearchClearBtn();
     loadAndRender();
 }
@@ -602,14 +609,21 @@ function loadFromKategori(query, order) {
     currentQuery = query;
     DATA_SOURCE = 'api';
 
-    // Override TAB_CONFIG popular sementara dengan order dari kategori yang dipilih
-    TAB_CONFIG['popular'] = { order: order, query: query };
+    // PERBAIKAN: Jangan mutasi TAB_CONFIG, gunakan variabel override sementara
+    window._tempTabOverride = { order: order, query: query };
 
     // Update visual tab aktif ke "popular"
     document.querySelectorAll('.nav-tab').forEach(function(t) {
         t.classList.remove('active');
         if (t.dataset.tab === 'popular') t.classList.add('active');
     });
+
+    // Update section label
+    document.getElementById('sectionLabel').textContent = 'kategori: ' + query;
+
+    // Update tab indicator position
+    var popularTab = document.querySelector('.nav-tab[data-tab="popular"]');
+    if (popularTab) updateTabIndicator(popularTab);
 
     document.getElementById('searchInput').value = query;
     updateSearchClearBtn();
@@ -707,8 +721,12 @@ function renderCardsToGrid(cardsToRender) {
         return 0;
     });
 
-    sorted.forEach(function(card, idx) {
-        var cardEl = createCardElement(card, idx);
+    sorted.forEach(function(card, sortedIdx) {
+        // Cari index asli card ini di currentDisplayCards
+        var originalIdx = currentDisplayCards.findIndex(function(c) {
+            return c.name === card.name && c.image === card.image;
+        });
+        var cardEl = createCardElement(card, originalIdx !== -1 ? originalIdx : sortedIdx);
         grid.appendChild(cardEl);
     });
 
@@ -736,8 +754,17 @@ async function loadAndRender() {
     if (DATA_SOURCE === 'api') {
         try {
             var config = TAB_CONFIG[currentTab] || TAB_CONFIG.popular;
+
+            // Gunakan override sementara dari loadFromKategori jika ada
+            if (window._tempTabOverride && currentTab === 'popular') {
+                config = window._tempTabOverride;
+            }
+
             var queryToUse = isSearchActive && currentQuery ? currentQuery : config.query;
             var orderToUse = config.order;
+
+            // Reset override setelah digunakan
+            window._tempTabOverride = null;
 
             var apiResponse = await fetchFromAPI(queryToUse, currentPage, orderToUse);
 
@@ -940,6 +967,9 @@ function initTabSwitching() {
         // Set tab aktif
         tab.classList.add('active');
         currentTab = tab.dataset.tab;
+
+        // Reset override saat user klik tab secara manual
+        window._tempTabOverride = null;
 
         // Mapping label yang lebih cantik untuk section label
         var labelMap = { popular: 'popular', viral: 'viral 🔥', kategori: 'semua kategori' };

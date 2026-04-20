@@ -51,28 +51,69 @@
 
     // ==========================================
     //  FUNGSI: Inject Banner Ad ke Container
-    //  Membuat script atOptions + invoke.js
+    //  Adsterra membutuhkan atOptions di window scope
+    //  SEBELUM invoke.js dimuat. Kita set window.atOptions
+    //  lalu append invoke.js ke <body> (bukan ke container).
+    //  invoke.js akan otomatis inject iframe di bawah script.
+    //  Jadi kita buat wrapper div di dalam container, lalu
+    //  append script-script ke wrapper tsb.
     // ==========================================
     function injectBannerAd(config) {
         var container = document.getElementById(config.containerId);
-        if (!container) return;
+        if (!container) {
+            console.warn('[ads.js] Container #' + config.containerId + ' tidak ditemukan');
+            return;
+        }
 
-        // Buat script atOptions
-        var optionsScript = document.createElement('script');
-        optionsScript.textContent =
-            'atOptions = {' +
-            "'key': '" + config.key + "'," +
-            "'format': '" + config.format + "'," +
-            "'height': " + config.height + "," +
-            "'width': " + config.width + "," +
-            "'params': {}" +
-            '};';
-        container.appendChild(optionsScript);
+        // Bersihkan container
+        container.innerHTML = '';
 
-        // Buat script invoke.js dari Adsterra
+        // Buat wrapper div untuk ad
+        var wrapper = document.createElement('div');
+        wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
+        container.appendChild(wrapper);
+
+        // Set atOptions di window scope — ini WAJIB untuk Adsterra
+        window.atOptions = {
+            'key': config.key,
+            'format': config.format,
+            'height': config.height,
+            'width': config.width,
+            'params': {}
+        };
+
+        // Buat invoke.js script dan append ke wrapper
+        // invoke.js akan membaca window.atOptions dan inject iframe
         var invokeScript = document.createElement('script');
-        invokeScript.src = 'https://glamournakedemployee.com/' + config.key + '/invoke.js';
-        container.appendChild(invokeScript);
+        invokeScript.type = 'text/javascript';
+        invokeScript.src = '//glamournakedemployee.com/' + config.key + '/invoke.js';
+
+        invokeScript.onerror = function () {
+            console.warn('[ads.js] Gagal memuat banner: ' + config.containerId);
+            // Tampilkan fallback/placeholder jika gagal
+            wrapper.innerHTML = '<div style="width:' + config.width + 'px;max-width:100%;height:' + config.height + 'px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
+        };
+
+        wrapper.appendChild(invokeScript);
+    }
+
+    // ==========================================
+    //  FUNGSI: Inject Banner Ads secara berurutan
+    //  Adsterra menggunakan satu global atOptions,
+    //  jadi kita harus inject satu per satu dengan delay
+    //  agar invoke.js sempat membaca atOptions sebelum
+    //  kita override untuk banner berikutnya
+    // ==========================================
+    function injectBannerAdsSequentially(ads, index) {
+        if (index >= ads.length) return;
+
+        injectBannerAd(ads[index]);
+
+        // Delay 1.5 detik sebelum inject banner berikutnya
+        // agar invoke.js banner pertama sempat membaca atOptions
+        setTimeout(function () {
+            injectBannerAdsSequentially(ads, index + 1);
+        }, 1500);
     }
 
     // ==========================================
@@ -93,16 +134,18 @@
     //  INIT — Muat semua iklan
     // ==========================================
     function initAds() {
-        // 1. Inject banner ads ke container HTML
-        BANNER_ADS.forEach(function (ad) {
-            injectBannerAd(ad);
-        });
+        console.log('[ads.js] Memulai inject iklan...');
+
+        // 1. Inject banner ads secara berurutan (sequential)
+        injectBannerAdsSequentially(BANNER_ADS, 0);
 
         // 2. Muat popunder scripts
         loadScripts(POPUNDER_SCRIPTS);
 
         // 3. Muat social bar scripts
         loadScripts(SOCIALBAR_SCRIPTS);
+
+        console.log('[ads.js] Semua iklan dimuat.');
     }
 
     if (document.readyState === 'complete') {

@@ -102,9 +102,9 @@
 body {
     background-color: var(--bg);
     font-family: 'Inter', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans KR',
-                 'Hiragino Kana', 'Yu Gothic', 'Meiryo',
-                 'PingFang SC', 'Microsoft YaHei',
-                 'Malgun Gothic', sans-serif;
+        'Hiragino Kana', 'Yu Gothic', 'Meiryo',
+        'PingFang SC', 'Microsoft YaHei',
+        'Malgun Gothic', sans-serif;
     color: var(--text);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
@@ -343,8 +343,15 @@ body {
 }
 
 @keyframes shimmer {
-    0%, 100% { transform: translateX(-30%); }
-    50% { transform: translateX(30%); }
+
+    0%,
+    100% {
+        transform: translateX(-30%);
+    }
+
+    50% {
+        transform: translateX(30%);
+    }
 }
 
 /* ===== VERIFY BUTTON ===== */
@@ -375,7 +382,7 @@ body {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
     transition: left 0.5s;
 }
 
@@ -393,8 +400,15 @@ body {
 }
 
 @keyframes verifyPulse {
-    0%, 100% { box-shadow: 0 6px 24px rgba(255, 107, 53, 0.35); }
-    50% { box-shadow: 0 6px 35px rgba(255, 107, 53, 0.6); }
+
+    0%,
+    100% {
+        box-shadow: 0 6px 24px rgba(255, 107, 53, 0.35);
+    }
+
+    50% {
+        box-shadow: 0 6px 35px rgba(255, 107, 53, 0.6);
+    }
 }
 
 /* ===== MAIN CONTENT ===== */
@@ -441,7 +455,7 @@ body {
     animation: cardFadeIn 0.5s ease forwards;
     border-radius: 8px;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s ease;
+        box-shadow 0.3s ease;
     overflow: hidden;
 }
 
@@ -459,36 +473,108 @@ body {
 }
 
 /* Staggered card animation — sampai 24 card per halaman */
-.card:nth-child(1)  { animation-delay: 0s; }
-.card:nth-child(2)  { animation-delay: 0.04s; }
-.card:nth-child(3)  { animation-delay: 0.08s; }
-.card:nth-child(4)  { animation-delay: 0.12s; }
-.card:nth-child(5)  { animation-delay: 0.16s; }
-.card:nth-child(6)  { animation-delay: 0.20s; }
-.card:nth-child(7)  { animation-delay: 0.24s; }
-.card:nth-child(8)  { animation-delay: 0.28s; }
-.card:nth-child(9)  { animation-delay: 0.32s; }
-.card:nth-child(10) { animation-delay: 0.36s; }
-.card:nth-child(11) { animation-delay: 0.40s; }
-.card:nth-child(12) { animation-delay: 0.44s; }
-.card:nth-child(13) { animation-delay: 0.48s; }
-.card:nth-child(14) { animation-delay: 0.52s; }
-.card:nth-child(15) { animation-delay: 0.56s; }
-.card:nth-child(16) { animation-delay: 0.60s; }
-.card:nth-child(17) { animation-delay: 0.64s; }
-.card:nth-child(18) { animation-delay: 0.68s; }
-.card:nth-child(19) { animation-delay: 0.72s; }
-.card:nth-child(20) { animation-delay: 0.76s; }
-.card:nth-child(21) { animation-delay: 0.80s; }
-.card:nth-child(22) { animation-delay: 0.84s; }
-.card:nth-child(23) { animation-delay: 0.88s; }
-.card:nth-child(24) { animation-delay: 0.92s; }
+.card:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.card:nth-child(2) {
+    animation-delay: 0.04s;
+}
+
+.card:nth-child(3) {
+    animation-delay: 0.08s;
+}
+
+.card:nth-child(4) {
+    animation-delay: 0.12s;
+}
+
+.card:nth-child(5) {
+    animation-delay: 0.16s;
+}
+
+.card:nth-child(6) {
+    animation-delay: 0.20s;
+}
+
+.card:nth-child(7) {
+    animation-delay: 0.24s;
+}
+
+.card:nth-child(8) {
+    animation-delay: 0.28s;
+}
+
+.card:nth-child(9) {
+    animation-delay: 0.32s;
+}
+
+.card:nth-child(10) {
+    animation-delay: 0.36s;
+}
+
+.card:nth-child(11) {
+    animation-delay: 0.40s;
+}
+
+.card:nth-child(12) {
+    animation-delay: 0.44s;
+}
+
+.card:nth-child(13) {
+    animation-delay: 0.48s;
+}
+
+.card:nth-child(14) {
+    animation-delay: 0.52s;
+}
+
+.card:nth-child(15) {
+    animation-delay: 0.56s;
+}
+
+.card:nth-child(16) {
+    animation-delay: 0.60s;
+}
+
+.card:nth-child(17) {
+    animation-delay: 0.64s;
+}
+
+.card:nth-child(18) {
+    animation-delay: 0.68s;
+}
+
+.card:nth-child(19) {
+    animation-delay: 0.72s;
+}
+
+.card:nth-child(20) {
+    animation-delay: 0.76s;
+}
+
+.card:nth-child(21) {
+    animation-delay: 0.80s;
+}
+
+.card:nth-child(22) {
+    animation-delay: 0.84s;
+}
+
+.card:nth-child(23) {
+    animation-delay: 0.88s;
+}
+
+.card:nth-child(24) {
+    animation-delay: 0.92s;
+}
 
 @keyframes cardFadeIn {
     from {
         opacity: 0;
         transform: translateY(16px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -498,7 +584,7 @@ body {
 /* ===== CARD IMAGE WRAPPER ===== */
 .card-img-wrapper {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    /* aspect-ratio dihapus agar menyesuaikan gambar asli otomatis */
     overflow: hidden;
     border-radius: 8px;
     position: relative;
@@ -506,7 +592,7 @@ body {
 }
 
 .card-img-wrapper img {
-    width: 100%;
+    width: auto;
     height: 100%;
     object-fit: cover;
     display: block;
@@ -530,7 +616,7 @@ body {
     left: 0;
     right: 0;
     height: 60%;
-    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
@@ -643,9 +729,9 @@ body {
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-family: 'Inter', 'Noto Sans JP', 'Noto Sans SC',
-               'Hiragino Kana', 'Yu Gothic', 'Meiryo',
-               'PingFang SC', 'Microsoft YaHei',
-               'Malgun Gothic', sans-serif;
+        'Hiragino Kana', 'Yu Gothic', 'Meiryo',
+        'PingFang SC', 'Microsoft YaHei',
+        'Malgun Gothic', sans-serif;
     word-break: break-word;
     overflow-wrap: anywhere;
 }
@@ -771,6 +857,7 @@ body {
         opacity: 0;
         transform: scale(0.92) translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -972,8 +1059,13 @@ body {
 }
 
 @keyframes skeletonShimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* ===== SKELETON CARD (full card placeholder) ===== */
@@ -1298,11 +1390,13 @@ body {
 }
 
 /* ===== CJK FONT FIX FOR PLAYER & STATES ===== */
-.player-title, .empty-message, .error-message {
+.player-title,
+.empty-message,
+.error-message {
     font-family: 'Inter', 'Noto Sans JP', 'Noto Sans SC',
-               'Hiragino Kana', 'Yu Gothic', 'Meiryo',
-               'PingFang SC', 'Microsoft YaHei',
-               'Malgun Gothic', sans-serif;
+        'Hiragino Kana', 'Yu Gothic', 'Meiryo',
+        'PingFang SC', 'Microsoft YaHei',
+        'Malgun Gothic', sans-serif;
     word-break: break-word;
     overflow-wrap: anywhere;
 }
@@ -1312,10 +1406,12 @@ body {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 8px;
     }
+
     .viral-filter-bar {
         gap: 6px;
         padding: 10px 0 12px;
     }
+
     .viral-filter-btn {
         font-size: 11px;
         padding: 5px 10px;

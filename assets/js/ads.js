@@ -46,7 +46,7 @@
     //  DAFTAR SCRIPT SOCIAL BAR
     // ==========================================
     var SOCIALBAR_SCRIPTS = [
-        'https://pl28946631.profitablecpmratenetwork.com/db/38/e3/db38e32a6ae0d31a9974402fe848e234.js',
+        // 'https://pl28946631.profitablecpmratenetwork.com/db/38/e3/db38e32a6ae0d31a9974402fe848e234.js',
     ];
 
     // ==========================================

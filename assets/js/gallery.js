@@ -660,8 +660,8 @@ function createCardElement(card, idx) {
     }
 
     cardEl.innerHTML =
-        '<div class="card-img-wrapper" style="background-image: url(\'' + escapeHTML(card.image) + '\');">' +
-        '<div class="blur-overlay"></div>' +
+        '<div class="card-img-wrapper">' +
+        '<div class="blur-overlay" style="background-image: url(\'' + escapeHTML(card.image) + '\');"></div>' +
         '<div class="img-skeleton"></div>' +
         durationBadge +
         ratingBadge +

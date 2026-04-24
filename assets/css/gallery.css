@@ -589,14 +589,15 @@ body {
     border-radius: 8px;
     position: relative;
     background-color: var(--card-img-bg);
-    background-size: cover;
-    background-position: center;
 }
 
 .blur-overlay {
     position: absolute;
-    inset: -15%;
-    background: inherit;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    /* Scale besar (2.5x) untuk "melewati/memotong" black-bars bawaan dari gambar API */
+    transform: scale(2.5);
     filter: blur(15px) brightness(0.45);
     z-index: 0;
     pointer-events: none;

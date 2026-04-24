@@ -584,20 +584,33 @@ body {
 /* ===== CARD IMAGE WRAPPER ===== */
 .card-img-wrapper {
     width: 100%;
-    /* aspect-ratio dihapus agar menyesuaikan gambar asli otomatis */
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     border-radius: 8px;
     position: relative;
-    background: var(--card-img-bg);
+    background-color: var(--card-img-bg);
+    background-size: cover;
+    background-position: center;
+}
+
+.blur-overlay {
+    position: absolute;
+    inset: -15%;
+    background: inherit;
+    filter: blur(15px) brightness(0.45);
+    z-index: 0;
+    pointer-events: none;
 }
 
 .card-img-wrapper img {
+    position: relative;
     width: 100%;
-    height: auto;
-    object-fit: cover;
+    height: 100%;
+    object-fit: contain;
     display: block;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
     opacity: 0;
+    z-index: 1;
 }
 
 .card-img-wrapper img.loaded {
@@ -1056,6 +1069,7 @@ body {
     background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
     background-size: 200% 100%;
     animation: skeletonShimmer 1.5s ease-in-out infinite;
+    z-index: 10;
 }
 
 @keyframes skeletonShimmer {

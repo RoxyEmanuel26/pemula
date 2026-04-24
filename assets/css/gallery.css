@@ -426,8 +426,8 @@ body {
 /* ===== CARD GRID ===== */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
     min-height: 200px;
 }
 
@@ -498,9 +498,9 @@ body {
 /* ===== CARD IMAGE WRAPPER ===== */
 .card-img-wrapper {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
-    border-radius: 6px;
+    border-radius: 8px;
     position: relative;
     background: var(--card-img-bg);
 }
@@ -1064,12 +1064,11 @@ body {
     }
 
     .card-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+        gap: 12px;
     }
 
     .card-title {
-        font-size: 11px;
+        font-size: 13px;
     }
 
     .player-iframe-wrapper iframe {
@@ -1109,8 +1108,13 @@ body {
 /* Mobile small */
 @media (max-width: 480px) {
     .card-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 16px;
+    }
+
+    .card-title {
+        font-size: 14px;
+        -webkit-line-clamp: 2;
     }
 
     .content-wrapper {
@@ -1188,7 +1192,7 @@ body {
     }
 
     .card-grid {
-        gap: 4px;
+        gap: 12px;
     }
 
     .badge-duration,

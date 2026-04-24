@@ -129,7 +129,7 @@ let DATA_SOURCE = "api";
 //  Setiap tab punya parameter API sendiri
 // =====================================================
 const TAB_CONFIG = {
-    popular: { order: 'most-popular', query: 'all' },
+    popular: { order: 'most-popular', query: 'indo' },
     viral: { order: 'latest', query: 'all' },
     kategori: { order: 'top-weekly', query: 'all' }
 };

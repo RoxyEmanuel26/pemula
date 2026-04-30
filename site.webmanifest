@@ -1,19 +1,53 @@
 {
-    "name": "kumpulenak",
+    "name": "kumpulenak — Premium 18+ Gallery",
     "short_name": "kumpulenak",
+    "description": "Platform galeri premium konten dewasa 18+ terbesar di Indonesia. Video viral, cosplay, dan konten eksklusif.",
+    "start_url": "/",
+    "scope": "/",
+    "id": "/",
+    "lang": "id",
+    "dir": "ltr",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#e8a800",
+    "background_color": "#080808",
+    "categories": ["entertainment", "social"],
     "icons": [
+        {
+            "src": "/assets/icons/favicon-16x16.png",
+            "sizes": "16x16",
+            "type": "image/png"
+        },
+        {
+            "src": "/assets/icons/favicon-32x32.png",
+            "sizes": "32x32",
+            "type": "image/png"
+        },
         {
             "src": "/assets/icons/android-chrome-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
             "src": "/assets/icons/android-chrome-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
-    "display": "standalone"
+    "shortcuts": [
+        {
+            "name": "Popular",
+            "short_name": "Popular",
+            "url": "/?tab=popular",
+            "icons": [{"src": "/assets/icons/favicon-32x32.png", "sizes": "32x32"}]
+        },
+        {
+            "name": "Viral",
+            "short_name": "Viral",
+            "url": "/?tab=viral",
+            "icons": [{"src": "/assets/icons/favicon-32x32.png", "sizes": "32x32"}]
+        }
+    ]
 }

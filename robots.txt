@@ -1,0 +1,53 @@
+# ==============================================
+# robots.txt — kumpulenak.web.id
+# Optimized for maximum SEO crawl coverage
+# ==============================================
+
+# Allow all search engine crawlers
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /dmca
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /howto
+
+# Disallow ad scripts and internal assets
+Disallow: /assets/js/ads.js
+Disallow: /assets/js/script.js
+Disallow: /.env
+
+# Crawl delay (politeness for smaller bots)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://www.kumpulenak.web.id/sitemap.xml
+
+# ==============================================
+# Specific bot rules
+# ==============================================
+
+# Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Google Images
+User-agent: Googlebot-Image
+Allow: /assets/icons/
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Yandex
+User-agent: Yandex
+Allow: /
+Crawl-delay: 2
+
+# Baidu
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2

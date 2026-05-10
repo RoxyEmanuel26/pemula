@@ -445,6 +445,33 @@ body {
     min-height: 200px;
 }
 
+/* ===== IN-GRID BANNER AD ===== */
+.ingrid-banner-ad {
+    grid-column: 1 / -1;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ingrid-banner-ad:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(232, 168, 0, 0.25);
+}
+
+.ingrid-banner-link {
+    display: block;
+    width: 100%;
+    text-decoration: none;
+}
+
+.ingrid-banner-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+}
+
 .card {
     background: var(--card-bg);
     cursor: pointer;

@@ -693,14 +693,36 @@ function renderCardsToGrid(cardsToRender) {
         return;
     }
 
+    // Tentukan posisi tengah untuk inject banner
+    var midIndex = Math.floor(cardsToRender.length / 2);
+
     cardsToRender.forEach(function (card, idx) {
+        // Inject in-grid banner di tengah-tengah card
+        if (idx === midIndex) {
+            var bannerWrapper = document.createElement('div');
+            bannerWrapper.className = 'ingrid-banner-ad';
+            bannerWrapper.innerHTML =
+                '<a href="https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A" class="ingrid-banner-link">' +
+                '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
+                'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
+                '</a>';
+
+            // Mencegah popunder terpicu saat klik banner
+            bannerWrapper.addEventListener('click', function (e) {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
+
+            grid.appendChild(bannerWrapper);
+        }
+
         var cardEl = createCardElement(card, idx);
         grid.appendChild(cardEl);
     });
 
     // Inisialisasi IntersectionObserver untuk animasi view counter
     initViewCounterAnimation();
-    kLog('Rendered ' + cardsToRender.length + ' cards ke grid');
+    kLog('Rendered ' + cardsToRender.length + ' cards ke grid (dengan in-grid banner)');
 }
 
 // =====================================================

@@ -125,8 +125,6 @@
 
         var link = document.createElement('a');
         link.href = config.linkUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
         link.style.cssText = 'display:block;width:100%;text-decoration:none;border-radius:12px;overflow:hidden;transition:transform 0.3s ease, box-shadow 0.3s ease;';
 
         var img = document.createElement('img');
@@ -138,6 +136,12 @@
             console.warn('[ads.js] Gagal memuat custom banner: ' + config.containerId);
             container.innerHTML = '<div style="width:100%;height:90px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
         };
+
+        // Mencegah popunder terpicu saat klik banner custom
+        link.addEventListener('click', function (e) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        }, true);
 
         // Hover effect
         link.addEventListener('mouseenter', function () {

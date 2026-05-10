@@ -42,7 +42,7 @@
     var CUSTOM_BANNER_ADS = [
         {
             containerId: 'adBannerCustom',
-            imageUrl: 'https://i.ibb.co/p6bWyz49/Gemini-Generated-Image-p9f8lp9f8lp9f8lp-1.png',
+            imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
             linkUrl: 'https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A',
             alt: 'Download Terabox'
         }

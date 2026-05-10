@@ -1,7 +1,7 @@
 {
     "name": "kumpulenak — Premium 18+ Gallery",
     "short_name": "kumpulenak",
-    "description": "Platform galeri premium konten dewasa 18+ terbesar di Indonesia. Video viral, cosplay, dan konten eksklusif.",
+    "description": "Platform galeri premium konten dewasa 18+ terbesar di Indonesia. Video viral, dan konten eksklusif.",
     "start_url": "/",
     "scope": "/",
     "id": "/",
@@ -11,7 +11,10 @@
     "orientation": "any",
     "theme_color": "#e8a800",
     "background_color": "#080808",
-    "categories": ["entertainment", "social"],
+    "categories": [
+        "entertainment",
+        "social"
+    ],
     "icons": [
         {
             "src": "/assets/icons/favicon-16x16.png",
@@ -41,13 +44,23 @@
             "name": "Popular",
             "short_name": "Popular",
             "url": "/?tab=popular",
-            "icons": [{"src": "/assets/icons/favicon-32x32.png", "sizes": "32x32"}]
+            "icons": [
+                {
+                    "src": "/assets/icons/favicon-32x32.png",
+                    "sizes": "32x32"
+                }
+            ]
         },
         {
             "name": "Viral",
             "short_name": "Viral",
             "url": "/?tab=viral",
-            "icons": [{"src": "/assets/icons/favicon-32x32.png", "sizes": "32x32"}]
+            "icons": [
+                {
+                    "src": "/assets/icons/favicon-32x32.png",
+                    "sizes": "32x32"
+                }
+            ]
         }
     ]
 }

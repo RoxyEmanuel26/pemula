@@ -36,6 +36,19 @@
     ];
 
     // ==========================================
+    //  KONFIGURASI CUSTOM BANNER ADS
+    //  Banner gambar sendiri (bukan Adsterra)
+    // ==========================================
+    var CUSTOM_BANNER_ADS = [
+        {
+            containerId: 'adBannerCustom',
+            imageUrl: 'https://i.ibb.co/p6bWyz49/Gemini-Generated-Image-p9f8lp9f8lp9f8lp-1.png',
+            linkUrl: 'https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A',
+            alt: 'Download Terabox'
+        }
+    ];
+
+    // ==========================================
     //  DAFTAR SCRIPT POPUNDER
     // ==========================================
     var POPUNDER_SCRIPTS = [
@@ -98,6 +111,49 @@
     }
 
     // ==========================================
+    //  FUNGSI: Inject Custom Image Banner
+    //  Banner gambar statis dengan link klik
+    // ==========================================
+    function injectCustomBanner(config) {
+        var container = document.getElementById(config.containerId);
+        if (!container) {
+            console.warn('[ads.js] Container #' + config.containerId + ' tidak ditemukan');
+            return;
+        }
+
+        container.innerHTML = '';
+
+        var link = document.createElement('a');
+        link.href = config.linkUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.cssText = 'display:block;width:100%;text-decoration:none;border-radius:12px;overflow:hidden;transition:transform 0.3s ease, box-shadow 0.3s ease;';
+
+        var img = document.createElement('img');
+        img.src = config.imageUrl;
+        img.alt = config.alt || 'Banner Ad';
+        img.style.cssText = 'width:100%;height:auto;display:block;border-radius:12px;';
+
+        img.onerror = function () {
+            console.warn('[ads.js] Gagal memuat custom banner: ' + config.containerId);
+            container.innerHTML = '<div style="width:100%;height:90px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
+        };
+
+        // Hover effect
+        link.addEventListener('mouseenter', function () {
+            link.style.transform = 'translateY(-2px)';
+            link.style.boxShadow = '0 8px 25px rgba(232,168,0,0.3)';
+        });
+        link.addEventListener('mouseleave', function () {
+            link.style.transform = 'translateY(0)';
+            link.style.boxShadow = 'none';
+        });
+
+        link.appendChild(img);
+        container.appendChild(link);
+    }
+
+    // ==========================================
     //  FUNGSI: Inject Banner Ads secara berurutan
     //  Adsterra menggunakan satu global atOptions,
     //  jadi kita harus inject satu per satu dengan delay
@@ -138,6 +194,11 @@
 
         // 1. Inject banner ads secara berurutan (sequential)
         injectBannerAdsSequentially(BANNER_ADS, 0);
+
+        // 1b. Inject custom banner ads (gambar sendiri)
+        CUSTOM_BANNER_ADS.forEach(function (config) {
+            injectCustomBanner(config);
+        });
 
         // 2. Muat popunder scripts
         loadScripts(POPUNDER_SCRIPTS);

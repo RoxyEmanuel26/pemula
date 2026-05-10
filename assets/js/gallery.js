@@ -696,24 +696,34 @@ function renderCardsToGrid(cardsToRender) {
     // Tentukan posisi tengah untuk inject banner
     var midIndex = Math.floor(cardsToRender.length / 2);
 
+    // Helper: buat in-grid banner element
+    function createIngridBanner() {
+        var bannerWrapper = document.createElement('div');
+        bannerWrapper.className = 'ingrid-banner-ad';
+        bannerWrapper.innerHTML =
+            '<a href="https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A" class="ingrid-banner-link">' +
+            '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
+            'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
+            '</a>';
+
+        // Mencegah popunder terpicu saat klik banner
+        bannerWrapper.addEventListener('click', function (e) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        }, true);
+
+        return bannerWrapper;
+    }
+
     cardsToRender.forEach(function (card, idx) {
+        // Inject in-grid banner di awal card
+        if (idx === 0) {
+            grid.appendChild(createIngridBanner());
+        }
+
         // Inject in-grid banner di tengah-tengah card
         if (idx === midIndex) {
-            var bannerWrapper = document.createElement('div');
-            bannerWrapper.className = 'ingrid-banner-ad';
-            bannerWrapper.innerHTML =
-                '<a href="https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A" class="ingrid-banner-link">' +
-                '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
-                'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
-                '</a>';
-
-            // Mencegah popunder terpicu saat klik banner
-            bannerWrapper.addEventListener('click', function (e) {
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-            }, true);
-
-            grid.appendChild(bannerWrapper);
+            grid.appendChild(createIngridBanner());
         }
 
         var cardEl = createCardElement(card, idx);

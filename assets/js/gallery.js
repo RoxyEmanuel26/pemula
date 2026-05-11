@@ -392,12 +392,12 @@ function mapAPIVideoToCard(video) {
     // Parse keywords string ke array (max 4 tag)
     var keywordsArr = [];
     if (video.keywords) {
-        keywordsArr = video.keywords.split(',').map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 0 && k.length < 30; }).slice(0, 4);
+        keywordsArr = video.keywords.split(',').map(function (k) { return k.trim(); }).filter(function (k) { return k.length > 0 && k.length < 30; }).slice(0, 4);
     }
     // Ambil semua thumbnail URLs
     var thumbsArr = [];
     if (video.thumbs && video.thumbs.length > 0) {
-        thumbsArr = video.thumbs.map(function(t) { return t.src; });
+        thumbsArr = video.thumbs.map(function (t) { return t.src; });
     }
     return {
         name: video.title || 'Untitled',
@@ -683,7 +683,7 @@ function createCardElement(card, idx) {
     var tagsHtml = '';
     if (card.keywords && card.keywords.length > 0) {
         tagsHtml = '<div class="card-tags">';
-        card.keywords.forEach(function(tag) {
+        card.keywords.forEach(function (tag) {
             tagsHtml += '<span class="card-tag" onclick="clickTag(\'' + escapeHTML(tag.replace(/'/g, "\\'")) + '\');event.preventDefault();event.stopPropagation();">' + escapeHTML(tag) + '</span>';
         });
         tagsHtml += '</div>';
@@ -733,7 +733,7 @@ function renderCardsToGrid(cardsToRender) {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.innerHTML =
-            '<a href="https://1024terabox.com/s/1kMGL2Lh3l377RcR_EncgiQ" class="ingrid-banner-link">' +
+            '<a href="https://1024terabox.com/s/1iWk9V4K_su7ThIV0obbDXg" class="ingrid-banner-link">' +
             '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';

@@ -1180,7 +1180,7 @@ function openPlayerModal(card) {
     duration.textContent = '⏱ ' + (card.length || '--:--');
     views.textContent = '👁 ' + (card.views || '0');
     date.textContent = '📅 ' + (card.date || '----');
-    openTab.href = card.link || '#';
+    openTab.href = 'https://bit.ly/kumpulenak';
 
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
@@ -1577,7 +1577,7 @@ function enhancedOpenPlayerModal(card) {
     duration.textContent = '⏱ ' + (card.length || '--:--');
     views.textContent = '👁 ' + (card.views || '0');
     date.textContent = '📅 ' + (card.date || '----');
-    openTab.href = card.link || '#';
+    openTab.href = 'https://bit.ly/kumpulenak';
 
     // Render tags jika sudah ada di card
     renderPlayerTags(card.keywords || []);

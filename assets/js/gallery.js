@@ -1346,17 +1346,28 @@ var thumbCurrentIndex = 0;
 
 /**
  * Inisialisasi thumbnail preview pada card grid
- * Menggunakan event delegation untuk efisiensi
+ * Menggunakan mouseover/mouseout (bubble) untuk event delegation
  */
 function initThumbnailPreview() {
     // Skip di touch device
     if ('ontouchstart' in window) return;
 
     var grid = document.getElementById('cardGrid');
+    var activeWrapper = null; // Track wrapper yang sedang aktif
 
-    grid.addEventListener('mouseenter', function (e) {
+    grid.addEventListener('mouseover', function (e) {
         var wrapper = e.target.closest('.card-img-wrapper[data-thumbs]');
-        if (!wrapper) return;
+        if (!wrapper || wrapper === activeWrapper) return; // Sudah aktif, skip
+
+        // Bersihkan interval sebelumnya jika ada
+        if (thumbPreviewInterval) {
+            clearInterval(thumbPreviewInterval);
+            thumbPreviewInterval = null;
+        }
+        // Reset wrapper sebelumnya
+        if (activeWrapper) {
+            resetThumbPreview(activeWrapper);
+        }
 
         var thumbsStr = wrapper.getAttribute('data-thumbs');
         if (!thumbsStr) return;
@@ -1365,6 +1376,7 @@ function initThumbnailPreview() {
             var thumbs = JSON.parse(thumbsStr);
             if (!thumbs || thumbs.length <= 1) return;
 
+            activeWrapper = wrapper;
             thumbCurrentIndex = 0;
             var img = wrapper.querySelector('img');
             var progressBar = wrapper.querySelector('.thumb-progress-bar');
@@ -1385,18 +1397,25 @@ function initThumbnailPreview() {
                 }
             }, 800);
         } catch (err) { /* silently ignore parse errors */ }
-    }, true);
+    });
 
-    grid.addEventListener('mouseleave', function (e) {
+    grid.addEventListener('mouseout', function (e) {
         var wrapper = e.target.closest('.card-img-wrapper[data-thumbs]');
-        if (!wrapper) return;
+        if (!wrapper || wrapper !== activeWrapper) return;
+
+        // Cek apakah mouse masih di dalam wrapper (relatedTarget)
+        var related = e.relatedTarget;
+        if (related && wrapper.contains(related)) return;
 
         if (thumbPreviewInterval) {
             clearInterval(thumbPreviewInterval);
             thumbPreviewInterval = null;
         }
+        resetThumbPreview(wrapper);
+        activeWrapper = null;
+    });
 
-        // Kembali ke default thumbnail
+    function resetThumbPreview(wrapper) {
         var defaultThumb = wrapper.getAttribute('data-default-thumb');
         var img = wrapper.querySelector('img');
         var progressBar = wrapper.querySelector('.thumb-progress-bar');
@@ -1406,7 +1425,7 @@ function initThumbnailPreview() {
         if (progressBar) {
             progressBar.classList.remove('active');
         }
-    }, true);
+    }
 }
 
 // =====================================================

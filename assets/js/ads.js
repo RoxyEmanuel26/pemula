@@ -43,7 +43,7 @@
         {
             containerId: 'adBannerCustom',
             imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            linkUrl: 'https://1024terabox.com/s/1iWk9V4K_su7ThIV0obbDXg',
+            linkUrl: 'https://1024terabox.com/s/1npo45TxLUGALFw81gxpmVQ',
             alt: 'Download Terabox'
         }
     ];

@@ -389,6 +389,16 @@ async function fetchFromAPI(query, page, order) {
  * @returns {Object} Objek card dalam format internal
  */
 function mapAPIVideoToCard(video) {
+    // Parse keywords string ke array (max 4 tag)
+    var keywordsArr = [];
+    if (video.keywords) {
+        keywordsArr = video.keywords.split(',').map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 0 && k.length < 30; }).slice(0, 4);
+    }
+    // Ambil semua thumbnail URLs
+    var thumbsArr = [];
+    if (video.thumbs && video.thumbs.length > 0) {
+        thumbsArr = video.thumbs.map(function(t) { return t.src; });
+    }
     return {
         name: video.title || 'Untitled',
         image: (video.default_thumb && video.default_thumb.src) ? video.default_thumb.src : '',
@@ -396,9 +406,12 @@ function mapAPIVideoToCard(video) {
         date: video.added ? video.added.slice(0, 10) : '',
         views: video.views ? video.views.toLocaleString('id-ID') : '0',
         length: video.length_min || '',
+        lengthSec: video.length_sec || 0,
         embedUrl: video.embed || '',
         videoId: video.id || '',
-        rate: video.rate || ''
+        rate: video.rate || '',
+        keywords: keywordsArr,
+        thumbs: thumbsArr
     };
 }
 
@@ -659,15 +672,33 @@ function createCardElement(card, idx) {
         ratingBadge = '<span class="badge-rating">⭐ ' + escapeHTML(String(card.rate)) + '</span>';
     }
 
+    // Thumbnail preview: simpan array thumbs sebagai data attribute
+    var thumbsData = '';
+    if (card.thumbs && card.thumbs.length > 1) {
+        thumbsData = ' data-thumbs="' + escapeHTML(JSON.stringify(card.thumbs)) + '"';
+        thumbsData += ' data-default-thumb="' + escapeHTML(card.image) + '"';
+    }
+
+    // Keyword tags HTML
+    var tagsHtml = '';
+    if (card.keywords && card.keywords.length > 0) {
+        tagsHtml = '<div class="card-tags">';
+        card.keywords.forEach(function(tag) {
+            tagsHtml += '<span class="card-tag" onclick="clickTag(\'' + escapeHTML(tag.replace(/'/g, "\\'")) + '\');event.preventDefault();event.stopPropagation();">' + escapeHTML(tag) + '</span>';
+        });
+        tagsHtml += '</div>';
+    }
+
     cardEl.innerHTML =
-        '<div class="card-img-wrapper">' +
+        '<div class="card-img-wrapper"' + thumbsData + '>' +
         '<div class="blur-overlay" style="background-image: url(\'' + escapeHTML(card.image) + '\');"></div>' +
         '<div class="img-skeleton"></div>' +
         durationBadge +
         ratingBadge +
+        '<div class="thumb-progress-bar"></div>' +
         '<img src="' + escapeHTML(card.image) + '" alt="' + escapeHTML(card.name) + '" loading="lazy" ' +
         'onload="handleImageLoad(this)" ' +
-        'onerror="this.style.background=\'linear-gradient(135deg,#333,#555)\';this.style.minHeight=\'200px\';this.classList.add(\'loaded\');">' +
+        'onerror="this.style.background=\'linear-gradient(135deg,#333,#555)\';this.style.minHeight=\'200px\';this.classList.add(\'loaded\');"></img>' +
         '</div>' +
         '<div class="card-meta">' +
         '<div class="card-date-views">' +
@@ -675,6 +706,7 @@ function createCardElement(card, idx) {
         '<span class="card-views" data-views="' + escapeHTML(card.views) + '">👁 ' + escapeHTML(card.views) + '</span>' +
         '</div>' +
         '<div class="card-title">' + escapeHTML(card.name) + '</div>' +
+        tagsHtml +
         '</div>';
 
     return cardEl;
@@ -761,7 +793,7 @@ async function loadAndRender() {
             }
 
             var queryToUse = isSearchActive && currentQuery ? currentQuery : config.query;
-            var orderToUse = config.order;
+            var orderToUse = currentSortOrder || config.order;
 
             // Reset override setelah digunakan
             window._tempTabOverride = null;
@@ -777,6 +809,8 @@ async function loadAndRender() {
             // Konversi data API ke format card
             if (apiResponse.videos && apiResponse.videos.length > 0) {
                 currentDisplayCards = apiResponse.videos.map(mapAPIVideoToCard);
+                // Filter video yang sudah dihapus
+                currentDisplayCards = filterRemovedVideos(currentDisplayCards);
                 totalPagesFromAPI = apiResponse.total_pages || 1;
 
                 renderCardsToGrid(currentDisplayCards);
@@ -983,6 +1017,11 @@ function initTabSwitching() {
         currentQuery = '';
         document.getElementById('searchInput').value = '';
         updateSearchClearBtn();
+
+        // Reset sort order ke default tab
+        var defaultOrder = TAB_CONFIG[currentTab] ? TAB_CONFIG[currentTab].order : 'most-popular';
+        currentSortOrder = defaultOrder;
+        renderSortBar();
 
         kLog('Tab diganti ke:', currentTab);
 
@@ -1297,6 +1336,329 @@ function initViewCounterAnimation() {
 }
 
 // =====================================================
+//  THUMBNAIL HOVER PREVIEW — Cycle thumbnails on hover
+//  Hanya aktif di desktop (non-touch)
+// =====================================================
+
+/** @type {number|null} */
+var thumbPreviewInterval = null;
+var thumbCurrentIndex = 0;
+
+/**
+ * Inisialisasi thumbnail preview pada card grid
+ * Menggunakan event delegation untuk efisiensi
+ */
+function initThumbnailPreview() {
+    // Skip di touch device
+    if ('ontouchstart' in window) return;
+
+    var grid = document.getElementById('cardGrid');
+
+    grid.addEventListener('mouseenter', function (e) {
+        var wrapper = e.target.closest('.card-img-wrapper[data-thumbs]');
+        if (!wrapper) return;
+
+        var thumbsStr = wrapper.getAttribute('data-thumbs');
+        if (!thumbsStr) return;
+
+        try {
+            var thumbs = JSON.parse(thumbsStr);
+            if (!thumbs || thumbs.length <= 1) return;
+
+            thumbCurrentIndex = 0;
+            var img = wrapper.querySelector('img');
+            var progressBar = wrapper.querySelector('.thumb-progress-bar');
+            if (!img) return;
+
+            // Tampilkan progress bar
+            if (progressBar) {
+                progressBar.classList.add('active');
+                progressBar.style.setProperty('--thumb-count', thumbs.length);
+                progressBar.style.setProperty('--thumb-index', '0');
+            }
+
+            thumbPreviewInterval = setInterval(function () {
+                thumbCurrentIndex = (thumbCurrentIndex + 1) % thumbs.length;
+                img.src = thumbs[thumbCurrentIndex];
+                if (progressBar) {
+                    progressBar.style.setProperty('--thumb-index', thumbCurrentIndex);
+                }
+            }, 800);
+        } catch (err) { /* silently ignore parse errors */ }
+    }, true);
+
+    grid.addEventListener('mouseleave', function (e) {
+        var wrapper = e.target.closest('.card-img-wrapper[data-thumbs]');
+        if (!wrapper) return;
+
+        if (thumbPreviewInterval) {
+            clearInterval(thumbPreviewInterval);
+            thumbPreviewInterval = null;
+        }
+
+        // Kembali ke default thumbnail
+        var defaultThumb = wrapper.getAttribute('data-default-thumb');
+        var img = wrapper.querySelector('img');
+        var progressBar = wrapper.querySelector('.thumb-progress-bar');
+        if (img && defaultThumb) {
+            img.src = defaultThumb;
+        }
+        if (progressBar) {
+            progressBar.classList.remove('active');
+        }
+    }, true);
+}
+
+// =====================================================
+//  SORT BAR — Dropdown sorting options
+// =====================================================
+
+/** @type {string} Urutan sorting aktif saat ini */
+var currentSortOrder = 'most-popular';
+
+/**
+ * Render sort bar di bawah section label
+ * Menampilkan semua opsi sorting dari API
+ */
+function renderSortBar() {
+    var contentWrapper = document.querySelector('.content-wrapper');
+    var existingBar = document.getElementById('sortBar');
+
+    // Jangan render di tab kategori
+    if (currentTab === 'kategori') {
+        if (existingBar) existingBar.remove();
+        return;
+    }
+
+    var sortOptions = [
+        { label: '🔥 Popular', order: 'most-popular' },
+        { label: '🆕 Terbaru', order: 'latest' },
+        { label: '⭐ Top Rated', order: 'top-rated' },
+        { label: '📈 Top Minggu', order: 'top-weekly' },
+        { label: '📅 Top Bulan', order: 'top-monthly' },
+        { label: '⏱ Terpanjang', order: 'longest' },
+        { label: '⚡ Terpendek', order: 'shortest' }
+    ];
+
+    var html = '';
+    sortOptions.forEach(function (opt) {
+        var isActive = currentSortOrder === opt.order;
+        html += '<button class="sort-btn' + (isActive ? ' active' : '') + '" onclick="changeSortOrder(\'' + opt.order + '\')">' + opt.label + '</button>';
+    });
+
+    if (!existingBar) {
+        var sortBar = document.createElement('div');
+        sortBar.id = 'sortBar';
+        sortBar.className = 'sort-bar';
+        sortBar.innerHTML = html;
+
+        // Sisipkan setelah sectionLabel
+        var sectionLabel = document.getElementById('sectionLabel');
+        if (sectionLabel && sectionLabel.nextSibling) {
+            contentWrapper.insertBefore(sortBar, sectionLabel.nextSibling);
+        } else {
+            contentWrapper.appendChild(sortBar);
+        }
+    } else {
+        existingBar.innerHTML = html;
+    }
+}
+
+/**
+ * Ganti urutan sorting, reset ke halaman 1, lalu muat ulang
+ * @param {string} order - Urutan sorting baru
+ */
+function changeSortOrder(order) {
+    if (currentSortOrder === order) return;
+    currentSortOrder = order;
+    currentPage = 1;
+
+    // Update config tab aktif
+    if (TAB_CONFIG[currentTab]) {
+        TAB_CONFIG[currentTab].order = order;
+    }
+
+    renderSortBar();
+    loadAndRender();
+    kLog('Sort order diganti ke:', order);
+}
+
+// =====================================================
+//  CLICK TAG — Search dari keyword tag yang diklik
+// =====================================================
+
+/**
+ * Klik tag pada card → set search query dan cari
+ * @param {string} tag - Keyword tag yang diklik
+ */
+function clickTag(tag) {
+    if (!tag) return;
+
+    var input = document.getElementById('searchInput');
+    input.value = tag;
+    updateSearchClearBtn();
+
+    isSearchActive = true;
+    currentQuery = tag;
+    currentPage = 1;
+
+    kLog('Tag diklik:', tag);
+    loadAndRender();
+}
+
+// =====================================================
+//  FETCH VIDEO BY ID — Detail video via /video/id/
+// =====================================================
+
+/**
+ * Fetch detail video spesifik dari API
+ * @param {string} videoId - ID video (11 karakter)
+ * @returns {Promise<Object|null>} Detail video atau null
+ */
+async function fetchVideoById(videoId) {
+    if (!videoId) return null;
+
+    var url = 'https://www.eporner.com/api/v2/video/id/?id=' + encodeURIComponent(videoId) + '&thumbsize=big&format=json';
+    kLog('Fetching video detail:', videoId);
+
+    try {
+        var response = await fetch(url);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        var data = await response.json();
+        if (!data || !data.id) return null;
+        return data;
+    } catch (error) {
+        kLog('Error fetching video by ID:', error.message);
+        return null;
+    }
+}
+
+// =====================================================
+//  ENHANCED PLAYER MODAL — Dengan tags dari API
+// =====================================================
+
+/**
+ * Buka player modal dengan info lengkap + keyword tags
+ * Jika video punya videoId, fetch detail untuk mendapatkan keywords
+ * @param {Object} card - Objek card
+ */
+var _originalOpenPlayerModal = null;
+
+function enhancedOpenPlayerModal(card) {
+    var modal = document.getElementById('playerModal');
+    var iframe = document.getElementById('playerIframe');
+    var title = document.getElementById('playerTitle');
+    var duration = document.getElementById('playerDuration');
+    var views = document.getElementById('playerViews');
+    var date = document.getElementById('playerDate');
+    var openTab = document.getElementById('playerOpenTab');
+
+    iframe.src = card.embedUrl;
+    title.textContent = card.name || 'Untitled';
+    duration.textContent = '⏱ ' + (card.length || '--:--');
+    views.textContent = '👁 ' + (card.views || '0');
+    date.textContent = '📅 ' + (card.date || '----');
+    openTab.href = card.link || '#';
+
+    // Render tags jika sudah ada di card
+    renderPlayerTags(card.keywords || []);
+
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    kLog('Player modal dibuka:', card.name);
+
+    // Fetch detail lengkap jika punya videoId (untuk mendapatkan keywords jika belum ada)
+    if (card.videoId && (!card.keywords || card.keywords.length === 0)) {
+        fetchVideoById(card.videoId).then(function (detail) {
+            if (detail && detail.keywords) {
+                var tags = detail.keywords.split(',').map(function (k) { return k.trim(); }).filter(function (k) { return k.length > 0 && k.length < 30; }).slice(0, 8);
+                renderPlayerTags(tags);
+            }
+        });
+    }
+}
+
+/**
+ * Render keyword tags di dalam player modal
+ * @param {string[]} tags - Array keyword strings
+ */
+function renderPlayerTags(tags) {
+    var container = document.getElementById('playerTags');
+    if (!container) {
+        // Buat container jika belum ada
+        var playerInfo = document.querySelector('.player-info');
+        if (!playerInfo) return;
+        container = document.createElement('div');
+        container.id = 'playerTags';
+        container.className = 'player-tags';
+        playerInfo.appendChild(container);
+    }
+
+    if (!tags || tags.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    var html = '';
+    tags.forEach(function (tag) {
+        html += '<span class="player-tag" onclick="closePlayerModal();clickTag(\'' + escapeHTML(tag.replace(/'/g, "\\'")) + '\')">' + escapeHTML(tag) + '</span>';
+    });
+    container.innerHTML = html;
+}
+
+// =====================================================
+//  REMOVED VIDEOS — Cek dan filter video yang dihapus
+// =====================================================
+
+/** @type {Set<string>} Set ID video yang sudah dihapus */
+var removedVideoIds = new Set();
+
+/**
+ * Fetch daftar video yang sudah dihapus dari API
+ * Disimpan di sessionStorage agar tidak re-fetch setiap page load
+ */
+async function fetchRemovedVideos() {
+    // Cek sessionStorage dulu
+    var cached = sessionStorage.getItem('kumpulenak_removed');
+    if (cached) {
+        try {
+            var arr = JSON.parse(cached);
+            removedVideoIds = new Set(arr);
+            kLog('Removed videos dari cache:', removedVideoIds.size);
+            return;
+        } catch (e) { /* ignore parse error */ }
+    }
+
+    try {
+        var response = await fetch('https://www.eporner.com/api/v2/video/removed/?format=json');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        var data = await response.json();
+
+        if (Array.isArray(data)) {
+            var ids = data.map(function (v) { return v.id; });
+            removedVideoIds = new Set(ids);
+            // Simpan ke sessionStorage (max 1 jam)
+            sessionStorage.setItem('kumpulenak_removed', JSON.stringify(ids));
+            kLog('Removed videos di-fetch:', removedVideoIds.size);
+        }
+    } catch (error) {
+        kLog('Error fetching removed videos:', error.message);
+    }
+}
+
+/**
+ * Filter video yang sudah dihapus dari array cards
+ * @param {Object[]} cards - Array card objects
+ * @returns {Object[]} Filtered array tanpa removed videos
+ */
+function filterRemovedVideos(cards) {
+    if (removedVideoIds.size === 0) return cards;
+    return cards.filter(function (card) {
+        return !card.videoId || !removedVideoIds.has(card.videoId);
+    });
+}
+
+// =====================================================
 //  RESIZE HANDLER — Update tab indicator saat resize
 // =====================================================
 window.addEventListener('resize', function () {
@@ -1343,8 +1705,22 @@ window.addEventListener('resize', function () {
     // Setup back to top
     initBackToTop();
 
+    // Setup thumbnail hover preview
+    initThumbnailPreview();
+
+    // Render sort bar
+    renderSortBar();
+
+    // Override openPlayerModal dengan enhanced version
+    window.openPlayerModal = enhancedOpenPlayerModal;
+
     // Muat dan render data pertama kali
     loadAndRender();
+
+    // Lazy load: fetch removed videos setelah 3 detik
+    setTimeout(function () {
+        fetchRemovedVideos();
+    }, 3000);
 
     kLog('Inisialisasi selesai.');
 })();

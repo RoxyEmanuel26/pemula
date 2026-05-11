@@ -1459,3 +1459,173 @@ body {
         padding: 5px 10px;
     }
 }
+
+/* ===== THUMBNAIL HOVER PREVIEW — Progress bar ===== */
+.thumb-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    background: rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.thumb-progress-bar.active {
+    opacity: 1;
+}
+
+.thumb-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #e8a800, #ffd700);
+    border-radius: 0 2px 2px 0;
+    width: calc((var(--thumb-index, 0) + 1) / var(--thumb-count, 15) * 100%);
+    transition: width 0.3s ease;
+}
+
+/* ===== SORT BAR ===== */
+.sort-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 0 14px;
+    justify-content: center;
+}
+
+.sort-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.sort-btn:hover {
+    background: rgba(232, 168, 0, 0.12);
+    border-color: rgba(232, 168, 0, 0.4);
+    color: var(--text);
+}
+
+.sort-btn.active {
+    background: linear-gradient(135deg, #e8a800, #d49a00);
+    border-color: #e8a800;
+    color: #000;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(232, 168, 0, 0.3);
+}
+
+[data-theme="light"] .sort-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .sort-btn:hover {
+    background: rgba(232, 168, 0, 0.15);
+}
+
+/* ===== CARD KEYWORD TAGS ===== */
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-top: 5px;
+}
+
+.card-tag {
+    display: inline-block;
+    background: rgba(232, 168, 0, 0.1);
+    border: 1px solid rgba(232, 168, 0, 0.2);
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-tag:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] .card-tag {
+    background: rgba(232, 168, 0, 0.08);
+    border-color: rgba(232, 168, 0, 0.25);
+}
+
+/* ===== PLAYER MODAL TAGS ===== */
+.player-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 12px;
+}
+
+.player-tag {
+    display: inline-block;
+    background: rgba(232, 168, 0, 0.1);
+    border: 1px solid rgba(232, 168, 0, 0.25);
+    color: #e8a800;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.player-tag:hover {
+    background: #e8a800;
+    color: #000;
+    border-color: #e8a800;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(232, 168, 0, 0.3);
+}
+
+/* ===== RESPONSIVE: Sort bar & tags mobile ===== */
+@media (max-width: 480px) {
+    .sort-bar {
+        gap: 4px;
+        padding: 6px 0 10px;
+    }
+
+    .sort-btn {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    .card-tag {
+        font-size: 8px;
+        padding: 1px 5px;
+    }
+
+    .player-tags {
+        gap: 4px;
+    }
+
+    .player-tag {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}

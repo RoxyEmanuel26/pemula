@@ -2,14 +2,19 @@
  * =============================================
  *  LOADER.JS — Anti-Adblock & Ad Recovery System
  * =============================================
- *  Mendeteksi adblock dan memastikan iklan tetap tampil.
+ *  Memastikan iklan tetap tampil meskipun adblock aktif.
  *
  *  Strategi:
- *  1. Deteksi adblock dengan bait element + fetch test
- *  2. Obfuscate URL domain iklan agar tidak ter-filter
- *  3. Tampilkan adblock wall jika terdeteksi
- *  4. Self-hosted popunder fallback
- *  5. Recovery: re-inject iklan yang diblokir
+ *  1. Coba muat iklan Adsterra secara normal (obfuscated URL)
+ *  2. Jika diblokir → tampilkan self-hosted fallback banner
+ *     (gambar dari domain yang TIDAK diblokir: imgbb, imgur, domain sendiri)
+ *  3. Self-hosted popunder — window.open() dari JS sendiri
+ *  4. Periodic recovery — re-inject jika dihapus adblock
+ *
+ *  PENTING: Adblock bekerja di level NETWORK browser.
+ *  Request ke domain iklan (glamournakedemployee.com, dll)
+ *  akan SELALU diblokir. Solusinya: serve konten dari
+ *  domain yang TIDAK ada di filter list.
  * =============================================
  */
 
@@ -18,41 +23,19 @@
 
     // ==========================================
     //  URL OBFUSCATION UTILITIES
-    //  Encode URL agar tidak terdeteksi filter list
     // ==========================================
 
-    /**
-     * Decode obfuscated URL — URL disimpan dalam bentuk
-     * base64 agar tidak cocok dengan filter list adblock
-     * @param {string} encoded - Base64 encoded URL
-     * @returns {string} Decoded URL
-     */
     function _d(encoded) {
-        try {
-            return atob(encoded);
-        } catch (e) {
-            return '';
-        }
+        try { return atob(encoded); } catch (e) { return ''; }
     }
-
-    /**
-     * Encode URL ke base64 (untuk referensi saat menambah URL baru)
-     * Panggil dari console: _encodeAdUrl('https://example.com/script.js')
-     */
-    window._encodeAdUrl = function (url) {
-        console.log('Encoded:', btoa(url));
-        return btoa(url);
-    };
 
     // ==========================================
     //  OBFUSCATED AD CONFIG
-    //  Semua URL dienkode agar lolos filter
     // ==========================================
 
-    // Adsterra invoke domain: glamournakedemployee.com
     var _invokeDomain = _d('Z2xhbW91cm5ha2VkZW1wbG95ZWUuY29t');
 
-    // Adsterra banner keys
+    // Adsterra banner keys (untuk mode tanpa adblock)
     var _bannerConfigs = [
         {
             containerId: 'adBannerHeader',
@@ -70,7 +53,7 @@
         }
     ];
 
-    // Custom banner (image-based, not blocked by adblock)
+    // Custom banner (image-based)
     var _customBanners = [
         {
             containerId: 'adBannerCustom',
@@ -90,219 +73,131 @@
     var _monetagZone = '10921359';
 
     // ==========================================
-    //  ADBLOCK DETECTION
-    //  Multi-layer detection
+    //  MONETISASI LINK POOL
+    //  Link yang dibuka saat user klik banner fallback
+    //  Gambar di-host di imgbb/imgur → TIDAK diblokir adblock
     // ==========================================
 
-    var adblockDetected = false;
+    var _monetLinks = [
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vZGt0eXl2aGh2cz9rZXk9MjEzNWI4MDg2YWQ1NjEyNTlkNTlhMzVlNzRkNGRhZTM='),
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYnhqOXY4eHM/a2V5PWJiY2MwMzU0MTcyMWZlNTk1ZjZkMGExOTkwODZjNjI4'),
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vZDF5ZHlnbjQ/a2V5PWFlMDRkYjk3NThmNjZkNTcxYTJkMTIyYjA4NjM1YWYz'),
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYzV4Zjc2Nzk/a2V5PTgwZGM4NjM1NzgwMTY1MTljYTkxNjdhYmM3MDkwOTQ0'),
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vbnBrdnpmNDZtP2tleT04MDYwZWE3MmEyOTFhY2RlYWU4OTc0MDU0MjZhNjAxMw=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyMQ=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjczNg=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcxOQ=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyMw=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjczMQ=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyNg=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyOQ=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyOA=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjczMA=='),
+        _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyNw==')
+    ];
+
+    function getRandomLink() {
+        return _monetLinks[Math.floor(Math.random() * _monetLinks.length)];
+    }
+
+    // ==========================================
+    //  SELF-HOSTED FALLBACK BANNERS
+    //  Gambar dari imgbb/imgur → TIDAK DIBLOKIR adblock
+    //  Klik → buka link monetisasi random
+    //
+    //  Ini yang muncul SAAT ADBLOCK AKTIF sebagai
+    //  pengganti banner Adsterra yang diblokir
+    // ==========================================
+
+    var _fallbackBanners = {
+        // Banner header (leaderboard 728x90)
+        adBannerHeader: [
+            {
+                image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
+                alt: 'Premium Content'
+            },
+            {
+                image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
+                alt: 'Exclusive Download'
+            }
+        ],
+        // Banner content (medium rectangle 300x250)
+        adBannerContent: [
+            {
+                image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
+                alt: 'Premium Content'
+            },
+            {
+                image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
+                alt: 'Exclusive Download'
+            }
+        ]
+    };
 
     /**
-     * Layer 1: Bait element detection
-     * Buat element dengan class/ID yang biasa diblokir adblock
+     * Inject self-hosted fallback banner ke container
+     * Gambar dari imgbb → tidak bisa diblokir adblock
+     * Klik → buka link monetisasi di tab baru
      */
-    function detectWithBait() {
-        return new Promise(function (resolve) {
-            var bait = document.createElement('div');
-            bait.innerHTML = '&nbsp;';
-            bait.className = 'adsbox ad-placement carbon-ads';
-            bait.setAttribute('id', 'ad-test-bait');
-            bait.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;pointer-events:none;';
-            document.body.appendChild(bait);
+    function injectFallbackBanner(containerId) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
 
+        var banners = _fallbackBanners[containerId];
+        if (!banners || banners.length === 0) return;
+
+        // Pilih random banner
+        var banner = banners[Math.floor(Math.random() * banners.length)];
+        var link = getRandomLink();
+
+        container.innerHTML = '';
+
+        var wrapper = document.createElement('div');
+        wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;';
+
+        var anchor = document.createElement('a');
+        anchor.href = link;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.style.cssText = 'display:block;max-width:100%;text-decoration:none;border-radius:10px;overflow:hidden;transition:transform 0.3s ease,box-shadow 0.3s ease;cursor:pointer;';
+
+        var img = document.createElement('img');
+        img.src = banner.image;
+        img.alt = banner.alt;
+        img.style.cssText = 'width:100%;height:auto;display:block;border-radius:10px;';
+        img.loading = 'lazy';
+
+        // Hover effects
+        anchor.addEventListener('mouseenter', function () {
+            anchor.style.transform = 'translateY(-2px)';
+            anchor.style.boxShadow = '0 8px 25px rgba(232,168,0,0.3)';
+        });
+        anchor.addEventListener('mouseleave', function () {
+            anchor.style.transform = 'translateY(0)';
+            anchor.style.boxShadow = 'none';
+        });
+
+        // Saat klik → buka link monetisasi + ganti href untuk klik berikutnya
+        anchor.addEventListener('click', function (e) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            // Ganti link untuk klik berikutnya
             setTimeout(function () {
-                var detected = false;
+                anchor.href = getRandomLink();
+            }, 100);
+        }, true);
 
-                // Check if element was removed or hidden
-                if (!bait.offsetParent && bait.offsetHeight === 0 && bait.offsetWidth === 0) {
-                    detected = true;
-                }
+        anchor.appendChild(img);
+        wrapper.appendChild(anchor);
+        container.appendChild(wrapper);
 
-                // Check computed style
-                var style = window.getComputedStyle(bait);
-                if (style && (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')) {
-                    detected = true;
-                }
-
-                // Cleanup
-                if (bait.parentNode) {
-                    bait.parentNode.removeChild(bait);
-                }
-
-                resolve(detected);
-            }, 200);
-        });
-    }
-
-    /**
-     * Layer 2: Fetch test — coba fetch URL ad script
-     * Jika gagal/blocked → adblock terdeteksi
-     */
-    function detectWithFetch() {
-        return new Promise(function (resolve) {
-            // Coba fetch domain iklan yang biasanya di-block
-            var testUrl = '//' + _invokeDomain + '/favicon.ico?_=' + Date.now();
-
-            var img = new Image();
-            img.onload = function () { resolve(false); };
-            img.onerror = function () { resolve(true); };
-
-            // Timeout 3 detik
-            setTimeout(function () { resolve(true); }, 3000);
-
-            img.src = testUrl;
-        });
-    }
-
-    /**
-     * Layer 3: Check jika script diblokir
-     * Cek apakah ads script berhasil dimuat
-     */
-    function detectScriptBlock() {
-        return new Promise(function (resolve) {
-            var s = document.createElement('script');
-            s.src = '//' + _invokeDomain + '/favicon.ico?t=' + Date.now();
-            s.onerror = function () {
-                resolve(true);
-                if (s.parentNode) s.parentNode.removeChild(s);
-            };
-            s.onload = function () {
-                resolve(false);
-                if (s.parentNode) s.parentNode.removeChild(s);
-            };
-            setTimeout(function () {
-                resolve(true);
-                if (s.parentNode) s.parentNode.removeChild(s);
-            }, 3000);
-            document.head.appendChild(s);
-        });
-    }
-
-    /**
-     * Jalankan semua layer detection
-     * @returns {Promise<boolean>} true jika adblock terdeteksi
-     */
-    async function runAdblockDetection() {
-        try {
-            var results = await Promise.all([
-                detectWithBait(),
-                detectWithFetch(),
-                detectScriptBlock()
-            ]);
-
-            // Jika salah satu layer mendeteksi → adblock aktif
-            adblockDetected = results.some(function (r) { return r === true; });
-            console.log('[loader] Adblock detection results:', results, '→', adblockDetected);
-            return adblockDetected;
-        } catch (e) {
-            console.log('[loader] Detection error:', e);
-            return true; // Assume blocked on error
-        }
+        // Tandai bahwa ini fallback banner (untuk recovery check)
+        container.setAttribute('data-fallback', '1');
     }
 
     // ==========================================
-    //  ADBLOCK WALL — Tampilkan pesan jika adblock aktif
-    // ==========================================
-
-    function showAdblockWall() {
-        // Jangan tampilkan kalau sudah ada
-        if (document.getElementById('kl-ab-wall')) return;
-
-        var wall = document.createElement('div');
-        wall.id = 'kl-ab-wall';
-        wall.style.cssText = [
-            'position:fixed',
-            'top:0',
-            'left:0',
-            'width:100vw',
-            'height:100vh',
-            'background:rgba(0,0,0,0.92)',
-            'z-index:999999',
-            'display:flex',
-            'align-items:center',
-            'justify-content:center',
-            'padding:20px',
-            'box-sizing:border-box',
-            'backdrop-filter:blur(8px)',
-            '-webkit-backdrop-filter:blur(8px)'
-        ].join(';');
-
-        wall.innerHTML =
-            '<div style="' +
-            'background:linear-gradient(145deg,#1a1a2e,#16213e);' +
-            'border:1px solid rgba(232,168,0,0.3);' +
-            'border-radius:16px;' +
-            'padding:32px 28px;' +
-            'max-width:440px;' +
-            'width:100%;' +
-            'text-align:center;' +
-            'box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 40px rgba(232,168,0,0.1);' +
-            'font-family:Inter,sans-serif;' +
-            '">' +
-            '<div style="font-size:48px;margin-bottom:16px;">🛡️</div>' +
-            '<h2 style="color:#e8a800;font-size:20px;font-weight:700;margin:0 0 12px;">AdBlock Terdeteksi</h2>' +
-            '<p style="color:rgba(255,255,255,0.8);font-size:14px;line-height:1.6;margin:0 0 20px;">' +
-            'Website ini didukung oleh iklan. Mohon matikan AdBlock untuk mendukung kami dan menikmati konten secara penuh. 🙏' +
-            '</p>' +
-            '<div style="display:flex;flex-direction:column;gap:10px;">' +
-            '<button id="kl-ab-refresh" style="' +
-            'background:linear-gradient(135deg,#e8a800,#ff6b00);' +
-            'color:#000;' +
-            'border:none;' +
-            'padding:12px 24px;' +
-            'border-radius:8px;' +
-            'font-size:15px;' +
-            'font-weight:700;' +
-            'cursor:pointer;' +
-            'transition:transform 0.2s,box-shadow 0.2s;' +
-            'font-family:Inter,sans-serif;' +
-            '">🔄 Sudah Matikan AdBlock — Refresh</button>' +
-            '<button id="kl-ab-continue" style="' +
-            'background:transparent;' +
-            'color:rgba(255,255,255,0.5);' +
-            'border:1px solid rgba(255,255,255,0.15);' +
-            'padding:10px 20px;' +
-            'border-radius:8px;' +
-            'font-size:13px;' +
-            'cursor:pointer;' +
-            'font-family:Inter,sans-serif;' +
-            '">Lanjutkan tanpa mematikan AdBlock</button>' +
-            '</div>' +
-            '</div>';
-
-        document.body.appendChild(wall);
-
-        // Refresh button
-        document.getElementById('kl-ab-refresh').addEventListener('click', function () {
-            location.reload();
-        });
-
-        // Continue anyway — tutup wall, tapi tetap coba inject fallback ads
-        document.getElementById('kl-ab-continue').addEventListener('click', function () {
-            wall.style.opacity = '0';
-            wall.style.transition = 'opacity 0.3s ease';
-            setTimeout(function () {
-                if (wall.parentNode) wall.parentNode.removeChild(wall);
-            }, 300);
-
-            // Inject fallback self-hosted popunder
-            initSelfHostedPopunder();
-        });
-
-        // Prevent scroll behind wall
-        document.body.style.overflow = 'hidden';
-    }
-
-    function removeAdblockWall() {
-        var wall = document.getElementById('kl-ab-wall');
-        if (wall && wall.parentNode) {
-            wall.parentNode.removeChild(wall);
-        }
-        document.body.style.overflow = '';
-    }
-
-    // ==========================================
-    //  SELF-HOSTED POPUNDER FALLBACK
-    //  Berjalan tanpa external script — tidak bisa diblokir
+    //  SELF-HOSTED POPUNDER
+    //  Berjalan 100% dari JS lokal — TIDAK bisa diblokir
     // ==========================================
 
     var _popunderFired = false;
@@ -310,49 +205,45 @@
     function initSelfHostedPopunder() {
         if (_popunderFired) return;
 
-        // Daftar URL target popunder (obfuscated)
-        var popTargets = [
-            _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vZGt0eXl2aGh2cz9rZXk9MjEzNWI4MDg2YWQ1NjEyNTlkNTlhMzVlNzRkNGRhZTM='),
-            _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYnhqOXY4eHM/a2V5PWJiY2MwMzU0MTcyMWZlNTk1ZjZkMGExOTkwODZjNjI4'),
-            _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vZDF5ZHlnbjQ/a2V5PWFlMDRkYjk3NThmNjZkNTcxYTJkMTIyYjA4NjM1YWYz'),
-            _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcyMQ=='),
-            _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjczNg=='),
-            _d('aHR0cHM6Ly9vbWcxMC5jb20vNC8xMDgwNjcxOQ==')
-        ];
-
         function doPopunder() {
             if (_popunderFired) return;
             _popunderFired = true;
 
-            var target = popTargets[Math.floor(Math.random() * popTargets.length)];
+            var target = getRandomLink();
 
             try {
-                // Teknik: buka tab baru, lalu focus kembali ke halaman utama
                 var w = window.open(target, '_blank');
                 if (w) {
-                    // Focus kembali ke halaman utama (popunder effect)
                     setTimeout(function () {
                         try { window.focus(); } catch (e) { }
                     }, 100);
                 }
             } catch (e) {
-                console.log('[loader] Popunder fallback failed');
+                // Silently fail
             }
         }
 
         // Trigger pada klik pertama user (hanya 1x)
-        document.addEventListener('click', function popHandler() {
+        document.addEventListener('click', function popHandler(e) {
+            // Jangan trigger pada link/button di modal script.js
+            var target = e.target;
+            if (target.closest && (
+                target.closest('#content-modal') ||
+                target.closest('.player-overlay') ||
+                target.closest('.ingrid-banner-ad')
+            )) {
+                return;
+            }
             doPopunder();
             document.removeEventListener('click', popHandler, true);
         }, true);
     }
 
     // ==========================================
-    //  AD INJECTION (OBFUSCATED)
-    //  Inject banner ads dengan URL yang sudah di-encode
+    //  ADSTERRA BANNER INJECTION (untuk non-adblock)
     // ==========================================
 
-    function injectObfuscatedBanner(config) {
+    function injectAdsterraBanner(config, onBlocked) {
         var container = document.getElementById(config.containerId);
         if (!container) return;
 
@@ -362,7 +253,6 @@
         wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
         container.appendChild(wrapper);
 
-        // Set atOptions secara dinamis
         window.atOptions = {
             'key': config.key,
             'format': config.format,
@@ -371,23 +261,32 @@
             'params': {}
         };
 
-        // Buat script URL secara dinamis (bukan hardcoded string)
         var scriptEl = document.createElement('script');
         scriptEl.type = 'text/javascript';
-
-        // Bangun URL secara programatis agar tidak terdeteksi filter
         var parts = ['//', _invokeDomain, '/', config.key, '/invoke.js'];
         scriptEl.src = parts.join('');
 
         scriptEl.onerror = function () {
-            // Fallback: tampilkan placeholder
-            wrapper.innerHTML = '<div style="width:' + config.width + 'px;max-width:100%;height:' + config.height + 'px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
+            // Adsterra diblokir → inject fallback banner
+            if (typeof onBlocked === 'function') {
+                onBlocked(config.containerId);
+            }
         };
 
         wrapper.appendChild(scriptEl);
+
+        // Juga cek setelah 4 detik — kadang script load tapi iframe diblokir
+        setTimeout(function () {
+            var iframe = container.querySelector('iframe');
+            if (!iframe || iframe.offsetHeight === 0) {
+                if (typeof onBlocked === 'function') {
+                    onBlocked(config.containerId);
+                }
+            }
+        }, 4000);
     }
 
-    function injectObfuscatedCustomBanner(config) {
+    function injectCustomBanner(config) {
         var container = document.getElementById(config.containerId);
         if (!container) return;
 
@@ -402,7 +301,7 @@
         img.alt = config.alt || 'Banner';
         img.style.cssText = 'width:100%;height:auto;display:block;border-radius:12px;';
         img.onerror = function () {
-            container.innerHTML = '<div style="width:100%;height:90px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
+            container.innerHTML = '';
         };
 
         link.addEventListener('click', function (e) {
@@ -423,7 +322,7 @@
         container.appendChild(link);
     }
 
-    function injectObfuscatedPopunder() {
+    function injectExternalPopunder() {
         _popunderUrls.forEach(function (url) {
             if (!url) return;
             var s = document.createElement('script');
@@ -431,7 +330,7 @@
             s.async = true;
             s.setAttribute('data-cfasync', 'false');
             s.onerror = function () {
-                console.log('[loader] External popunder blocked, using fallback');
+                // External popunder diblokir → gunakan self-hosted
                 initSelfHostedPopunder();
             };
             document.body.appendChild(s);
@@ -444,7 +343,7 @@
         s.dataset.zone = _monetagZone;
         s.src = _monetagDomain;
         s.onerror = function () {
-            console.log('[loader] Monetag blocked, using fallback');
+            // Monetag diblokir → gunakan self-hosted
             initSelfHostedPopunder();
         };
         ([document.documentElement, document.body].filter(Boolean).pop()).appendChild(s);
@@ -453,12 +352,17 @@
     // ==========================================
     //  BANNER ADS SEQUENTIAL INJECTION
     //  Inject satu per satu dengan delay
+    //  Jika Adsterra diblokir → otomatis fallback
     // ==========================================
 
     function injectBannersSequentially(banners, index) {
         if (index >= banners.length) return;
 
-        injectObfuscatedBanner(banners[index]);
+        injectAdsterraBanner(banners[index], function (containerId) {
+            // Callback: Adsterra diblokir → inject self-hosted fallback
+            console.log('[loader] Adsterra blocked for', containerId, '→ injecting fallback banner');
+            injectFallbackBanner(containerId);
+        });
 
         setTimeout(function () {
             injectBannersSequentially(banners, index + 1);
@@ -468,7 +372,7 @@
     // ==========================================
     //  PERIODIC AD RECOVERY
     //  Cek berkala apakah iklan masih tampil
-    //  Jika dihapus/disembunyikan oleh adblock → re-inject
+    //  Jika dihapus → re-inject (fallback jika Adsterra gagal)
     // ==========================================
 
     function startAdRecovery() {
@@ -477,13 +381,21 @@
                 var container = document.getElementById(config.containerId);
                 if (!container) return;
 
-                // Cek apakah container masih berisi iklan
                 var hasContent = container.children.length > 0;
                 var isVisible = container.offsetHeight > 0;
 
                 if (!hasContent || !isVisible) {
-                    console.log('[loader] Recovering ad:', config.containerId);
-                    injectObfuscatedBanner(config);
+                    console.log('[loader] Recovering:', config.containerId);
+
+                    // Jika sebelumnya sudah fallback, langsung inject fallback lagi
+                    if (container.getAttribute('data-fallback') === '1') {
+                        injectFallbackBanner(config.containerId);
+                    } else {
+                        // Coba Adsterra dulu, jika gagal → fallback
+                        injectAdsterraBanner(config, function (cid) {
+                            injectFallbackBanner(cid);
+                        });
+                    }
                 }
             });
 
@@ -492,57 +404,87 @@
                 if (!container) return;
 
                 if (container.children.length === 0 || container.offsetHeight === 0) {
-                    console.log('[loader] Recovering custom banner:', config.containerId);
-                    injectObfuscatedCustomBanner(config);
+                    injectCustomBanner(config);
                 }
             });
-        }, 10000); // Cek setiap 10 detik
+        }, 10000);
+    }
+
+    // ==========================================
+    //  IN-GRID FALLBACK BANNERS
+    //  Re-inject in-grid banners jika original diblokir
+    // ==========================================
+
+    function recoverIngridBanners() {
+        setInterval(function () {
+            var ingridBanners = document.querySelectorAll('.ingrid-banner-ad');
+            ingridBanners.forEach(function (banner) {
+                if (banner.offsetHeight === 0 || banner.children.length === 0) {
+                    // Re-inject in-grid banner
+                    banner.innerHTML = '';
+                    var link = document.createElement('a');
+                    link.href = getRandomLink();
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.className = 'ingrid-banner-link';
+                    link.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        setTimeout(function () { link.href = getRandomLink(); }, 100);
+                    }, true);
+
+                    var img = document.createElement('img');
+                    img.src = 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png';
+                    img.alt = 'Download Terabox';
+                    img.className = 'ingrid-banner-img';
+                    img.onerror = function () { banner.style.display = 'none'; };
+
+                    link.appendChild(img);
+                    banner.appendChild(link);
+                }
+            });
+        }, 8000);
     }
 
     // ==========================================
     //  MAIN INIT
+    //  Satu flow untuk semua user (adblock ON/OFF)
+    //  Tidak ada wall/notif — iklan selalu muncul
     // ==========================================
 
-    async function init() {
-        console.log('[loader] Initializing anti-adblock system...');
+    function init() {
+        console.log('[loader] Initializing...');
 
-        // Detect adblock
-        var blocked = await runAdblockDetection();
+        // 1. Coba inject Adsterra banners
+        //    Jika diblokir → callback otomatis inject fallback banner
+        injectBannersSequentially(_bannerConfigs, 0);
 
-        if (blocked) {
-            console.log('[loader] AdBlock DETECTED — using silent fallback');
+        // 2. Inject custom banners (dari imgbb → tidak diblokir)
+        _customBanners.forEach(function (config) {
+            injectCustomBanner(config);
+        });
 
-            // Tetap coba inject iklan (beberapa mungkin lolos)
-            injectBannersSequentially(_bannerConfigs, 0);
-            _customBanners.forEach(function (config) {
-                injectObfuscatedCustomBanner(config);
-            });
+        // 3. Coba external popunder scripts
+        //    Jika diblokir → onerror otomatis aktifkan self-hosted popunder
+        injectExternalPopunder();
 
-            // Self-hosted popunder sebagai fallback (tanpa notif)
+        // 4. Coba Monetag
+        //    Jika diblokir → onerror otomatis aktifkan self-hosted popunder
+        injectMonetag();
+
+        // 5. Selalu aktifkan self-hosted popunder sebagai jaga-jaga
+        //    (hanya fire 1x karena ada flag _popunderFired)
+        setTimeout(function () {
             initSelfHostedPopunder();
+        }, 5000);
 
-        } else {
-            console.log('[loader] No adblock — loading all ads normally');
-
-            // Inject banner ads dengan URL obfuscated
-            injectBannersSequentially(_bannerConfigs, 0);
-
-            // Custom banners
-            _customBanners.forEach(function (config) {
-                injectObfuscatedCustomBanner(config);
-            });
-
-            // External popunder scripts
-            injectObfuscatedPopunder();
-
-            // Monetag popunder
-            injectMonetag();
-        }
-
-        // Start periodic ad recovery
+        // 6. Start periodic ad recovery
         startAdRecovery();
 
-        console.log('[loader] Init complete.');
+        // 7. Start in-grid banner recovery
+        recoverIngridBanners();
+
+        console.log('[loader] Init complete — ads will show regardless of adblock.');
     }
 
     // Run when page is ready

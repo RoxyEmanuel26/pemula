@@ -129,7 +129,7 @@ let DATA_SOURCE = "api";
 //  Setiap tab punya parameter API sendiri
 // =====================================================
 const TAB_CONFIG = {
-    popular: { order: 'most-popular', query: 'indo' },
+    popular: { order: 'most-popular', query: 'all' },
     viral: { order: 'latest', query: 'all' },
     kategori: { order: 'top-weekly', query: 'all' }
 };
@@ -1518,11 +1518,10 @@ function changeSortOrder(order) {
     if (TAB_CONFIG[currentTab]) {
         TAB_CONFIG[currentTab].order = order;
 
-        // Saat ganti sort di tab popular:
-        // - Default 'most-popular' → tetap query 'indo'
-        // - Sort lain → query 'all' agar menampilkan semua video
+        // Semua sort di tab popular menggunakan query 'all'
+        // agar menampilkan semua video dari API sesuai order yang dipilih
         if (currentTab === 'popular' && !isSearchActive) {
-            TAB_CONFIG[currentTab].query = (order === 'most-popular') ? 'indo' : 'all';
+            TAB_CONFIG[currentTab].query = 'all';
         }
     }
 

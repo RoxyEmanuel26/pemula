@@ -129,7 +129,7 @@ let DATA_SOURCE = "api";
 //  Setiap tab punya parameter API sendiri
 // =====================================================
 const TAB_CONFIG = {
-    popular: { order: 'most-popular', query: 'all' },
+    popular: { order: 'most-popular', query: 'indo' },
     viral: { order: 'latest', query: 'all' },
     kategori: { order: 'top-weekly', query: 'all' }
 };
@@ -313,7 +313,7 @@ function handleImageLoad(img) {
  */
 async function fetchFromAPI(query, page, order) {
     // Buat cache key
-    const cacheKey = currentTab + '_' + page + '_' + (query || 'all');
+    const cacheKey = currentTab + '_' + page + '_' + (query || 'all') + '_' + (order || 'latest');
 
     // Cek cache terlebih dahulu
     if (cacheStore[cacheKey] && (Date.now() - cacheStore[cacheKey].timestamp < CACHE_DURATION)) {
@@ -793,7 +793,8 @@ async function loadAndRender() {
             }
 
             var queryToUse = isSearchActive && currentQuery ? currentQuery : config.query;
-            var orderToUse = currentSortOrder || config.order;
+            // 'indo' bukan order API yang valid — sudah dihandle via config.order
+            var orderToUse = (currentSortOrder === 'indo') ? 'most-popular' : (currentSortOrder || config.order);
 
             // Reset override setelah digunakan
             window._tempTabOverride = null;
@@ -1455,7 +1456,7 @@ function initThumbnailPreview() {
 // =====================================================
 
 /** @type {string} Urutan sorting aktif saat ini */
-var currentSortOrder = 'most-popular';
+var currentSortOrder = 'indo';
 
 /**
  * Render sort bar di bawah section label
@@ -1472,13 +1473,14 @@ function renderSortBar() {
     }
 
     var sortOptions = [
-        { label: '🔥 Popular', order: 'most-popular' },
-        { label: '🆕 Terbaru', order: 'latest' },
-        { label: '⭐ Top Rated', order: 'top-rated' },
-        { label: '📈 Top Minggu', order: 'top-weekly' },
-        { label: '📅 Top Bulan', order: 'top-monthly' },
-        { label: '⏱ Terpanjang', order: 'longest' },
-        { label: '⚡ Terpendek', order: 'shortest' }
+        { label: '🇮🇩 Indo', order: 'indo', query: 'indo' },
+        { label: '🔥 Popular', order: 'most-popular', query: 'all' },
+        { label: '🆕 Terbaru', order: 'latest', query: 'all' },
+        { label: '⭐ Top Rated', order: 'top-rated', query: 'all' },
+        { label: '📈 Top Minggu', order: 'top-weekly', query: 'all' },
+        { label: '📅 Top Bulan', order: 'top-monthly', query: 'all' },
+        { label: '⏱ Terpanjang', order: 'longest', query: 'all' },
+        { label: '⚡ Terpendek', order: 'shortest', query: 'all' }
     ];
 
     var html = '';
@@ -1514,20 +1516,32 @@ function changeSortOrder(order) {
     currentSortOrder = order;
     currentPage = 1;
 
+    // Tentukan query berdasarkan sort option yang dipilih
+    // 'indo' menggunakan query 'indo', sisanya 'all'
+    var sortQueryMap = {
+        'indo': 'indo',
+        'most-popular': 'all',
+        'latest': 'all',
+        'top-rated': 'all',
+        'top-weekly': 'all',
+        'top-monthly': 'all',
+        'longest': 'all',
+        'shortest': 'all'
+    };
+
     // Update config tab aktif
     if (TAB_CONFIG[currentTab]) {
-        TAB_CONFIG[currentTab].order = order;
+        // Untuk 'indo', gunakan order 'most-popular' (API tidak punya order 'indo')
+        TAB_CONFIG[currentTab].order = (order === 'indo') ? 'most-popular' : order;
 
-        // Semua sort di tab popular menggunakan query 'all'
-        // agar menampilkan semua video dari API sesuai order yang dipilih
         if (currentTab === 'popular' && !isSearchActive) {
-            TAB_CONFIG[currentTab].query = 'all';
+            TAB_CONFIG[currentTab].query = sortQueryMap[order] || 'all';
         }
     }
 
     renderSortBar();
     loadAndRender();
-    kLog('Sort order diganti ke:', order);
+    kLog('Sort order diganti ke:', order, '| query:', sortQueryMap[order]);
 }
 
 // =====================================================

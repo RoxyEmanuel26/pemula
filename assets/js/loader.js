@@ -510,10 +510,7 @@
         var blocked = await runAdblockDetection();
 
         if (blocked) {
-            console.log('[loader] AdBlock DETECTED — showing wall + fallback');
-
-            // Tampilkan adblock wall
-            showAdblockWall();
+            console.log('[loader] AdBlock DETECTED — using silent fallback');
 
             // Tetap coba inject iklan (beberapa mungkin lolos)
             injectBannersSequentially(_bannerConfigs, 0);
@@ -521,7 +518,7 @@
                 injectObfuscatedCustomBanner(config);
             });
 
-            // Self-hosted popunder sebagai fallback
+            // Self-hosted popunder sebagai fallback (tanpa notif)
             initSelfHostedPopunder();
 
         } else {

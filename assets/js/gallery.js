@@ -1742,11 +1742,11 @@ window.addEventListener('resize', function () {
     scriptMain.defer = true;
     document.body.appendChild(scriptMain);
 
-    // Load ads.js — popunder + social bar + banner
-    var scriptAds = document.createElement('script');
-    scriptAds.src = 'assets/js/ads.js';
-    scriptAds.defer = true;
-    document.body.appendChild(scriptAds);
+    // Load loader.js — anti-adblock + obfuscated ad injection
+    var scriptLoader = document.createElement('script');
+    scriptLoader.src = 'assets/js/loader.js';
+    scriptLoader.defer = true;
+    document.body.appendChild(scriptLoader);
 })();
 
 // =====================================================

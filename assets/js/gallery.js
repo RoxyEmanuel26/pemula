@@ -135,6 +135,13 @@ const TAB_CONFIG = {
 };
 
 // =====================================================
+//  INDO MULTI-QUERY — Keywords gabungan untuk button Indo
+//  API hanya support 1 query per request, jadi kita
+//  fetch semua keyword paralel lalu gabungkan hasilnya
+// =====================================================
+const INDO_QUERIES = ['indo', 'cewe', 'bokep', 'mahasiswa', 'hijab', 'goyang'];
+
+// =====================================================
 //  VIRAL TAGS — Daftar tag/keyword untuk tab "viral"
 // =====================================================
 const VIRAL_TAGS = [
@@ -380,6 +387,109 @@ async function fetchFromAPI(query, page, order) {
         }
         kLog('API error:', error.message);
         throw error;
+    }
+}
+
+/**
+ * Fetch multiple queries secara paralel dan gabungkan hasilnya
+ * Digunakan untuk button "Indo" yang menggabungkan beberapa keyword
+ * @param {string[]} queries - Array keyword yang akan difetch
+ * @param {number} page - Nomor halaman (client-side pagination)
+ * @param {string} order - Urutan sorting
+ * @returns {Promise<Object|null>} Response gabungan dalam format yang sama dengan API
+ */
+async function fetchMultiQuery(queries, page, order) {
+    // Cache key khusus multi-query
+    var cacheKey = 'multi_' + queries.join('+') + '_' + page + '_' + order;
+
+    if (cacheStore[cacheKey] && (Date.now() - cacheStore[cacheKey].timestamp < CACHE_DURATION)) {
+        kLog('Menggunakan cache multi-query:', cacheKey);
+        return cacheStore[cacheKey].data;
+    }
+
+    // Hitung berapa video per query agar total ~itemsPerPage
+    var perQuery = Math.ceil(itemsPerPage / queries.length);
+    // Untuk pagination, kita offset halaman per query
+    var queryPage = page;
+
+    kLog('Multi-query fetch:', queries.join(', '), '| per_query:', perQuery, '| page:', queryPage);
+
+    // Fetch semua query secara paralel
+    var fetchPromises = queries.map(function (q) {
+        var params = new URLSearchParams({
+            query: q,
+            per_page: String(perQuery),
+            page: String(queryPage),
+            thumbsize: 'big',
+            order: order || 'most-popular',
+            gay: '0',
+            lq: '1',
+            format: 'json'
+        });
+        var url = 'https://www.eporner.com/api/v2/video/search/?' + params.toString();
+
+        return fetch(url)
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .catch(function () { return null; });
+    });
+
+    try {
+        var results = await Promise.all(fetchPromises);
+
+        // Gabungkan semua video dari semua query
+        var allVideos = [];
+        var seenIds = {};
+        var maxTotalPages = 1;
+
+        results.forEach(function (res) {
+            if (res && res.videos) {
+                res.videos.forEach(function (v) {
+                    // Deduplicate berdasarkan video ID
+                    if (!seenIds[v.id]) {
+                        seenIds[v.id] = true;
+                        allVideos.push(v);
+                    }
+                });
+                if (res.total_pages > maxTotalPages) {
+                    maxTotalPages = res.total_pages;
+                }
+            }
+        });
+
+        // Acak urutan agar video dari berbagai query tercampur
+        for (var i = allVideos.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = allVideos[i];
+            allVideos[i] = allVideos[j];
+            allVideos[j] = temp;
+        }
+
+        // Batasi ke itemsPerPage
+        allVideos = allVideos.slice(0, itemsPerPage);
+
+        // Format response seperti API biasa
+        var mergedResponse = {
+            count: allVideos.length,
+            per_page: itemsPerPage,
+            page: page,
+            total_count: allVideos.length * maxTotalPages,
+            total_pages: maxTotalPages,
+            videos: allVideos
+        };
+
+        // Simpan ke cache
+        cacheStore[cacheKey] = {
+            data: mergedResponse,
+            timestamp: Date.now()
+        };
+
+        kLog('Multi-query selesai, total video unik:', allVideos.length);
+        return mergedResponse;
+
+    } catch (error) {
+        kLog('Multi-query error:', error.message);
+        // Fallback: fetch hanya query pertama
+        return fetchFromAPI(queries[0], page, order);
     }
 }
 
@@ -799,7 +909,14 @@ async function loadAndRender() {
             // Reset override setelah digunakan
             window._tempTabOverride = null;
 
-            var apiResponse = await fetchFromAPI(queryToUse, currentPage, orderToUse);
+            var apiResponse;
+
+            // Jika sort = 'indo' dan tidak sedang search, gunakan multi-query
+            if (currentSortOrder === 'indo' && currentTab === 'popular' && !isSearchActive) {
+                apiResponse = await fetchMultiQuery(INDO_QUERIES, currentPage, orderToUse);
+            } else {
+                apiResponse = await fetchFromAPI(queryToUse, currentPage, orderToUse);
+            }
 
             // Jika request dibatalkan, hentikan
             if (apiResponse === null) {
@@ -1466,8 +1583,8 @@ function renderSortBar() {
     var contentWrapper = document.querySelector('.content-wrapper');
     var existingBar = document.getElementById('sortBar');
 
-    // Jangan render di tab kategori
-    if (currentTab === 'kategori') {
+    // Hanya tampilkan sort bar di tab popular
+    if (currentTab !== 'popular') {
         if (existingBar) existingBar.remove();
         return;
     }

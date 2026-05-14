@@ -1517,6 +1517,13 @@ function changeSortOrder(order) {
     // Update config tab aktif
     if (TAB_CONFIG[currentTab]) {
         TAB_CONFIG[currentTab].order = order;
+
+        // Saat ganti sort di tab popular:
+        // - Default 'most-popular' → tetap query 'indo'
+        // - Sort lain → query 'all' agar menampilkan semua video
+        if (currentTab === 'popular' && !isSearchActive) {
+            TAB_CONFIG[currentTab].query = (order === 'most-popular') ? 'indo' : 'all';
+        }
     }
 
     renderSortBar();

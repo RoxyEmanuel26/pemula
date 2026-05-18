@@ -843,7 +843,7 @@ function renderCardsToGrid(cardsToRender) {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.innerHTML =
-            '<a href="https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A" class="ingrid-banner-link">' +
+            '<a href="https://1024terabox.com/s/1snAFIN56MYV0_VbZGYsBTA" class="ingrid-banner-link">' +
             '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';

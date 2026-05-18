@@ -5,7 +5,7 @@
     <!-- Homepage — highest priority -->
     <url>
         <loc>https://www.kumpulenak.web.id/</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
         <xhtml:link rel="alternate" hreflang="id" href="https://www.kumpulenak.web.id/" />
@@ -16,7 +16,7 @@
     <!-- About Page -->
     <url>
         <loc>https://www.kumpulenak.web.id/about</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
@@ -24,7 +24,7 @@
     <!-- How to Download Guide -->
     <url>
         <loc>https://www.kumpulenak.web.id/howto</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -32,7 +32,7 @@
     <!-- DMCA Policy -->
     <url>
         <loc>https://www.kumpulenak.web.id/dmca</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
@@ -40,7 +40,7 @@
     <!-- Contact Page -->
     <url>
         <loc>https://www.kumpulenak.web.id/contact</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.6</priority>
     </url>
@@ -48,7 +48,7 @@
     <!-- Privacy Policy -->
     <url>
         <loc>https://www.kumpulenak.web.id/privacy</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.4</priority>
     </url>
@@ -56,7 +56,7 @@
     <!-- Terms of Service -->
     <url>
         <loc>https://www.kumpulenak.web.id/terms</loc>
-        <lastmod>2026-04-30</lastmod>
+        <lastmod>2026-05-19</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.4</priority>
     </url>

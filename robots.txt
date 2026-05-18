@@ -15,7 +15,7 @@ Allow: /howto
 
 # Disallow ad scripts and internal assets
 Disallow: /assets/js/ads.js
-Disallow: /assets/js/script.js
+Disallow: /assets/js/loader.js
 Disallow: /.env
 
 # Crawl delay (politeness for smaller bots)

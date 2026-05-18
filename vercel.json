@@ -5,9 +5,9 @@
     { "source": "/contact", "destination": "/contact.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/howto", "destination": "/howto.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/howto", "destination": "/howto.html" }
   ],
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/index.html",

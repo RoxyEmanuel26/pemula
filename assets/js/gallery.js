@@ -11,7 +11,7 @@
  *  - Dark/Light mode toggle
  *  - Loading, error, empty states
  *  - In-memory cache, AbortController, XSS escape
- *  - Conditional loading script.js & ads.js
+ *  - SEO: VideoObject JSON-LD schema injection
  * ==========================================================
  */
 
@@ -874,6 +874,10 @@ function renderCardsToGrid(cardsToRender) {
 
     // Inisialisasi IntersectionObserver untuk animasi view counter
     initViewCounterAnimation();
+
+    // SEO: Inject VideoObject JSON-LD schema untuk Google Video Search
+    injectVideoSchema(cardsToRender);
+
     kLog('Rendered ' + cardsToRender.length + ' cards ke grid (dengan in-grid banner)');
 }
 
@@ -1866,6 +1870,79 @@ function filterRemovedVideos(cards) {
     return cards.filter(function (card) {
         return !card.videoId || !removedVideoIds.has(card.videoId);
     });
+}
+
+// =====================================================
+//  SEO: VideoObject JSON-LD Schema Injection
+//  Injects structured data for Google Video Search
+// =====================================================
+
+/**
+ * Inject VideoObject JSON-LD schema ke <head> halaman
+ * Hanya inject untuk card yang punya embedUrl (video dari API)
+ * @param {Object[]} cardsToRender - Array card objects
+ */
+function injectVideoSchema(cardsToRender) {
+    // Hapus schema lama jika ada
+    var oldSchema = document.getElementById('videoObjectSchema');
+    if (oldSchema) oldSchema.remove();
+
+    // Filter hanya video cards (yang punya embedUrl)
+    var videoCards = cardsToRender.filter(function (card) {
+        return card.embedUrl && card.name;
+    });
+
+    if (videoCards.length === 0) return;
+
+    // Batasi max 12 video per halaman untuk schema
+    var schemaCards = videoCards.slice(0, 12);
+
+    var schemaItems = schemaCards.map(function (card) {
+        // Parse durasi dari format "MM:SS" atau "HH:MM:SS" ke ISO 8601
+        var isoDuration = 'PT0S';
+        if (card.length) {
+            var parts = card.length.split(':').map(Number);
+            if (parts.length === 3) {
+                isoDuration = 'PT' + parts[0] + 'H' + parts[1] + 'M' + parts[2] + 'S';
+            } else if (parts.length === 2) {
+                isoDuration = 'PT' + parts[0] + 'M' + parts[1] + 'S';
+            }
+        }
+
+        return {
+            '@type': 'VideoObject',
+            'name': card.name,
+            'description': card.name + ' - Video streaming gratis di kumpulenak',
+            'thumbnailUrl': card.image || '',
+            'uploadDate': card.date ? '2026-' + card.date.replace('/', '-') : '2026-01-01',
+            'duration': isoDuration,
+            'contentUrl': 'https://www.kumpulenak.web.id/',
+            'embedUrl': card.embedUrl || '',
+            'interactionStatistic': {
+                '@type': 'InteractionCounter',
+                'interactionType': { '@type': 'WatchAction' },
+                'userInteractionCount': parseInt(String(card.views || '0').replace(/\D/g, '')) || 0
+            }
+        };
+    });
+
+    var schemaData = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        'itemListElement': schemaItems.map(function (item, idx) {
+            return {
+                '@type': 'ListItem',
+                'position': idx + 1,
+                'item': item
+            };
+        })
+    };
+
+    var script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'videoObjectSchema';
+    script.textContent = JSON.stringify(schemaData);
+    document.head.appendChild(script);
 }
 
 // =====================================================

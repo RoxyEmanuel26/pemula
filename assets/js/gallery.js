@@ -1883,12 +1883,6 @@ window.addEventListener('resize', function () {
 //  Muat script.js dan ads.js untuk semua visitor
 // =====================================================
 (function () {
-    // Load script.js — modal overlay + monetisasi
-    var scriptMain = document.createElement('script');
-    scriptMain.src = 'assets/js/script.js';
-    scriptMain.defer = true;
-    document.body.appendChild(scriptMain);
-
     // Load loader.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
     scriptLoader.src = 'assets/js/loader.js';

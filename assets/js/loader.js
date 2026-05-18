@@ -225,10 +225,9 @@
 
         // Trigger pada klik pertama user (hanya 1x)
         document.addEventListener('click', function popHandler(e) {
-            // Jangan trigger pada link/button di modal script.js
+            // Jangan trigger pada elemen interaktif
             var target = e.target;
             if (target.closest && (
-                target.closest('#content-modal') ||
                 target.closest('.player-overlay') ||
                 target.closest('.ingrid-banner-ad')
             )) {

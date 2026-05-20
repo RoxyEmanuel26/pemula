@@ -225,6 +225,16 @@
                 document.getElementById('ogImage').setAttribute('content', video.default_thumb.src);
             }
 
+            // Format uploadDate sesuai ISO 8601
+            let uploadISO = new Date().toISOString().split('.')[0] + 'Z';
+            if (video.added) {
+                // e.g. "2024-03-24 16:34:55" -> "2024-03-24T16:34:55Z"
+                uploadISO = video.added.replace(' ', 'T');
+                if (!uploadISO.includes('Z') && !uploadISO.includes('+')) {
+                    uploadISO += 'Z';
+                }
+            }
+
             // JSON-LD Schema
             const schema = {
                 "@context": "https://schema.org",
@@ -232,7 +242,7 @@
                 "name": video.title,
                 "description": desc,
                 "thumbnailUrl": (video.default_thumb && video.default_thumb.src) ? [video.default_thumb.src] : [],
-                "uploadDate": new Date().toISOString(), // Fallback if API doesn't provide
+                "uploadDate": uploadISO,
                 "duration": "PT" + (video.length_sec || 0) + "S",
                 "embedUrl": video.embed || window.location.href,
                 "interactionCount": video.views || "0"

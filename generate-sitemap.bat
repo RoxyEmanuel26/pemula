@@ -1,17 +1,24 @@
 @echo off
-title kumpulenak - Static Site Generator & Sitemap
+title kumpulenak - Sitemap Generator v3.0
 color 0A
 
 echo ============================================
-echo   kumpulenak SSG ^& Sitemap Generator v2.0
-echo   Website: https://www.kumpulenak.web.id
+echo   kumpulenak Sitemap Generator v3.0
+echo   Fetches ribuan video dari Eporner API
 echo ============================================
 echo.
+echo PENTING: Proses ini membutuhkan waktu 5-15 menit
+echo karena mengambil data secara perlahan (1.5 detik per request)
+echo agar tidak kena rate limit API.
+echo.
 
-:: Jalankan PowerShell script dari direktori saat ini
+:: Jalankan PowerShell script
 powershell -ExecutionPolicy Bypass -File .\generate_sitemap.ps1
 
 echo.
-echo [DONE] SSG Generator dan Sitemap berhasil dieksekusi!
-echo Sekarang jalankan: git add . ^& git commit -m "update sitemap and videos" ^& git push
+echo Sekarang jalankan:
+echo   git add .
+echo   git commit -m "update sitemap with video URLs"
+echo   git push
+echo.
 pause

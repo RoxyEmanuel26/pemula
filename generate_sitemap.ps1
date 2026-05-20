@@ -97,7 +97,7 @@ foreach ($query in $searchQueries) {
                 break  # Tidak ada video lagi
             }
         } catch {
-            Write-Host "      [!] Error halaman $page: $($_.Exception.Message)"
+            Write-Host "      [!] Error halaman ${page} - $($_.Exception.Message)"
             # Coba lagi setelah delay lebih lama
             Start-Sleep -Seconds 5
             $page++

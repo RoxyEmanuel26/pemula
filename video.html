@@ -8,328 +8,236 @@
     <meta name="robots" content="index, follow">
     <meta name="rating" content="adult">
 
-    <!-- Fonts — SAMA PERSIS dengan index.html -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Performance Preconnects -->
+    <link rel="preconnect" href="https://www.eporner.com">
+    <link rel="preconnect" href="https://static-ca-cdn.eporner.com">
 
-    <!-- Favicon -->
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
 
-    <!-- CSS UTAMA — gallery.css, BUKAN style.css! -->
+    <!-- CSS UTAMA -->
     <link rel="stylesheet" href="/assets/css/gallery.css">
 
+    <!-- SEO Meta Tags -->
+    <meta property="og:type" content="video.other">
+    <meta property="og:site_name" content="kumpulenak">
+    <meta id="ogTitle" property="og:title" content="Tonton Video Viral - kumpulenak">
+    <meta id="ogDesc" property="og:description" content="Tonton video viral full HD gratis di kumpulenak.">
+    <meta id="ogImage" property="og:image" content="">
+    <meta id="ogUrl" property="og:url" content="">
+    
     <style>
-        /* === VIDEO PAGE SPECIFIC STYLES === */
-        .video-player-container {
-            width: 100%;
-            margin-bottom: 24px;
-        }
-        .video-player-wrapper {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 */
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .video-player-wrapper iframe {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            border: none;
-        }
-        .video-player-wrapper .loader-spinner {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            border: 4px solid rgba(255,255,255,0.15);
-            border-top: 4px solid #e8a800;
-            border-radius: 50%;
-            width: 44px; height: 44px;
-            animation: spinLoader 0.8s linear infinite;
-        }
-        @keyframes spinLoader {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        .video-info {
-            margin-top: 16px;
-        }
-        .video-info h1 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-        .video-meta-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 14px;
-        }
-        .video-tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        .video-tag {
-            background: rgba(232, 168, 0, 0.12);
-            color: var(--accent);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(232, 168, 0, 0.2);
-        }
-        .video-tag:hover {
-            background: var(--accent);
-            color: #000;
-        }
-        .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #e8a800 0%, #d4990a 100%);
-            color: #000;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(232, 168, 0, 0.35);
-        }
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(232, 168, 0, 0.5);
-        }
-        .error-msg {
-            padding: 40px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-        @media (max-width: 768px) {
-            .video-info h1 { font-size: 1.15rem; }
-            .download-btn { padding: 10px 18px; font-size: 0.85rem; }
-        }
+        .video-page-container { max-width: 1200px; margin: 80px auto 40px; padding: 0 20px; }
+        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        .video-details { margin-top: 25px; background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333; }
+        .video-title { font-size: 1.8rem; color: #fff; margin-bottom: 15px; font-weight: 700; }
+        .video-meta { display: flex; flex-wrap: wrap; gap: 15px; color: #aaa; font-size: 0.95rem; margin-bottom: 20px; }
+        .video-meta span { display: flex; align-items: center; gap: 6px; }
+        .video-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .video-tag { background: rgba(232, 168, 0, 0.1); color: #e8a800; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; text-decoration: none; transition: all 0.3s ease; }
+        .video-tag:hover { background: #e8a800; color: #000; }
+        .back-btn { display: inline-flex; align-items: center; gap: 8px; color: #e8a800; text-decoration: none; font-weight: 600; margin-bottom: 20px; transition: opacity 0.3s ease; }
+        .back-btn:hover { opacity: 0.8; }
+        .loader { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #e8a800; border-radius: 50%; animation: spin 1s linear infinite; margin: 100px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-state { text-align: center; padding: 100px 20px; color: #ff4444; }
     </style>
 </head>
 <body>
-
-    <!-- ===== HEADER — SAMA PERSIS dengan index.html ===== -->
     <header class="header">
-        <div class="header-inner">
-            <div class="logo" onclick="window.location='/'">kumpulenak</div>
-            <nav class="nav-tabs">
-                <button class="nav-tab active" onclick="window.location='/'">popular</button>
-                <button class="nav-tab" onclick="window.location='/?q=viral'">viral</button>
-                <button class="nav-tab" onclick="window.location='/?order=latest'">terbaru</button>
-            </nav>
-            <div class="search-box">
-                <input type="text" placeholder="search..." id="searchInput" autocomplete="off"
-                    onkeydown="if(event.key==='Enter'&&this.value.trim()) window.location='/?q='+encodeURIComponent(this.value.trim())">
-                <button class="search-submit-btn"
-                    onclick="var q=document.getElementById('searchInput').value.trim();if(q) window.location='/?q='+encodeURIComponent(q)">🔍</button>
-            </div>
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+        <div class="header-content">
+            <a href="/" class="logo">kumpul<span>enak</span></a>
         </div>
     </header>
 
-    <!-- ===== MAIN CONTENT ===== -->
-    <main class="main-content">
-        <div class="content-wrapper">
+    <!-- Ad Header Placeholder -->
+    <div id="adBannerHeader" style="margin-top: 80px; text-align: center; min-height: 90px;"></div>
 
-            <!-- Video Player -->
-            <div class="video-player-container">
-                <div class="video-player-wrapper" id="playerWrapper">
-                    <div class="loader-spinner"></div>
-                </div>
-                <div class="video-info">
-                    <h1 id="vTitle">Memuat video...</h1>
-                    <div class="video-meta-row" id="vMeta" style="display:none;">
-                        <span id="vDur">⏱ --:--</span>
-                        <span id="vViews">👁 0</span>
-                        <span id="vDate">📅 ----</span>
-                        <span id="vRate">⭐ 0</span>
-                    </div>
-                    <div class="video-tags" id="vTags"></div>
-                    <a class="download-btn" id="vDownload" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">
-                        🔗 DOWNLOAD / SUMBER ASLI
-                    </a>
-                </div>
-            </div>
-
-            <!-- Related Videos -->
-            <div class="section-label">Video Serupa 🔥</div>
-            <div class="card-grid" id="relatedGrid">
-                <p class="error-msg" style="width:100%;">Memuat video serupa...</p>
-            </div>
-
-        </div>
+    <main class="video-page-container" id="videoContainer">
+        <div class="loader" id="videoLoader"></div>
     </main>
 
-    <!-- ===== FOOTER — SAMA PERSIS dengan index.html ===== -->
-    <footer class="footer">
-        <div class="footer-links">
-            <a href="/about">Tentang</a>
-            <a href="/howto">Cara Download</a>
-            <a href="/contact">Kontak</a>
-            <a href="/dmca">DMCA</a>
-            <a href="/privacy">Privacy Policy</a>
-            <a href="/terms">Terms of Service</a>
-        </div>
-        <p>All resources are shared by their respective owners. &copy; 2026 kumpulenak</p>
-    </footer>
+    <!-- Script Injection (JSON-LD) -->
+    <script id="jsonLdScript" type="application/ld+json"></script>
 
     <script>
-    // ===== THEME TOGGLE =====
-    (function initTheme(){
-        var saved = localStorage.getItem('theme');
-        if(saved) document.documentElement.setAttribute('data-theme', saved);
-        var btn = document.getElementById('themeToggle');
-        if(btn) btn.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? '☀️' : '🌙';
-    })();
-    function toggleTheme(){
-        var curr = document.documentElement.getAttribute('data-theme');
-        var next = curr === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        var btn = document.getElementById('themeToggle');
-        if(btn) btn.textContent = next === 'light' ? '☀️' : '🌙';
-    }
-
-    // ===== HELPERS =====
-    function esc(s){ return s ? String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }) : ''; }
-    function fmtViews(v){ var n=parseInt(v,10); if(isNaN(n)) return v||'0'; if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return n.toString(); }
-
-    // ===== RENDER RELATED CARD — Struktur SAMA PERSIS dengan gallery.js =====
-    function renderRelatedCard(v){
-        var slug = (v.title||'video').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'');
-        var url = '/video?v=' + encodeURIComponent(v.id) + '-' + slug;
-        var thumb = v.default_thumb && v.default_thumb.src ? v.default_thumb.src : '';
-        var dur = v.length_min ? '<span class="badge-duration">'+esc(v.length_min)+'</span>' : '';
-        var rate = v.rate ? '<span class="badge-rating">⭐ '+esc(String(v.rate))+'</span>' : '';
-
-        var el = document.createElement('a');
-        el.className = 'card';
-        el.href = url;
-        el.style.opacity = '1'; // override fadeIn since no gallery.js
-        el.innerHTML =
-            '<div class="card-img-wrapper">' +
-                '<div class="blur-overlay" style="background-image:url(\''+esc(thumb)+'\');"></div>' +
-                dur + rate +
-                '<img src="'+esc(thumb)+'" alt="'+esc(v.title)+'" loading="lazy" class="loaded">' +
-            '</div>' +
-            '<div class="card-meta">' +
-                '<div class="card-date-views">' +
-                    '<span>📅 '+esc(v.added||'')+'</span>' +
-                    '<span>👁 <span class="view-count">'+esc(fmtViews(v.views))+'</span></span>' +
-                '</div>' +
-                '<h2 class="card-title">'+esc(v.title)+'</h2>' +
-            '</div>';
-        return el;
-    }
-
-    // ===== MAIN LOGIC =====
-    (async function(){
-        // 1. Ambil Video ID dari ?v= atau dari path /v/xxx
-        var params = new URLSearchParams(window.location.search);
-        var slug = params.get('v');
-        if(!slug){
-            var p = window.location.pathname.split('/');
-            slug = p[p.length-1];
-        }
-        var videoId = slug ? slug.split('-')[0] : '';
-
-        var vTitle = document.getElementById('vTitle');
-        var playerWrap = document.getElementById('playerWrapper');
-        var vMeta = document.getElementById('vMeta');
-        var vTags = document.getElementById('vTags');
-        var vDownload = document.getElementById('vDownload');
-        var relGrid = document.getElementById('relatedGrid');
-
-        if(!videoId || videoId.length < 5){
-            vTitle.textContent = 'Video tidak ditemukan.';
-            playerWrap.innerHTML = '<p class="error-msg">ID video tidak valid atau kosong.</p>';
-            relGrid.innerHTML = '';
-            return;
-        }
-
-        // 2. Fetch Video Utama
-        try {
-            var res = await fetch('https://www.eporner.com/api/v2/video/id/?id='+encodeURIComponent(videoId)+'&thumbsize=big&format=json');
-            if(!res.ok) throw new Error('HTTP '+res.status);
-            var data = await res.json();
-
-            if(data && data.id){
-                document.title = data.title + ' - kumpulenak';
-                vTitle.textContent = data.title;
-                document.getElementById('vDur').textContent = '⏱ '+(data.length_min||'--:--');
-                document.getElementById('vViews').textContent = '👁 '+fmtViews(data.views||'0')+' views';
-                document.getElementById('vDate').textContent = '📅 '+(data.added||'----');
-                document.getElementById('vRate').textContent = '⭐ '+(data.rate||'0');
-                vMeta.style.display = 'flex';
-
-                // Tags — API mengembalikan keywords sebagai STRING ("amateur, asian, homemade")
-                var kwArr = [];
-                if(data.keywords && typeof data.keywords === 'string'){
-                    kwArr = data.keywords.split(',').map(function(k){ return k.trim(); }).filter(function(k){ return k.length > 0 && k.length < 30; });
-                } else if(Array.isArray(data.keywords)){
-                    kwArr = data.keywords.map(function(k){ return typeof k === 'string' ? k : k.name; });
-                }
-                if(kwArr.length > 0){
-                    vTags.innerHTML = kwArr.map(function(t){
-                        return '<a href="/?q='+encodeURIComponent(t)+'" class="video-tag">'+esc(t)+'</a>';
-                    }).join('');
-                }
-
-                // Download
-                vDownload.href = 'https://www.eporner.com/video-'+data.id+'/';
-                vDownload.style.display = 'inline-flex';
-
-                // Embed iframe
-                playerWrap.innerHTML = '<iframe src="'+data.embed+'" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>';
-
-                // 3. Fetch Related Videos (terpisah, tidak akan mengganggu video utama)
-                try {
-                    var q = kwArr.length > 0 ? kwArr[0] : 'asian';
-                    var rr = await fetch('https://www.eporner.com/api/v2/video/search/?query='+encodeURIComponent(q)+'&per_page=12&thumbsize=big&order=top-weekly&format=json');
-                    if(rr.ok){
-                        var rd = await rr.json();
-                        if(rd && rd.videos && rd.videos.length > 0){
-                            relGrid.innerHTML = '';
-                            rd.videos.forEach(function(rv){
-                                if(rv.id !== videoId) relGrid.appendChild(renderRelatedCard(rv));
-                            });
-                        } else {
-                            relGrid.innerHTML = '<p class="error-msg" style="width:100%;">Tidak ada video serupa.</p>';
-                        }
-                    }
-                } catch(re){
-                    relGrid.innerHTML = '<p class="error-msg" style="width:100%;">Gagal memuat video serupa.</p>';
-                }
-
-            } else {
-                vTitle.textContent = 'Video tidak ditemukan.';
-                playerWrap.innerHTML = '<p class="error-msg">Video mungkin telah dihapus dari sumbernya.</p>';
-                relGrid.innerHTML = '';
+        // Security Helper
+        function isSafeUrl(url) {
+            if (!url || typeof url !== 'string') return false;
+            try {
+                const u = new URL(url);
+                return u.protocol === 'https:' || u.protocol === 'http:';
+            } catch {
+                return false;
             }
-        } catch(err){
-            vTitle.textContent = 'Terjadi kesalahan koneksi.';
-            playerWrap.innerHTML = '<p class="error-msg">Gagal memuat API. Pastikan koneksi internet Anda tidak diblokir atau gunakan VPN.</p>';
-            relGrid.innerHTML = '';
-            console.error(err);
         }
-    })();
+
+        // Get video slug from path
+        const pathParts = window.location.pathname.split('/');
+        const videoId = pathParts[pathParts.length - 1].replace('.html', ''); // Mendukung format /v/id dan /v/id.html
+
+        if (!videoId || videoId === 'v') {
+            showError('Video ID tidak ditemukan.');
+        } else {
+            fetchVideoData(videoId);
+        }
+
+        async function fetchVideoData(id) {
+            try {
+                const response = await fetch('https://www.eporner.com/api/v2/video/id/?id=' + encodeURIComponent(id) + '&format=json');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                
+                if (!data || data.error) {
+                    showError('Video tidak ditemukan atau telah dihapus.');
+                    return;
+                }
+
+                renderVideo(data);
+                updateSEO(data);
+            } catch (error) {
+                console.error('Error fetching video:', error);
+                showError('Gagal memuat video. Silakan coba lagi nanti.');
+            }
+        }
+
+        function renderVideo(video) {
+            const container = document.getElementById('videoContainer');
+            container.innerHTML = ''; // Bersihkan loader
+
+            const backBtn = document.createElement('a');
+            backBtn.href = '/';
+            backBtn.className = 'back-btn';
+            backBtn.textContent = '← Kembali ke Beranda';
+            container.appendChild(backBtn);
+
+            if (video.embed && isSafeUrl(video.embed)) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'video-wrapper';
+                
+                const iframe = document.createElement('iframe');
+                iframe.src = video.embed;
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allowfullscreen', 'true');
+                iframe.setAttribute('scrolling', 'no');
+                
+                wrapper.appendChild(iframe);
+                container.appendChild(wrapper);
+            } else {
+                showError('Embed URL tidak valid atau tidak aman.');
+                return;
+            }
+
+            const details = document.createElement('div');
+            details.className = 'video-details';
+
+            const title = document.createElement('h1');
+            title.className = 'video-title';
+            title.textContent = video.title || 'Tanpa Judul';
+            details.appendChild(title);
+
+            const meta = document.createElement('div');
+            meta.className = 'video-meta';
+            
+            const duration = document.createElement('span');
+            duration.textContent = '⏱ ' + (video.length_min || '0:00');
+            meta.appendChild(duration);
+
+            const views = document.createElement('span');
+            views.textContent = '👁 ' + (video.views || '0') + ' views';
+            meta.appendChild(views);
+
+            const rating = document.createElement('span');
+            rating.textContent = '⭐ ' + (video.rate || '0') + ' rating';
+            meta.appendChild(rating);
+
+            details.appendChild(meta);
+
+            // Tags
+            if (video.keywords) {
+                const tagsContainer = document.createElement('div');
+                tagsContainer.className = 'video-tags';
+                
+                // Pisahkan string koma menjadi array
+                const tagArray = typeof video.keywords === 'string' 
+                    ? video.keywords.split(',').map(t => t.trim()) 
+                    : video.keywords;
+                    
+                tagArray.forEach(tag => {
+                    if (!tag) return;
+                    const tagLink = document.createElement('a');
+                    tagLink.className = 'video-tag';
+                    tagLink.href = '/?q=' + encodeURIComponent(tag);
+                    tagLink.textContent = tag;
+                    tagsContainer.appendChild(tagLink);
+                });
+                
+                details.appendChild(tagsContainer);
+            }
+
+            container.appendChild(details);
+        }
+
+        function updateSEO(video) {
+            document.title = video.title + ' — kumpulenak';
+            
+            const desc = 'Tonton video ' + video.title + ' secara gratis dengan kualitas full HD di kumpulenak.';
+            document.querySelector('meta[name="description"]').setAttribute('content', desc);
+            
+            // Open Graph
+            document.getElementById('ogTitle').setAttribute('content', video.title);
+            document.getElementById('ogDesc').setAttribute('content', desc);
+            document.getElementById('ogUrl').setAttribute('content', window.location.href);
+            
+            if (video.default_thumb && video.default_thumb.src && isSafeUrl(video.default_thumb.src)) {
+                document.getElementById('ogImage').setAttribute('content', video.default_thumb.src);
+            }
+
+            // JSON-LD Schema
+            const schema = {
+                "@context": "https://schema.org",
+                "@type": "VideoObject",
+                "name": video.title,
+                "description": desc,
+                "thumbnailUrl": (video.default_thumb && video.default_thumb.src) ? [video.default_thumb.src] : [],
+                "uploadDate": new Date().toISOString(), // Fallback if API doesn't provide
+                "duration": "PT" + (video.length_sec || 0) + "S",
+                "embedUrl": video.embed || window.location.href,
+                "interactionCount": video.views || "0"
+            };
+
+            document.getElementById('jsonLdScript').textContent = JSON.stringify(schema);
+        }
+
+        function showError(msg) {
+            const container = document.getElementById('videoContainer');
+            container.innerHTML = '';
+            
+            const errDiv = document.createElement('div');
+            errDiv.className = 'error-state';
+            
+            const h2 = document.createElement('h2');
+            h2.textContent = 'Oops!';
+            errDiv.appendChild(h2);
+            
+            const p = document.createElement('p');
+            p.textContent = msg;
+            errDiv.appendChild(p);
+            
+            const backBtn = document.createElement('a');
+            backBtn.href = '/';
+            backBtn.className = 'back-btn';
+            backBtn.style.marginTop = '20px';
+            backBtn.textContent = '← Kembali ke Beranda';
+            errDiv.appendChild(backBtn);
+            
+            container.appendChild(errDiv);
+        }
     </script>
+    
+    <!-- Load Ads Script -->
+    <script src="/assets/js/loader.js" defer></script>
 </body>
 </html>

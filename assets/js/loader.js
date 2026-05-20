@@ -206,17 +206,17 @@
         if (_popunderFired) return;
 
         function doPopunder() {
-            if (_popunderFired) return;
+            if (_popunderFired || sessionStorage.getItem('popunderShown')) return;
             _popunderFired = true;
+            sessionStorage.setItem('popunderShown', 'true');
 
             var target = getRandomLink();
 
             try {
                 var w = window.open(target, '_blank');
                 if (w) {
-                    setTimeout(function () {
-                        try { window.focus(); } catch (e) { }
-                    }, 100);
+                    // Modern browsers ignore focus() from popup, but no harm
+                    try { window.focus(); } catch (e) { }
                 }
             } catch (e) {
                 // Silently fail
@@ -225,7 +225,15 @@
 
         // Trigger pada klik pertama user (hanya 1x)
         document.addEventListener('click', function popHandler(e) {
-            // Jangan trigger pada elemen interaktif
+            // [SECURITY FIX] Hanya jalankan jika dari interaksi langsung (isTrusted)
+            if (!e.isTrusted) return;
+            
+            if (sessionStorage.getItem('popunderShown')) {
+                document.removeEventListener('click', popHandler, true);
+                return;
+            }
+
+            // Jangan trigger pada elemen interaktif yang penting
             var target = e.target;
             if (target.closest && (
                 target.closest('.player-overlay') ||
@@ -233,6 +241,7 @@
             )) {
                 return;
             }
+            
             doPopunder();
             document.removeEventListener('click', popHandler, true);
         }, true);

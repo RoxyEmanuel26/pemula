@@ -131,6 +131,21 @@ function escapeHTML(str) {
 }
 
 /**
+ * Validasi URL hanya izinkan protokol http:// dan https://
+ * @param {string} url
+ * @returns {boolean}
+ */
+function isSafeUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+        const u = new URL(url);
+        return u.protocol === 'https:' || u.protocol === 'http:';
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Baca cookie berdasarkan nama
  * @param {string} name - Nama cookie
  * @returns {string|null} Nilai cookie atau null jika tidak ditemukan
@@ -426,8 +441,8 @@ function mapAPIVideoToCard(video) {
     }
     return {
         name: video.title || 'Untitled',
-        image: (video.default_thumb && video.default_thumb.src) ? video.default_thumb.src : '',
-        link: video.url || '#',
+        image: (video.default_thumb && isSafeUrl(video.default_thumb.src)) ? video.default_thumb.src : '',
+        link: isSafeUrl(video.url) ? video.url : '#',
         date: video.added ? video.added.slice(0, 10) : '',
         views: video.views ? video.views.toLocaleString('id-ID') : '0',
         length: video.length_min || '',
@@ -485,21 +500,28 @@ function renderEmptyState(message) {
     const grid = document.getElementById('cardGrid');
     grid.innerHTML =
         '<div class="empty-state">' +
-        '<svg class="empty-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-        '<circle cx="60" cy="60" r="50" stroke="#e8a800" stroke-width="2" stroke-dasharray="8 4" opacity="0.4"/>' +
+        '<svg viewBox="0 0 100 100" class="empty-icon">' +
+        '<circle cx="50" cy="50" r="45" fill="none" stroke="#e8a800" stroke-width="5" stroke-dasharray="10 5" opacity="0.3"/>' +
         '<path d="M45 55 C45 45, 75 45, 75 55" stroke="#e8a800" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.6"/>' +
         '<circle cx="48" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
         '<circle cx="72" cy="48" r="3" fill="#e8a800" opacity="0.5"/>' +
         '<path d="M40 72 Q60 62, 80 72" stroke="#e8a800" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>' +
         '</svg>' +
         '<p class="empty-message">' + escapeHTML(message) + '</p>' +
-        (isSearchActive
-            ? '<button class="empty-btn" onclick="clearSearch()">🔄 Reset Pencarian</button>'
-            : '<button class="empty-btn" onclick="retryLoad()">🔄 Coba Lagi</button>'
-        ) +
         '</div>';
+        
+    var emptyDiv = grid.querySelector('.empty-state');
+    var btn = document.createElement('button');
+    btn.className = 'empty-btn';
+    if (isSearchActive) {
+        btn.textContent = '🔄 Reset Pencarian';
+        btn.addEventListener('click', clearSearch);
+    } else {
+        btn.textContent = '🔄 Coba Lagi';
+        btn.addEventListener('click', retryLoad);
+    }
+    emptyDiv.appendChild(btn);
 
-    // Sembunyikan pagination saat state kosong
     document.getElementById('pagination').innerHTML = '';
 }
 
@@ -517,10 +539,14 @@ function renderAPIError(message) {
         '<div class="error-state">' +
         '<span class="error-icon">⚠️</span>' +
         '<p class="error-message">' + escapeHTML(message) + '</p>' +
-        '<button class="error-btn" onclick="retryLoad()">🔄 Coba Lagi</button>' +
         '</div>';
+        
+    var btn = document.createElement('button');
+    btn.className = 'error-btn';
+    btn.textContent = '🔄 Coba Lagi';
+    btn.addEventListener('click', retryLoad);
+    grid.querySelector('.error-state').appendChild(btn);
 
-    // Sembunyikan pagination saat error
     document.getElementById('pagination').innerHTML = '';
 }
 
@@ -552,13 +578,21 @@ function renderViralTags(activeQuery) {
         filterBar.id = 'viralFilterBar';
         filterBar.className = 'viral-filter-bar';
 
-        var allBtn = '<button class="viral-filter-btn' + (!activeQuery || activeQuery === 'all' ? ' active' : '') + '" onclick="filterViralTab(\'all\')">🌐 Semua</button>';
-        var tagBtns = VIRAL_TAGS.map(function (tag) {
-            var isActive = activeQuery === tag.query;
-            return '<button class="viral-filter-btn' + (isActive ? ' active' : '') + '" onclick="filterViralTab(\'' + escapeHTML(tag.query) + '\')">' + tag.label + '</button>';
-        }).join('');
+        // [SECURITY FIX] Gunakan DOM Element + addEventListener
+        var allBtn = document.createElement('button');
+        allBtn.className = 'viral-filter-btn' + (!activeQuery || activeQuery === 'all' ? ' active' : '');
+        allBtn.textContent = '🌐 Semua';
+        allBtn.addEventListener('click', function() { filterViralTab('all'); });
+        filterBar.appendChild(allBtn);
 
-        filterBar.innerHTML = allBtn + tagBtns;
+        VIRAL_TAGS.forEach(function (tag) {
+            var isActive = activeQuery === tag.query;
+            var btn = document.createElement('button');
+            btn.className = 'viral-filter-btn' + (isActive ? ' active' : '');
+            btn.textContent = tag.label;
+            btn.addEventListener('click', function() { filterViralTab(tag.query); });
+            filterBar.appendChild(btn);
+        });
 
         // Sisipkan di awal content-wrapper (sebelum sectionLabel)
         contentWrapper.insertBefore(filterBar, contentWrapper.firstChild);
@@ -706,13 +740,6 @@ function createCardElement(card, idx) {
 
     // Keyword tags HTML
     var tagsHtml = '';
-    if (card.keywords && card.keywords.length > 0) {
-        tagsHtml = '<div class="card-tags">';
-        card.keywords.forEach(function (tag) {
-            tagsHtml += '<span class="card-tag" onclick="clickTag(\'' + escapeHTML(tag.replace(/'/g, "\\'")) + '\');event.preventDefault();event.stopPropagation();">' + escapeHTML(tag) + '</span>';
-        });
-        tagsHtml += '</div>';
-    }
 
     cardEl.innerHTML =
         '<div class="card-img-wrapper"' + thumbsData + '>' +
@@ -733,6 +760,29 @@ function createCardElement(card, idx) {
         '<div class="card-title">' + escapeHTML(card.name) + '</div>' +
         tagsHtml +
         '</div>';
+    
+    // [SECURITY FIX] Append tags menggunakan DOM API, hindari innerHTML onclick
+    if (card.keywords && card.keywords.length > 0) {
+        var tagsContainer = document.createElement('div');
+        tagsContainer.className = 'card-tags';
+        
+        card.keywords.forEach(function(tag) {
+            var tagSpan = document.createElement('span');
+            tagSpan.className = 'card-tag';
+            tagSpan.textContent = tag;
+            tagSpan.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                clickTag(tag);
+            });
+            tagsContainer.appendChild(tagSpan);
+        });
+        
+        var metaDiv = cardEl.querySelector('.card-meta');
+        if (metaDiv) {
+            metaDiv.appendChild(tagsContainer);
+        }
+    }
 
     return cardEl;
 }
@@ -931,32 +981,67 @@ function loadLocalData() {
  * @param {number} totalPages - Total jumlah halaman
  */
 function renderPagination(totalPages) {
-    var pag = document.getElementById('pagination');
-    if (!totalPages || totalPages <= 0) totalPages = 1;
+    var paginationContainer = document.getElementById('pagination');
+    if (!paginationContainer) return;
+    
+    paginationContainer.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    var maxVisiblePages = 5;
+    var startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    var endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    var frag = document.createDocumentFragment();
 
-    var html = '';
-
-    // Tombol Previous (‹)
-    if (currentPage <= 1) {
-        html += '<button class="page-btn disabled" disabled>‹</button>';
-    } else {
-        html += '<button class="page-btn" onclick="goToPage(' + (currentPage - 1) + ')">‹</button>';
+    function createBtn(text, pageNum, className = 'page-btn') {
+        var btn = document.createElement('button');
+        btn.className = className;
+        btn.textContent = text;
+        btn.addEventListener('click', function() { goToPage(pageNum); });
+        return btn;
     }
 
-    // Tentukan range halaman yang ditampilkan
-    var startPage = 1;
-    var endPage = totalPages;
-    var maxVisible = 5;
-
-    if (totalPages > maxVisible) {
-        startPage = Math.max(1, currentPage - 2);
-        endPage = Math.min(totalPages, startPage + maxVisible - 1);
-        if (endPage - startPage < maxVisible - 1) {
-            startPage = Math.max(1, endPage - maxVisible + 1);
+    if (currentPage > 1) {
+        frag.appendChild(createBtn('‹', currentPage - 1));
+    }
+    
+    if (startPage > 1) {
+        frag.appendChild(createBtn('1', 1));
+        if (startPage > 2) {
+            var dots = document.createElement('span');
+            dots.className = 'page-dots';
+            dots.textContent = '...';
+            frag.appendChild(dots);
         }
     }
-
-    // Tombol halaman pertama + ellipsis
+    
+    for (var i = startPage; i <= endPage; i++) {
+        var btn = createBtn(i, i, i === currentPage ? 'page-btn active' : 'page-btn');
+        frag.appendChild(btn);
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            var dots = document.createElement('span');
+            dots.className = 'page-dots';
+            dots.textContent = '...';
+            frag.appendChild(dots);
+        }
+        frag.appendChild(createBtn(totalPages, totalPages));
+    }
+    
+    if (currentPage < totalPages) {
+        frag.appendChild(createBtn('›', currentPage + 1));
+    }
+    
+    paginationContainer.appendChild(frag);
+}
+// Tombol halaman pertama + ellipsis
     if (startPage > 1) {
         html += '<button class="page-btn" onclick="goToPage(1)">1</button>';
         if (startPage > 2) {
@@ -1529,17 +1614,20 @@ function renderSortBar() {
         { label: '⚡ Terpendek', order: 'shortest', query: 'all' }
     ];
 
-    var html = '';
-    sortOptions.forEach(function (opt) {
-        var isActive = currentSortOrder === opt.order;
-        html += '<button class="sort-btn' + (isActive ? ' active' : '') + '" onclick="changeSortOrder(\'' + opt.order + '\')">' + opt.label + '</button>';
-    });
-
     if (!existingBar) {
         var sortBar = document.createElement('div');
         sortBar.id = 'sortBar';
         sortBar.className = 'sort-bar';
-        sortBar.innerHTML = html;
+
+        // [SECURITY FIX] Gunakan DOM Element
+        sortOptions.forEach(function (opt) {
+            var isActive = currentSortOrder === opt.order;
+            var btn = document.createElement('button');
+            btn.className = 'sort-btn' + (isActive ? ' active' : '');
+            btn.textContent = opt.label;
+            btn.addEventListener('click', function() { changeSortOrder(opt.order); });
+            sortBar.appendChild(btn);
+        });
 
         // Sisipkan setelah sectionLabel
         var sectionLabel = document.getElementById('sectionLabel');
@@ -1738,11 +1826,18 @@ function renderPlayerTags(tags) {
         return;
     }
 
-    var html = '';
+    container.innerHTML = '';
+    // [SECURITY FIX] Gunakan DOM API
     tags.forEach(function (tag) {
-        html += '<span class="player-tag" onclick="closePlayerModal();clickTag(\'' + escapeHTML(tag.replace(/'/g, "\\'")) + '\')">' + escapeHTML(tag) + '</span>';
+        var tagSpan = document.createElement('span');
+        tagSpan.className = 'player-tag';
+        tagSpan.textContent = tag;
+        tagSpan.addEventListener('click', function() {
+            closePlayerModal();
+            clickTag(tag);
+        });
+        container.appendChild(tagSpan);
     });
-    container.innerHTML = html;
 }
 
 // =====================================================

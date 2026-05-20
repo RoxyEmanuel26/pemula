@@ -1694,8 +1694,9 @@ function enhancedOpenPlayerModal(card) {
     if (fullPageBtn) {
         var slug = (card.name || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         var vid = card.videoId ? card.videoId + '-' : '';
-        // Menggunakan query string agar bekerja sempurna di Live Server lokal
-        fullPageBtn.href = '/video.html?v=' + vid + slug;
+        // Menggunakan clean URL /video?v= agar bekerja di Vercel (cleanUrls:true)
+        fullPageBtn.href = '/video?v=' + vid + slug;
+        fullPageBtn.target = '_blank';
     }
 
     // Render tags jika sudah ada di card

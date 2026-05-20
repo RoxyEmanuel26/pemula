@@ -3,7 +3,8 @@ $baseUrl = 'https://www.kumpulenak.web.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 Write-Host ""
 Write-Host "============================================"
-Write-Host "  kumpulenak Sitemap Generator v3.0"
+Write-Host "  kumpulenak Sitemap Generator v4.0"
+Write-Host "  FULL CRAWL — Ambil SEMUA video tanpa sisa"
 Write-Host "  Website: $baseUrl"
 Write-Host "  Waktu: $dateStr"
 Write-Host "============================================"
@@ -12,108 +13,121 @@ Write-Host "============================================"
 # KONFIGURASI
 # =============================================
 $delaySeconds = 1.5        # Delay antar request API (detik)
-$perPage = 100             # Jumlah video per halaman API
-$maxPagesPerQuery = 10     # Maks halaman per query (100 x 10 = 1000 video per query)
-$maxSitemapUrls = 45000    # Google limit: 50.000 per sitemap, kita batas 45.000
+$perPage = 100             # Jumlah video per halaman API (maks Eporner)
+$maxSitemapUrls = 49000    # Google limit: 50.000 per file sitemap
 
-# Daftar query pencarian untuk menjaring video seluas mungkin
+# Daftar query pencarian — mencakup semua kategori seluas mungkin
 $searchQueries = @(
-    'indonesia',
-    'viral',
-    'asian',
-    'japanese',
-    'korean',
-    'amateur',
-    'student',
-    'hijab',
-    'couple',
-    'celebrity',
-    'homemade',
-    'massage',
-    'outdoor',
-    'webcam',
-    'teen',
-    'milf',
-    'latina',
-    'blonde',
-    'brunette',
-    'pov'
+    'indonesia', 'viral', 'asian', 'japanese', 'korean',
+    'amateur', 'student', 'hijab', 'couple', 'celebrity',
+    'homemade', 'massage', 'outdoor', 'webcam', 'teen',
+    'milf', 'latina', 'blonde', 'brunette', 'pov',
+    'anal', 'blowjob', 'creampie', 'threesome', 'lesbian',
+    'interracial', 'big ass', 'big tits', 'small tits', 'redhead',
+    'ebony', 'indian', 'thai', 'filipina', 'malay',
+    'chinese', 'vietnam', 'arab', 'turkish', 'russian',
+    'hentai', 'cosplay', 'yoga', 'dance', 'shower',
+    'hotel', 'car', 'office', 'public', 'beach'
 )
 
 # =============================================
-# STEP 1: Fetch ribuan video dari API Eporner
+# STEP 1: Fetch SEMUA video dari API Eporner
 # =============================================
 Write-Host ""
-Write-Host "[API] Memulai pengambilan data video dari Eporner API..."
-Write-Host "      Query: $($searchQueries.Count) kategori | Per halaman: $perPage | Maks halaman/query: $maxPagesPerQuery"
-Write-Host "      Delay antar request: ${delaySeconds}s (menghindari rate limit)"
+Write-Host "[API] Memulai FULL CRAWL dari Eporner API..."
+Write-Host "      Query: $($searchQueries.Count) kategori"
+Write-Host "      Mode: AMBIL SEMUA HALAMAN sampai habis (tanpa batas)"
+Write-Host "      Delay: ${delaySeconds}s per request"
 Write-Host ""
 
-$allVideos = @{}  # Hashtable untuk deduplikasi berdasarkan video ID
+$allVideos = @{}           # Hashtable deduplikasi berdasarkan video ID
+$titleSet = @{}            # Hashtable deduplikasi berdasarkan judul (lowercase)
 $totalRequests = 0
+$totalSkippedDupes = 0
 
 foreach ($query in $searchQueries) {
-    if ($allVideos.Count -ge $maxSitemapUrls) {
-        Write-Host "      [!] Batas $maxSitemapUrls URL tercapai, menghentikan fetch."
-        break
-    }
-
-    Write-Host "  [$query] Fetching..."
+    Write-Host "  [$query] Fetching halaman 1..."
     $beforeCount = $allVideos.Count
+    $page = 1
+    $totalPages = 1  # Akan di-update dari response API
 
-    for ($page = 1; $page -le $maxPagesPerQuery; $page++) {
-        if ($allVideos.Count -ge $maxSitemapUrls) { break }
-
+    while ($page -le $totalPages) {
         $apiUrl = "https://www.eporner.com/api/v2/video/search/?query=$([uri]::EscapeDataString($query))&per_page=$perPage&page=$page&thumbsize=small&order=most-popular&format=json"
 
         try {
             $response = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 30
             $totalRequests++
 
+            # Update total halaman dari response API (hanya sekali per query)
+            if ($page -eq 1 -and $response.total_pages) {
+                $totalPages = [int]$response.total_pages
+                Write-Host "         Total tersedia: $($response.total_count) video ($totalPages halaman)"
+            }
+
             if ($response.videos -and $response.videos.Count -gt 0) {
                 foreach ($v in $response.videos) {
-                    if (-not $allVideos.ContainsKey($v.id)) {
-                        # Buat slug dari judul
-                        $slug = ($v.title -replace '[^a-zA-Z0-9]+', '-').Trim('-').ToLower()
-                        if ($slug.Length -gt 80) { $slug = $slug.Substring(0, 80).TrimEnd('-') }
+                    # Deduplikasi berdasarkan ID
+                    if ($allVideos.ContainsKey($v.id)) { continue }
 
-                        $allVideos[$v.id] = @{
-                            id    = $v.id
-                            title = $v.title
-                            slug  = $slug
-                            added = if ($v.added) { $v.added.Substring(0, 10) } else { $dateStr.Substring(0, 10) }
-                        }
+                    # Deduplikasi berdasarkan judul (case-insensitive)
+                    $titleLower = $v.title.ToLower().Trim()
+                    if ($titleSet.ContainsKey($titleLower)) {
+                        $totalSkippedDupes++
+                        continue
                     }
+
+                    # Buat slug dari judul
+                    $slug = ($v.title -replace '[^a-zA-Z0-9]+', '-').Trim('-').ToLower()
+                    if ($slug.Length -gt 80) { $slug = $slug.Substring(0, 80).TrimEnd('-') }
+
+                    $allVideos[$v.id] = @{
+                        id    = $v.id
+                        title = $v.title
+                        slug  = $slug
+                        added = if ($v.added) { $v.added.Substring(0, 10) } else { $dateStr.Substring(0, 10) }
+                    }
+                    $titleSet[$titleLower] = $true
                 }
 
-                # Jika halaman ini kurang dari per_page, berarti sudah habis
-                if ($response.videos.Count -lt $perPage) { break }
+                # Progress setiap 5 halaman
+                if ($page % 5 -eq 0) {
+                    Write-Host "         Halaman $page/$totalPages... ($($allVideos.Count) video unik terkumpul)"
+                }
             } else {
-                break  # Tidak ada video lagi untuk query ini
+                break  # Tidak ada video lagi
             }
         } catch {
-            Write-Host "      [!] Error halaman $page query '$query': $($_.Exception.Message)"
-            break
+            Write-Host "      [!] Error halaman $page: $($_.Exception.Message)"
+            # Coba lagi setelah delay lebih lama
+            Start-Sleep -Seconds 5
+            $page++
+            continue
         }
 
-        # Delay untuk menghindari rate limit
+        $page++
+
+        # Delay antar request
         Start-Sleep -Seconds $delaySeconds
     }
 
     $newCount = $allVideos.Count - $beforeCount
-    Write-Host "      -> +$newCount baru | Total: $($allVideos.Count) video unik | ($totalRequests requests)"
+    Write-Host "      -> +$newCount baru (duplikat dilewati: $totalSkippedDupes) | Total: $($allVideos.Count) unik | $totalRequests requests"
+    Write-Host ""
 }
 
-Write-Host ""
-Write-Host "[API] Selesai! Total: $($allVideos.Count) video unik dari $totalRequests API requests"
+Write-Host "============================================"
+Write-Host "[API] FULL CRAWL SELESAI!"
+Write-Host "      Total video unik  : $($allVideos.Count)"
+Write-Host "      Judul duplikat skip: $totalSkippedDupes"
+Write-Host "      Total API requests : $totalRequests"
+Write-Host "============================================"
 Write-Host ""
 
 # =============================================
-# STEP 2: Generate sitemap_videos.xml
+# STEP 2: Generate sitemap_videos XML file(s)
 # =============================================
-Write-Host "[SITEMAP] Generating sitemap_videos.xml..."
+Write-Host "[SITEMAP] Generating sitemap video..."
 
-# Jika terlalu banyak, pecah ke beberapa file sitemap (Google max 50.000 per file)
 $videoList = $allVideos.Values | Sort-Object { $_.added } -Descending
 $sitemapVideoFiles = @()
 $fileIndex = 1
@@ -125,7 +139,7 @@ foreach ($v in $videoList) {
     $currentXml += "  <url>`n    <loc>$videoUrl</loc>`n    <lastmod>$($v.added)</lastmod>`n    <changefreq>monthly</changefreq>`n    <priority>0.70</priority>`n  </url>`n"
     $urlsInCurrentFile++
 
-    # Jika mencapai 40.000 per file, mulai file baru
+    # Google limit: maks 50.000 per file, kita pecah di 40.000
     if ($urlsInCurrentFile -ge 40000) {
         $currentXml += "</urlset>"
         $fileName = "sitemap_videos_$fileIndex.xml"
@@ -138,7 +152,7 @@ foreach ($v in $videoList) {
     }
 }
 
-# Tulis sisa yang belum di-flush
+# Tulis sisa
 if ($urlsInCurrentFile -gt 0) {
     $currentXml += "</urlset>"
     if ($fileIndex -eq 1) {
@@ -233,17 +247,18 @@ $indexXml += "</sitemapindex>"
 # =============================================
 Write-Host ""
 Write-Host "============================================"
-Write-Host "  SELESAI!"
+Write-Host "  FULL CRAWL SELESAI!"
 Write-Host "============================================"
-Write-Host "  - sitemap_pages.xml     (7 URLs)"
-Write-Host "  - sitemap_kategori.xml  (18 URLs)"
-Write-Host "  - sitemap_tags.xml      (16 URLs)"
+Write-Host "  sitemap_pages.xml     : 7 URLs"
+Write-Host "  sitemap_kategori.xml  : 18 URLs"
+Write-Host "  sitemap_tags.xml      : 16 URLs"
 foreach ($sf in $sitemapVideoFiles) {
-    Write-Host "  - $sf"
+    Write-Host "  $sf"
 }
-Write-Host "  - sitemap_index.xml     (master)"
+Write-Host "  sitemap_index.xml     : master index"
 Write-Host ""
-Write-Host "  Total video URL: $($allVideos.Count)"
-Write-Host "  Total API requests: $totalRequests"
+Write-Host "  Total video unik   : $($allVideos.Count)"
+Write-Host "  Duplikat dilewati  : $totalSkippedDupes"
+Write-Host "  Total API requests : $totalRequests"
 Write-Host "============================================"
 Write-Host ""

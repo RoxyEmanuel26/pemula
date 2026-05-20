@@ -22,7 +22,7 @@ Disallow: /.env
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://www.kumpulenak.web.id/sitemap.xml
+Sitemap: https://www.kumpulenak.web.id/sitemap_index.xml
 
 # ==============================================
 # Specific bot rules

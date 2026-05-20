@@ -52,12 +52,20 @@
         </div>
     </header>
 
-    <!-- Ad Header Placeholder -->
-    <div id="adBannerHeader" style="margin-top: 80px; text-align: center; min-height: 90px;"></div>
+    <!-- ===== BANNER ===== -->
+    <div class="banner" style="margin-top: 80px;">
+        <div class="banner-img ad-space" id="adBannerHeader" style="border: none;">
+            <!-- Iklan banner header di-inject oleh ads.js -->
+        </div>
+    </div>
 
-    <main class="video-page-container" id="videoContainer">
+    <main class="video-page-container" id="videoContainer" style="margin-top: 20px;">
         <div class="loader" id="videoLoader"></div>
     </main>
+    <div class="video-page-container" id="similarVideosSection" style="margin-top: 40px; display: none;">
+        <h2 style="color: #fff; margin-bottom: 20px; font-weight: 700; border-left: 4px solid #e8a800; padding-left: 10px;">Video Serupa</h2>
+        <div class="card-grid" id="similarVideoGrid"></div>
+    </div>
 
     <!-- Script Injection (JSON-LD) -->
     <script id="jsonLdScript" type="application/ld+json"></script>
@@ -113,6 +121,7 @@
 
                 renderVideo(data);
                 updateSEO(data);
+                fetchSimilarVideos(data);
             } catch (error) {
                 console.error('Error fetching video:', error);
                 showError('Gagal memuat video. Silakan coba lagi nanti.');
@@ -230,6 +239,59 @@
             };
 
             document.getElementById('jsonLdScript').textContent = JSON.stringify(schema);
+        }
+
+
+        async function fetchSimilarVideos(video) {
+            try {
+                let query = 'indonesia';
+                if (video.keywords) {
+                    const tagArray = typeof video.keywords === 'string' ? video.keywords.split(',').map(t => t.trim()) : video.keywords;
+                    if (tagArray.length > 0 && tagArray[0]) query = tagArray[0];
+                }
+                
+                const response = await fetch('https://www.eporner.com/api/v2/video/search/?query=' + encodeURIComponent(query) + '&per_page=12&format=json');
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                if (data && data.videos && data.videos.length > 0) {
+                    document.getElementById('similarVideosSection').style.display = 'block';
+                    const grid = document.getElementById('similarVideoGrid');
+                    
+                    data.videos.forEach(v => {
+                        if (v.id === video.id) return; // Skip if same video
+                        
+                        const slug = (v.title || '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().substring(0, 80);
+                        const a = document.createElement('a');
+                        a.href = '/v/' + v.id + '-' + slug;
+                        a.className = 'card';
+                        a.style.textDecoration = 'none';
+                        
+                        const views = v.views ? v.views.toLocaleString('id-ID') : '0';
+                        const added = v.added ? v.added.substring(0, 10) : '';
+                        const thumb = v.default_thumb ? v.default_thumb.src : '';
+                        const title = v.title || 'Tanpa Judul';
+                        
+                        a.innerHTML = 
+                            '<div class="card-img-wrapper">' +
+                                (v.length_min ? '<span class="badge-duration">' + v.length_min + '</span>' : '') +
+                                (v.rate ? '<span class="badge-rating">⭐ ' + v.rate + '</span>' : '') +
+                                '<img src="' + thumb + '" alt="Thumbnail" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">' +
+                            '</div>' +
+                            '<div class="card-meta">' +
+                                '<div class="card-date-views">' +
+                                    '<span style="color:#aaa;">📅 ' + added + '</span>' +
+                                    '<span style="color:#aaa;">👁 ' + views + '</span>' +
+                                '</div>' +
+                                '<div class="card-title" style="color:#fff;">' + title + '</div>' +
+                            '</div>';
+                            
+                        grid.appendChild(a);
+                    });
+                }
+            } catch (err) {
+                console.error("Error fetching similar videos:", err);
+            }
         }
 
         function showError(msg) {

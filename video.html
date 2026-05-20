@@ -279,10 +279,16 @@
                 document.getElementById('vRate').textContent = '⭐ '+(data.rate||'0');
                 vMeta.style.display = 'flex';
 
-                // Tags
-                if(data.keywords && data.keywords.length > 0){
-                    vTags.innerHTML = data.keywords.map(function(t){
-                        return '<a href="/?q='+encodeURIComponent(t.name)+'" class="video-tag">'+esc(t.name)+'</a>';
+                // Tags — API mengembalikan keywords sebagai STRING ("amateur, asian, homemade")
+                var kwArr = [];
+                if(data.keywords && typeof data.keywords === 'string'){
+                    kwArr = data.keywords.split(',').map(function(k){ return k.trim(); }).filter(function(k){ return k.length > 0 && k.length < 30; });
+                } else if(Array.isArray(data.keywords)){
+                    kwArr = data.keywords.map(function(k){ return typeof k === 'string' ? k : k.name; });
+                }
+                if(kwArr.length > 0){
+                    vTags.innerHTML = kwArr.map(function(t){
+                        return '<a href="/?q='+encodeURIComponent(t)+'" class="video-tag">'+esc(t)+'</a>';
                     }).join('');
                 }
 
@@ -295,7 +301,7 @@
 
                 // 3. Fetch Related Videos (terpisah, tidak akan mengganggu video utama)
                 try {
-                    var q = data.keywords && data.keywords.length > 0 ? data.keywords[0].name : 'asian';
+                    var q = kwArr.length > 0 ? kwArr[0] : 'asian';
                     var rr = await fetch('https://www.eporner.com/api/v2/video/search/?query='+encodeURIComponent(q)+'&per_page=12&thumbsize=big&order=top-weekly&format=json');
                     if(rr.ok){
                         var rd = await rr.json();

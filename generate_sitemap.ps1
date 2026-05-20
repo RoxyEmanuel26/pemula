@@ -102,16 +102,31 @@ foreach ($query in $searchQueries) {
     $grandTotalDupes += $dupeCount
 
     if ($categoryVideos.Count -gt 0) {
-        $xml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
-        foreach ($v in $categoryVideos.Values) {
-            $videoUrl = "$baseUrl/video?v=$($v.id)-$($v.slug)"
-            $xml += "  <url>`n    <loc>$videoUrl</loc>`n    <lastmod>$($v.added)</lastmod>`n    <changefreq>monthly</changefreq>`n    <priority>0.70</priority>`n  </url>`n"
+        $chunkSize = 49000
+        $videosArray = @($categoryVideos.Values)
+        $totalChunks = [Math]::Ceiling($videosArray.Count / $chunkSize)
+        
+        for ($i = 0; $i -lt $totalChunks; $i++) {
+            $chunkVideos = $videosArray | Select-Object -Skip ($i * $chunkSize) -First $chunkSize
+            
+            $currentFileName = $fileName
+            if ($totalChunks -gt 1) {
+                $currentFileName = $fileName.Replace(".xml", "_$($i+1).xml")
+            }
+            
+            $xml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
+            foreach ($v in $chunkVideos) {
+                $videoUrl = "$baseUrl/video?v=$($v.id)-$($v.slug)"
+                $xml += "  <url>`n    <loc>$videoUrl</loc>`n    <lastmod>$($v.added)</lastmod>`n    <changefreq>monthly</changefreq>`n    <priority>0.70</priority>`n  </url>`n"
+            }
+            $xml += "</urlset>"
+            
+            [System.IO.File]::WriteAllText($currentFileName, $xml, [System.Text.Encoding]::UTF8)
+            $sitemapVideoFiles += $currentFileName
+            Write-Host "      -> $currentFileName ($($chunkVideos.Count) URLs)"
         }
-        $xml += "</urlset>"
-        [System.IO.File]::WriteAllText($fileName, $xml, [System.Text.Encoding]::UTF8)
-        $sitemapVideoFiles += $fileName
         $grandTotalVideos += $categoryVideos.Count
-        Write-Host "      -> $fileName ($($categoryVideos.Count) URLs, duplikat: $dupeCount)"
+        Write-Host "      Total duplikat diskip: $dupeCount"
     } else {
         Write-Host "      -> SKIP (0 video baru)"
     }

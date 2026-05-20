@@ -136,7 +136,12 @@
                 wrapper.appendChild(iframe);
                 container.appendChild(wrapper);
             } else {
-                showError('Embed URL tidak valid atau tidak aman.');
+                console.error("Embed URL bermasalah. Data API:", video);
+                if (!video.embed) {
+                    showError('Video ini tidak menyediakan link untuk diputar (Tidak ada Embed URL dari sumber aslinya).');
+                } else {
+                    showError('URL Pemutar Video tidak valid atau tidak aman untuk ditampilkan.');
+                }
                 return;
             }
 

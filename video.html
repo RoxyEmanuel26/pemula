@@ -7,7 +7,7 @@
     <meta name="description" content="Tonton video viral full HD gratis di kumpulenak.">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     
     <style>
         .player-container {
@@ -241,20 +241,27 @@
                     iframeWrap.innerHTML = `<iframe src="${data.embed}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
                     
                     // Fetch Related Videos using the first keyword or title
-                    var q = data.keywords && data.keywords.length > 0 ? data.keywords[0].name : 'asian';
-                    var relRes = await fetch('https://www.eporner.com/api/v2/video/search/?query=' + encodeURIComponent(q) + '&per_page=12&thumbsize=big&order=top-weekly&format=json');
-                    if (relRes.ok) {
-                        var relData = await relRes.json();
-                        if (relData && relData.videos && relData.videos.length > 0) {
-                            relatedGrid.innerHTML = '';
-                            relData.videos.forEach(v => {
-                                if (v.id !== videoId) {
-                                    relatedGrid.appendChild(renderRelatedCard(v));
-                                }
-                            });
+                    try {
+                        var q = data.keywords && data.keywords.length > 0 ? data.keywords[0].name : 'asian';
+                        var relRes = await fetch('https://www.eporner.com/api/v2/video/search/?query=' + encodeURIComponent(q) + '&per_page=12&thumbsize=big&order=top-weekly&format=json');
+                        if (relRes.ok) {
+                            var relData = await relRes.json();
+                            if (relData && relData.videos && relData.videos.length > 0) {
+                                relatedGrid.innerHTML = '';
+                                relData.videos.forEach(v => {
+                                    if (v.id !== videoId) {
+                                        relatedGrid.appendChild(renderRelatedCard(v));
+                                    }
+                                });
+                            } else {
+                                relatedGrid.innerHTML = '<p style="color:var(--text-muted); padding:20px;">Tidak ada video serupa.</p>';
+                            }
                         } else {
                             relatedGrid.innerHTML = '<p style="color:var(--text-muted); padding:20px;">Tidak ada video serupa.</p>';
                         }
+                    } catch (relErr) {
+                        console.error("Gagal memuat video serupa:", relErr);
+                        relatedGrid.innerHTML = '<p style="color:var(--text-muted); padding:20px;">Video serupa diblokir atau gagal dimuat.</p>';
                     }
                 } else {
                     pTitle.textContent = "Video tidak ditemukan.";

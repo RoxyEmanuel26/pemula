@@ -1692,9 +1692,10 @@ function enhancedOpenPlayerModal(card) {
     // Setup Tonton Halaman Penuh Link
     var fullPageBtn = document.getElementById('playerFullPageBtn');
     if (fullPageBtn) {
-        // Buat slug dari judul
         var slug = (card.name || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        fullPageBtn.href = '/v/' + slug;
+        // Jika ada videoId dari Eporner, gabungkan ID dan slug. Jika tidak ada, fallback.
+        var vid = card.videoId ? card.videoId + '-' : '';
+        fullPageBtn.href = '/v/' + vid + slug;
     }
 
     // Render tags jika sudah ada di card
@@ -1893,19 +1894,8 @@ window.addEventListener('resize', function () {
 // =====================================================
 //  INIT — Inisialisasi semua komponen
 // =====================================================
-(async function init() {
+(function init() {
     kLog('Inisialisasi kumpulenak gallery...');
-
-    // Fetch local videos data
-    try {
-        var response = await fetch('assets/data/videos.json');
-        if (response.ok) {
-            cards = await response.json();
-            kLog('Local videos loaded:', cards.length);
-        }
-    } catch (error) {
-        kLog('Gagal memuat local videos', error);
-    }
 
     // Setup event delegation untuk card grid
     initCardGridDelegation();

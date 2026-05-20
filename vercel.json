@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/v/(.*)", "destination": "/video.html" },
     { "source": "/about", "destination": "/about.html" },
     { "source": "/dmca", "destination": "/dmca.html" },
     { "source": "/contact", "destination": "/contact.html" },

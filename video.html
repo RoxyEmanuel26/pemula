@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kumpulenak — Tonton Video Viral</title>
+    <meta name="description" content="Tonton video viral full HD gratis di kumpulenak.">
+    <meta name="robots" content="index, follow">
+    
+    <!-- CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .video-container {
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+        .video-iframe {
+            width: 100%;
+            height: 60vh;
+            border-radius: 8px;
+        }
+        .loader {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+            .video-iframe { height: 40vh; }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-container">
+            <a href="/" class="logo">
+                <h1>kumpul<span>enak</span></h1>
+            </a>
+            <div class="search-bar">
+                <a href="/" style="color:var(--text-main);text-decoration:none;font-weight:600;background:var(--primary-color);padding:8px 16px;border-radius:8px;">🏠 Kembali ke Beranda</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="main-content" style="padding-top: 100px; max-width: 1000px; margin: 0 auto; padding-bottom: 50px; min-height: 80vh;">
+        
+        <h1 id="pageTitle" style="margin-bottom: 20px; font-size: 1.8rem; color: var(--text-main);">Memuat Video...</h1>
+        
+        <div class="video-container" id="videoContainer">
+            <div class="loader"></div>
+        </div>
+        
+        <div id="videoMeta" style="margin-bottom: 30px; display: flex; gap: 20px; color: var(--text-muted); font-size:0.95rem; font-weight:500; display:none;">
+            <span id="metaDuration">⏱ --:--</span>
+            <span id="metaViews">👁 0 views</span>
+            <span id="metaDate">📅 ----</span>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="/" class="btn" style="background:var(--primary-color); color:var(--bg-main); padding:16px 32px; text-decoration:none; border-radius:12px; display:inline-block; font-weight:bold; font-size:1.1rem; box-shadow: 0 4px 15px rgba(255,51,102,0.4);">
+                🔥 Jelajahi Ribuan Video Viral Lainnya
+            </a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 kumpulenak. All rights reserved.</p>
+    </footer>
+
+    <script>
+        (async function() {
+            // Ambil path dari URL. Contoh: /v/abc123def-jessica-valeen
+            var path = window.location.pathname;
+            var parts = path.split('/');
+            var slug = parts[parts.length - 1]; // "abc123def-jessica-valeen"
+            
+            // Format ID Eporner biasanya ada di bagian pertama slug yang dipisah strip
+            var videoId = slug.split('-')[0];
+            
+            var titleEl = document.getElementById('pageTitle');
+            var container = document.getElementById('videoContainer');
+            var meta = document.getElementById('videoMeta');
+            var mDur = document.getElementById('metaDuration');
+            var mView = document.getElementById('metaViews');
+            var mDate = document.getElementById('metaDate');
+
+            if (!videoId || videoId.length < 5) {
+                titleEl.textContent = "Video tidak valid.";
+                container.innerHTML = "<p>Video ID tidak ditemukan di URL.</p>";
+                return;
+            }
+
+            try {
+                var res = await fetch('https://www.eporner.com/api/v2/video/id/?id=' + encodeURIComponent(videoId) + '&thumbsize=big&format=json');
+                if (!res.ok) throw new Error("HTTP Error " + res.status);
+                var data = await res.json();
+                
+                if (data && data.id) {
+                    // Update UI
+                    document.title = data.title + " - kumpulenak";
+                    titleEl.textContent = data.title;
+                    mDur.textContent = "⏱ " + (data.length_min || '--:--');
+                    mView.textContent = "👁 " + (data.views || '0') + " views";
+                    mDate.textContent = "📅 " + (data.added || '----');
+                    meta.style.display = "flex";
+                    
+                    // Insert Iframe
+                    container.innerHTML = '<iframe class="video-iframe" src="' + data.embed + '" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>';
+                } else {
+                    titleEl.textContent = "Video tidak ditemukan.";
+                    container.innerHTML = "<p>Video mungkin telah dihapus oleh sumber.</p>";
+                }
+            } catch (err) {
+                titleEl.textContent = "Terjadi kesalahan saat memuat video.";
+                container.innerHTML = "<p>Mohon coba lagi nanti.</p>";
+                console.error(err);
+            }
+        })();
+    </script>
+</body>
+</html>

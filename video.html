@@ -74,11 +74,20 @@
             }
         }
 
-        // Get video slug from path
-        const pathParts = window.location.pathname.split('/');
-        const videoId = pathParts[pathParts.length - 1].replace('.html', ''); // Mendukung format /v/id dan /v/id.html
+        // Get video slug from query param or path
+        const urlParams = new URLSearchParams(window.location.search);
+        let videoId = urlParams.get('id') || urlParams.get('v');
+        
+        if (!videoId) {
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const lastPart = pathParts[pathParts.length - 1] || '';
+            videoId = lastPart.replace('.html', '');
+            if (videoId === 'v' || videoId === 'video' || !videoId) {
+                videoId = null;
+            }
+        }
 
-        if (!videoId || videoId === 'v') {
+        if (!videoId) {
             showError('Video ID tidak ditemukan.');
         } else {
             fetchVideoData(videoId);
@@ -90,7 +99,8 @@
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
                 
-                if (!data || data.error) {
+                // Eporner returns an empty array [] if the video ID is not found
+                if (!data || data.error || (Array.isArray(data) && data.length === 0)) {
                     showError('Video tidak ditemukan atau telah dihapus.');
                     return;
                 }

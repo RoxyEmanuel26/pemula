@@ -215,7 +215,7 @@
     function renderRelatedCard(v){
         var slug = (v.title||'video').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'');
         var url = '/video?v=' + encodeURIComponent(v.id) + '-' + slug;
-        var thumb = v.default_thumb && v.default_thumb.size_big ? v.default_thumb.size_big : '';
+        var thumb = v.default_thumb && v.default_thumb.src ? v.default_thumb.src : '';
         var dur = v.length_min ? '<span class="badge-duration">'+esc(v.length_min)+'</span>' : '';
         var rate = v.rate ? '<span class="badge-rating">⭐ '+esc(String(v.rate))+'</span>' : '';
 

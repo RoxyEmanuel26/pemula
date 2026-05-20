@@ -87,6 +87,12 @@
             }
         }
 
+        // Jika URL dari sitemap menggunakan format ?v=ID-SLUG atau /v/ID-SLUG,
+        // kita hanya perlu ID-nya (bagian sebelum tanda strip pertama).
+        if (videoId && videoId.includes('-')) {
+            videoId = videoId.split('-')[0];
+        }
+
         if (!videoId) {
             showError('Video ID tidak ditemukan.');
         } else {

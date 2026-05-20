@@ -5,134 +5,266 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>kumpulenak — Tonton Video Viral</title>
     <meta name="description" content="Tonton video viral full HD gratis di kumpulenak.">
-    <meta name="robots" content="index, follow">
     
-    <!-- CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/style.css">
     
     <style>
-        .video-container {
-            background: var(--bg-card);
-            padding: 10px;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 400px;
-        }
-        .video-iframe {
+        .player-container {
             width: 100%;
-            height: 60vh;
-            border-radius: 8px;
+            max-width: 1200px;
+            margin: 20px auto 40px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px var(--shadow-color);
         }
-        .loader {
-            border: 4px solid var(--border-color);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        .player-iframe-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            background: #000;
+        }
+        .player-iframe-wrapper iframe {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%; border: none;
+        }
+        .player-info {
+            padding: 20px;
+        }
+        .player-title {
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+        .player-meta {
+            display: flex;
+            gap: 15px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .card-tag {
+            background: rgba(255,51,102,0.1);
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .card-tag:hover {
+            background: var(--primary-color);
+            color: var(--bg-main);
+        }
+        .section-label {
+            margin-top: 40px;
+        }
+        @media (max-width: 768px) {
+            .player-title { font-size: 1.2rem; }
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @media (max-width: 768px) {
-            .video-iframe { height: 40vh; }
-        }
     </style>
 </head>
 <body>
+
     <!-- HEADER -->
     <header class="header">
-        <div class="header-container">
-            <a href="/" class="logo">
-                <h1>kumpul<span>enak</span></h1>
-            </a>
-            <div class="search-bar">
-                <a href="/" style="color:var(--text-main);text-decoration:none;font-weight:600;background:var(--primary-color);padding:8px 16px;border-radius:8px;">🏠 Kembali ke Beranda</a>
+        <div class="header-inner">
+            <div class="logo" onclick="window.location='/'" style="cursor:pointer;">kumpulenak</div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" onclick="window.location='/'">home</button>
+                <button class="nav-tab" onclick="window.location='/?q=viral'">viral</button>
+                <button class="nav-tab" onclick="window.location='/?order=latest'">terbaru</button>
+            </nav>
+            <div class="search-box">
+                <input type="text" placeholder="search..." id="searchInput" autocomplete="off" onkeydown="if(event.key==='Enter' && this.value.trim()) window.location='/?q='+encodeURIComponent(this.value.trim())">
+                <button class="search-submit-btn" onclick="var q=document.getElementById('searchInput').value.trim(); if(q) window.location='/?q='+encodeURIComponent(q)">🔍</button>
             </div>
+            <button class="theme-toggle" onclick="var t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);">🌙</button>
         </div>
     </header>
 
-    <!-- CONTENT -->
-    <main class="main-content" style="padding-top: 100px; max-width: 1000px; margin: 0 auto; padding-bottom: 50px; min-height: 80vh;">
-        
-        <h1 id="pageTitle" style="margin-bottom: 20px; font-size: 1.8rem; color: var(--text-main);">Memuat Video...</h1>
-        
-        <div class="video-container" id="videoContainer">
-            <div class="loader"></div>
-        </div>
-        
-        <div id="videoMeta" style="margin-bottom: 30px; display: flex; gap: 20px; color: var(--text-muted); font-size:0.95rem; font-weight:500; display:none;">
-            <span id="metaDuration">⏱ --:--</span>
-            <span id="metaViews">👁 0 views</span>
-            <span id="metaDate">📅 ----</span>
-        </div>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            
+            <div class="player-container" id="playerContainer">
+                <div class="player-iframe-wrapper" id="iframeWrapper" style="display:flex; justify-content:center; align-items:center;">
+                    <div style="border:4px solid var(--border-color); border-top:4px solid var(--primary-color); border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div>
+                </div>
+                <div class="player-info">
+                    <h1 class="player-title" id="pTitle">Memuat Video...</h1>
+                    <div class="player-meta" id="pMeta" style="display:none;">
+                        <span id="pDur">⏱ --:--</span>
+                        <span id="pViews">👁 0 views</span>
+                        <span id="pDate">📅 ----</span>
+                        <span id="pRate">⭐ 0</span>
+                    </div>
+                    <div class="card-tags" id="pTags"></div>
+                    
+                    <a id="pDownload" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; margin-top:10px; padding:12px 24px; background:var(--primary-color); color:var(--bg-main); border-radius:8px; text-decoration:none; font-weight:700; display:none; transition:transform 0.2s; box-shadow:0 4px 15px rgba(255,51,102,0.4);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        🔗 DOWNLOAD VIDEO KUALITAS TINGGI
+                    </a>
+                </div>
+            </div>
 
-        <div style="text-align: center; margin-top: 40px;">
-            <a href="/" class="btn" style="background:var(--primary-color); color:var(--bg-main); padding:16px 32px; text-decoration:none; border-radius:12px; display:inline-block; font-weight:bold; font-size:1.1rem; box-shadow: 0 4px 15px rgba(255,51,102,0.4);">
-                🔥 Jelajahi Ribuan Video Viral Lainnya
-            </a>
+            <div class="section-label">Video Serupa 🔥</div>
+            <div class="card-grid" id="relatedGrid">
+                <!-- Related cards injected here -->
+                <p style="color:var(--text-muted); text-align:center; width:100%; padding:40px; font-weight:500;">Mencari video terkait yang paling mantap...</p>
+            </div>
+
         </div>
     </main>
 
+    <!-- FOOTER -->
     <footer class="footer">
-        <p>&copy; 2026 kumpulenak. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/about">Tentang</a>
+            <a href="/howto">Cara Download</a>
+            <a href="/contact">Kontak</a>
+            <a href="/dmca">DMCA</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+        </div>
+        <p>All resources are shared by their respective owners. &copy; 2026 kumpulenak</p>
     </footer>
 
     <script>
+        // Init theme from localStorage
+        (function(){
+            var savedTheme = localStorage.getItem('theme');
+            if(savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])
+            );
+        }
+
+        function formatViews(v) {
+            var n = parseInt(v, 10);
+            if (isNaN(n)) return v;
+            if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        function renderRelatedCard(card) {
+            var url = '/video.html?v=' + encodeURIComponent(card.id) + '-' + (card.title || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            var dur = card.length_min ? `<span class="badge-duration">${escapeHTML(card.length_min)}</span>` : '';
+            var rate = card.rate ? `<span class="badge-rating">⭐ ${escapeHTML(card.rate)}</span>` : '';
+            
+            var thumb = card.default_thumb && card.default_thumb.size_big ? card.default_thumb.size_big : '';
+            
+            var cardEl = document.createElement('a');
+            cardEl.className = 'card';
+            cardEl.href = url;
+            cardEl.style.textDecoration = 'none';
+            cardEl.style.display = 'block';
+
+            cardEl.innerHTML = `
+                <div class="card-img-wrapper">
+                    <div class="blur-overlay" style="background-image: url('${escapeHTML(thumb)}');"></div>
+                    ${dur}${rate}
+                    <img src="${escapeHTML(thumb)}" alt="${escapeHTML(card.title)}" loading="lazy" style="opacity:1;">
+                </div>
+                <div class="card-meta">
+                    <div class="card-date-views">
+                        <span>📅 ${escapeHTML(card.added || '')}</span>
+                        <span>👁 <span class="view-count">${escapeHTML(formatViews(card.views))}</span></span>
+                    </div>
+                    <h2 class="card-title" style="margin-top:8px;">${escapeHTML(card.title)}</h2>
+                </div>
+            `;
+            return cardEl;
+        }
+
         (async function() {
-            // Ambil ID dari URL params (?v=abc123def-jessica-valeen) atau fallback ke path
             var urlParams = new URLSearchParams(window.location.search);
             var slug = urlParams.get('v');
-            
             if (!slug) {
                 var path = window.location.pathname;
                 var parts = path.split('/');
                 slug = parts[parts.length - 1]; 
             }
-            
-            // Format ID Eporner biasanya ada di bagian pertama slug yang dipisah strip
             var videoId = slug ? slug.split('-')[0] : '';
             
-            var titleEl = document.getElementById('pageTitle');
-            var container = document.getElementById('videoContainer');
-            var meta = document.getElementById('videoMeta');
-            var mDur = document.getElementById('metaDuration');
-            var mView = document.getElementById('metaViews');
-            var mDate = document.getElementById('metaDate');
+            var pTitle = document.getElementById('pTitle');
+            var iframeWrap = document.getElementById('iframeWrapper');
+            var pMeta = document.getElementById('pMeta');
+            var pTags = document.getElementById('pTags');
+            var relatedGrid = document.getElementById('relatedGrid');
+            var pDownload = document.getElementById('pDownload');
 
             if (!videoId || videoId.length < 5) {
-                titleEl.textContent = "Video tidak valid.";
-                container.innerHTML = "<p>Video ID tidak ditemukan di URL.</p>";
+                pTitle.textContent = "Video tidak valid.";
+                iframeWrap.innerHTML = "<p style='padding:40px;text-align:center;color:var(--text-muted);'>Video ID tidak ditemukan di URL.</p>";
+                relatedGrid.innerHTML = "";
                 return;
             }
 
             try {
+                // Fetch Main Video
                 var res = await fetch('https://www.eporner.com/api/v2/video/id/?id=' + encodeURIComponent(videoId) + '&thumbsize=big&format=json');
                 if (!res.ok) throw new Error("HTTP Error " + res.status);
                 var data = await res.json();
                 
                 if (data && data.id) {
-                    // Update UI
                     document.title = data.title + " - kumpulenak";
-                    titleEl.textContent = data.title;
-                    mDur.textContent = "⏱ " + (data.length_min || '--:--');
-                    mView.textContent = "👁 " + (data.views || '0') + " views";
-                    mDate.textContent = "📅 " + (data.added || '----');
-                    meta.style.display = "flex";
+                    pTitle.textContent = data.title;
+                    document.getElementById('pDur').textContent = "⏱ " + (data.length_min || '--:--');
+                    document.getElementById('pViews').textContent = "👁 " + formatViews(data.views || '0') + " views";
+                    document.getElementById('pDate').textContent = "📅 " + (data.added || '----');
+                    document.getElementById('pRate').textContent = "⭐ " + (data.rate || '0');
+                    pMeta.style.display = "flex";
                     
-                    // Insert Iframe
-                    container.innerHTML = '<iframe class="video-iframe" src="' + data.embed + '" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>';
+                    if (data.keywords && data.keywords.length > 0) {
+                        pTags.innerHTML = data.keywords.map(t => `<a href="/?q=${encodeURIComponent(t.name)}" class="card-tag">${escapeHTML(t.name)}</a>`).join('');
+                    }
+                    
+                    pDownload.href = `https://www.eporner.com/video-${data.id}/`;
+                    pDownload.style.display = 'inline-flex';
+                    
+                    iframeWrap.innerHTML = `<iframe src="${data.embed}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+                    
+                    // Fetch Related Videos using the first keyword or title
+                    var q = data.keywords && data.keywords.length > 0 ? data.keywords[0].name : 'asian';
+                    var relRes = await fetch('https://www.eporner.com/api/v2/video/search/?query=' + encodeURIComponent(q) + '&per_page=12&thumbsize=big&order=top-weekly&format=json');
+                    if (relRes.ok) {
+                        var relData = await relRes.json();
+                        if (relData && relData.videos && relData.videos.length > 0) {
+                            relatedGrid.innerHTML = '';
+                            relData.videos.forEach(v => {
+                                if (v.id !== videoId) {
+                                    relatedGrid.appendChild(renderRelatedCard(v));
+                                }
+                            });
+                        } else {
+                            relatedGrid.innerHTML = '<p style="color:var(--text-muted); padding:20px;">Tidak ada video serupa.</p>';
+                        }
+                    }
                 } else {
-                    titleEl.textContent = "Video tidak ditemukan.";
-                    container.innerHTML = "<p>Video mungkin telah dihapus oleh sumber.</p>";
+                    pTitle.textContent = "Video tidak ditemukan.";
+                    iframeWrap.innerHTML = "<p style='padding:40px;text-align:center;color:var(--text-muted);'>Video mungkin telah dihapus oleh pihak Eporner.</p>";
+                    relatedGrid.innerHTML = "";
                 }
             } catch (err) {
-                titleEl.textContent = "Terjadi kesalahan saat memuat video.";
-                container.innerHTML = "<p>Mohon coba lagi nanti.</p>";
+                pTitle.textContent = "Terjadi kesalahan koneksi.";
+                iframeWrap.innerHTML = "<p style='padding:40px;text-align:center;color:var(--text-muted);'>Gagal memuat API Eporner. Pastikan koneksi internet Anda lancar tanpa blokir, atau gunakan VPN.</p>";
+                relatedGrid.innerHTML = "";
                 console.error(err);
             }
         })();

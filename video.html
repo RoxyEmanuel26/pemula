@@ -84,13 +84,18 @@
 
     <script>
         (async function() {
-            // Ambil path dari URL. Contoh: /v/abc123def-jessica-valeen
-            var path = window.location.pathname;
-            var parts = path.split('/');
-            var slug = parts[parts.length - 1]; // "abc123def-jessica-valeen"
+            // Ambil ID dari URL params (?v=abc123def-jessica-valeen) atau fallback ke path
+            var urlParams = new URLSearchParams(window.location.search);
+            var slug = urlParams.get('v');
+            
+            if (!slug) {
+                var path = window.location.pathname;
+                var parts = path.split('/');
+                slug = parts[parts.length - 1]; 
+            }
             
             // Format ID Eporner biasanya ada di bagian pertama slug yang dipisah strip
-            var videoId = slug.split('-')[0];
+            var videoId = slug ? slug.split('-')[0] : '';
             
             var titleEl = document.getElementById('pageTitle');
             var container = document.getElementById('videoContainer');

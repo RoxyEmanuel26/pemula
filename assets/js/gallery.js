@@ -1693,9 +1693,9 @@ function enhancedOpenPlayerModal(card) {
     var fullPageBtn = document.getElementById('playerFullPageBtn');
     if (fullPageBtn) {
         var slug = (card.name || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        // Jika ada videoId dari Eporner, gabungkan ID dan slug. Jika tidak ada, fallback.
         var vid = card.videoId ? card.videoId + '-' : '';
-        fullPageBtn.href = '/v/' + vid + slug;
+        // Menggunakan query string agar bekerja sempurna di Live Server lokal
+        fullPageBtn.href = '/video.html?v=' + vid + slug;
     }
 
     // Render tags jika sudah ada di card

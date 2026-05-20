@@ -1041,43 +1041,7 @@ function renderPagination(totalPages) {
     
     paginationContainer.appendChild(frag);
 }
-// Tombol halaman pertama + ellipsis
-    if (startPage > 1) {
-        html += '<button class="page-btn" onclick="goToPage(1)">1</button>';
-        if (startPage > 2) {
-            html += '<span class="page-ellipsis">…</span>';
-        }
-    }
 
-    // Tombol halaman
-    for (var i = startPage; i <= endPage; i++) {
-        if (i === currentPage) {
-            html += '<button class="page-btn active">' + i + '</button>';
-        } else {
-            html += '<button class="page-btn" onclick="goToPage(' + i + ')">' + i + '</button>';
-        }
-    }
-
-    // Tombol halaman terakhir + ellipsis
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            html += '<span class="page-ellipsis">…</span>';
-        }
-        html += '<button class="page-btn" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
-    }
-
-    // Info halaman
-    html += '<span class="page-info">Halaman ' + currentPage + ' dari ' + totalPages + '</span>';
-
-    // Tombol Next (›)
-    if (currentPage >= totalPages) {
-        html += '<button class="page-btn disabled" disabled>›</button>';
-    } else {
-        html += '<button class="page-btn" onclick="goToPage(' + (currentPage + 1) + ')">›</button>';
-    }
-
-    pag.innerHTML = html;
-}
 
 /**
  * Navigasi ke halaman tertentu

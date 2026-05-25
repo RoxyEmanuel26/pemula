@@ -1389,10 +1389,11 @@ function injectPlayerAds() {
         }
     }
 
-    // 320x50 top, bottom & side (key: 2e8603e8d49f282cb2b6c51077745034)
+    // 320x50 top & bottom (key: 2e8603e8d49f282cb2b6c51077745034)
     injectAd('playerAdTop', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
     injectAd('playerAdBottom', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
-    injectAd('playerAdSide', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
+    // 300x250 sidebar (key: ac030fa023c7db2ca8b74d28f66aaccb)
+    injectAd('playerAdSide', 'ac030fa023c7db2ca8b74d28f66aaccb', 300, 250);
 }
 
 /**

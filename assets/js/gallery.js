@@ -1946,7 +1946,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.js';
+    scriptLoader.src = 'assets/js/loader.js?v=2';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

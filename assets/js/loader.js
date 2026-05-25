@@ -204,18 +204,52 @@
 
     function initSelfHostedPopunder() {
         if (_popunderFired) return;
+        
+        // Aturan 1: Maksimal 1 popunder per tab/visit (mencegah spam saat user pindah halaman)
+        if (sessionStorage.getItem('popunderShown')) return;
+        
+        // Aturan 2: Maksimal 2 popunder per 24 jam untuk setiap user (Rekomendasi terbaik)
+        var maxPopsPerDay = 2; 
+
+        function checkDailyLimit() {
+            var now = new Date().getTime();
+            var popHistory = [];
+            try {
+                popHistory = JSON.parse(localStorage.getItem('popunderHistory') || '[]');
+            } catch (e) {}
+            
+            // Hapus riwayat yang sudah lebih dari 24 jam (86400000 ms)
+            popHistory = popHistory.filter(function(ts) {
+                return (now - ts) < 86400000;
+            });
+            
+            localStorage.setItem('popunderHistory', JSON.stringify(popHistory));
+            return popHistory.length < maxPopsPerDay;
+        }
+
+        function recordPopunder() {
+            var now = new Date().getTime();
+            var popHistory = [];
+            try {
+                popHistory = JSON.parse(localStorage.getItem('popunderHistory') || '[]');
+            } catch (e) {}
+            
+            popHistory.push(now);
+            localStorage.setItem('popunderHistory', JSON.stringify(popHistory));
+            sessionStorage.setItem('popunderShown', 'true');
+        }
 
         function doPopunder() {
-            if (_popunderFired || sessionStorage.getItem('popunderShown')) return;
+            if (_popunderFired || sessionStorage.getItem('popunderShown') || !checkDailyLimit()) return;
             _popunderFired = true;
-            sessionStorage.setItem('popunderShown', 'true');
+            
+            recordPopunder();
 
             var target = getRandomLink();
 
             try {
                 var w = window.open(target, '_blank');
                 if (w) {
-                    // Modern browsers ignore focus() from popup, but no harm
                     try { window.focus(); } catch (e) { }
                 }
             } catch (e) {
@@ -223,17 +257,18 @@
             }
         }
 
-        // Trigger pada klik pertama user (hanya 1x)
+        // Trigger pada klik pertama user
         document.addEventListener('click', function popHandler(e) {
             // [SECURITY FIX] Hanya jalankan jika dari interaksi langsung (isTrusted)
             if (!e.isTrusted) return;
             
-            if (sessionStorage.getItem('popunderShown')) {
+            // Hapus event listener jika user sudah mencapai limit (sesi tab atau harian)
+            if (sessionStorage.getItem('popunderShown') || !checkDailyLimit()) {
                 document.removeEventListener('click', popHandler, true);
                 return;
             }
 
-            // Jangan trigger pada elemen interaktif yang penting
+            // Jangan trigger pada elemen interaktif yang penting (tombol play/iklan lain)
             var target = e.target;
             if (target.closest && (
                 target.closest('.player-overlay') ||

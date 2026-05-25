@@ -1343,31 +1343,56 @@ function closePlayerModal() {
 
 /**
  * Inject Adsterra ads ke player modal
- * - Top: 728x90 leaderboard
- * - Bottom: 728x90 leaderboard
- * - Side: 300x250 medium rectangle
+ * - Top: 320x50 banner
+ * - Bottom: 320x50 banner
+ * - Side: 320x50 banner
  */
 function injectPlayerAds() {
-    // Helper: inject Adsterra script ke container
+    // Helper: inject Adsterra script ke container via iframe isolasi
     function injectAd(containerId, key, width, height) {
         var container = document.getElementById(containerId);
-        if (!container || container.hasChildNodes()) return;
+        if (!container) return;
+        container.innerHTML = ''; // Pastikan bersih
 
-        var optScript = document.createElement('script');
-        optScript.textContent = "atOptions = { 'key' : '" + key + "', 'format' : 'iframe', 'height' : " + height + ", 'width' : " + width + ", 'params' : {} };";
-        container.appendChild(optScript);
+        var iframe = document.createElement('iframe');
+        iframe.width = width;
+        iframe.height = height;
+        iframe.frameBorder = '0';
+        iframe.scrolling = 'no';
+        iframe.style.border = 'none';
+        iframe.style.overflow = 'hidden';
+        iframe.style.width = width + 'px';
+        iframe.style.height = height + 'px';
+        
+        container.appendChild(iframe);
 
-        var invokeScript = document.createElement('script');
-        invokeScript.src = 'https://glamournakedemployee.com/' + key + '/invoke.js';
-        container.appendChild(invokeScript);
+        try {
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            doc.open();
+            doc.write(
+                '<!DOCTYPE html>' +
+                '<html>' +
+                '<head>' +
+                '<style>body { margin: 0; padding: 0; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }</style>' +
+                '</head>' +
+                '<body>' +
+                '<script type="text/javascript">' +
+                'atOptions = { "key" : "' + key + '", "format" : "iframe", "height" : ' + height + ', "width" : ' + width + ', "params" : {} };' +
+                '</script>' +
+                '<script type="text/javascript" src="https://glamournakedemployee.com/' + key + '/invoke.js"></script>' +
+                '</body>' +
+                '</html>'
+            );
+            doc.close();
+        } catch (e) {
+            console.error('Gagal menulis ke iframe ad:', e);
+        }
     }
 
-    // 728x90 top & bottom (sama key)
-    injectAd('playerAdTop', 'cffac27f60f026f84e02386788c1a06b', 728, 90);
-    injectAd('playerAdBottom', 'cffac27f60f026f84e02386788c1a06b', 728, 90);
-
-    // 300x250 sidebar
-    injectAd('playerAdSide', 'ac030fa023c7db2ca8b74d28f66aaccb', 300, 250);
+    // 320x50 top, bottom & side (key: 2e8603e8d49f282cb2b6c51077745034)
+    injectAd('playerAdTop', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
+    injectAd('playerAdBottom', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
+    injectAd('playerAdSide', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
 }
 
 /**
@@ -1836,6 +1861,7 @@ function enhancedOpenPlayerModal(card) {
 
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
+    injectPlayerAds();
     kLog('Player modal dibuka:', card.name);
 
     // Fetch detail lengkap jika punya videoId (untuk mendapatkan keywords jika belum ada)

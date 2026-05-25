@@ -946,14 +946,14 @@ body {
 
 .player-ad-top,
 .player-ad-bottom {
-    max-width: 728px;
-    min-height: 0;
+    max-width: 320px;
+    min-height: 50px;
 }
 
 .player-ad-side {
     flex-shrink: 0;
-    width: 300px;
-    min-height: 250px;
+    width: 320px;
+    min-height: 50px;
 }
 
 /* Info row: video info + 300x250 ad side by side */

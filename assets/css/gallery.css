@@ -917,10 +917,55 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
 }
 
 .player-overlay.show {
     display: flex;
+}
+
+/* Wrapper untuk menampung ad top + content + ad bottom */
+.player-modal-wrapper {
+    max-width: 800px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Ad slot containers */
+.player-ad-slot {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.player-ad-top,
+.player-ad-bottom {
+    max-width: 728px;
+    min-height: 0;
+}
+
+.player-ad-side {
+    flex-shrink: 0;
+    width: 300px;
+    min-height: 250px;
+}
+
+/* Info row: video info + 300x250 ad side by side */
+.player-info-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.player-info-row .player-info {
+    flex: 1;
+    min-width: 0;
 }
 
 .player-content {
@@ -1217,12 +1262,19 @@ body {
         align-items: stretch;
     }
 
+    .player-modal-wrapper {
+        max-width: 100%;
+        height: 100%;
+        gap: 0;
+    }
+
     .player-content {
         max-width: 100%;
         border-radius: 0;
-        height: 100%;
+        flex: 1;
         display: flex;
         flex-direction: column;
+        overflow-y: auto;
     }
 
     .player-iframe-wrapper {
@@ -1233,9 +1285,24 @@ body {
         height: 240px;
     }
 
+    .player-info-row {
+        flex-direction: column;
+    }
+
+    .player-ad-side {
+        width: 100%;
+        min-height: 0;
+        justify-content: center;
+    }
+
     .player-info {
         flex: 1;
         overflow-y: auto;
+    }
+
+    .player-ad-top,
+    .player-ad-bottom {
+        max-width: 100%;
     }
 }
 

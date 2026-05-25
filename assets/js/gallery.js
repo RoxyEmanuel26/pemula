@@ -803,7 +803,7 @@ function renderCardsToGrid(cardsToRender) {
     // Tentukan posisi tengah untuk inject banner
     var midIndex = Math.floor(cardsToRender.length / 2);
 
-    // Helper: buat in-grid banner element
+    // Helper: buat in-grid custom image banner (untuk posisi atas)
     function createIngridBanner() {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
@@ -822,15 +822,39 @@ function renderCardsToGrid(cardsToRender) {
         return bannerWrapper;
     }
 
+    // Helper: buat in-grid Adsterra ad banner (untuk posisi tengah)
+    function createIngridAdBanner() {
+        var bannerWrapper = document.createElement('div');
+        bannerWrapper.className = 'ingrid-banner-ad';
+        bannerWrapper.style.cssText = 'display:flex;justify-content:center;align-items:center;min-height:90px;';
+
+        // Inject Adsterra atOptions + invoke script
+        var atScript = document.createElement('script');
+        atScript.textContent = "atOptions = { 'key' : 'cffac27f60f026f84e02386788c1a06b', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };";
+        bannerWrapper.appendChild(atScript);
+
+        var invokeScript = document.createElement('script');
+        invokeScript.src = 'https://glamournakedemployee.com/cffac27f60f026f84e02386788c1a06b/invoke.js';
+        bannerWrapper.appendChild(invokeScript);
+
+        // Mencegah popunder terpicu saat klik banner
+        bannerWrapper.addEventListener('click', function (e) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        }, true);
+
+        return bannerWrapper;
+    }
+
     cardsToRender.forEach(function (card, idx) {
-        // Inject in-grid banner di awal card
+        // Inject custom image banner di awal card
         if (idx === 0) {
             grid.appendChild(createIngridBanner());
         }
 
-        // Inject in-grid banner di tengah-tengah card
+        // Inject Adsterra ad banner di tengah-tengah card
         if (idx === midIndex) {
-            grid.appendChild(createIngridBanner());
+            grid.appendChild(createIngridAdBanner());
         }
 
         var cardEl = createCardElement(card, idx);
@@ -1292,6 +1316,10 @@ function openPlayerModal(card) {
 
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
+
+    // Inject Adsterra ads ke modal
+    injectPlayerAds();
+
     kLog('Player modal dibuka:', card.name);
 }
 
@@ -1306,12 +1334,55 @@ function closePlayerModal() {
     iframe.src = '';
     modal.classList.remove('show');
     document.body.style.overflow = '';
+
+    // Bersihkan ad slots agar tidak duplikat saat buka lagi
+    clearPlayerAds();
+
     kLog('Player modal ditutup');
+}
+
+/**
+ * Inject Adsterra ads ke player modal
+ * - Top: 728x90 leaderboard
+ * - Bottom: 728x90 leaderboard
+ * - Side: 300x250 medium rectangle
+ */
+function injectPlayerAds() {
+    // Helper: inject Adsterra script ke container
+    function injectAd(containerId, key, width, height) {
+        var container = document.getElementById(containerId);
+        if (!container || container.hasChildNodes()) return;
+
+        var optScript = document.createElement('script');
+        optScript.textContent = "atOptions = { 'key' : '" + key + "', 'format' : 'iframe', 'height' : " + height + ", 'width' : " + width + ", 'params' : {} };";
+        container.appendChild(optScript);
+
+        var invokeScript = document.createElement('script');
+        invokeScript.src = 'https://glamournakedemployee.com/' + key + '/invoke.js';
+        container.appendChild(invokeScript);
+    }
+
+    // 728x90 top & bottom (sama key)
+    injectAd('playerAdTop', 'cffac27f60f026f84e02386788c1a06b', 728, 90);
+    injectAd('playerAdBottom', 'cffac27f60f026f84e02386788c1a06b', 728, 90);
+
+    // 300x250 sidebar
+    injectAd('playerAdSide', 'ac030fa023c7db2ca8b74d28f66aaccb', 300, 250);
+}
+
+/**
+ * Bersihkan semua ad dari player modal
+ */
+function clearPlayerAds() {
+    ['playerAdTop', 'playerAdBottom', 'playerAdSide'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
 }
 
 // Event: tutup player modal saat klik overlay
 document.getElementById('playerModal').addEventListener('click', function (e) {
-    if (e.target === this) closePlayerModal();
+    if (e.target === this || e.target.classList.contains('player-modal-wrapper')) closePlayerModal();
 });
 
 // Event: tutup player modal saat klik tombol close
@@ -1955,7 +2026,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.js?v=3';
+    scriptLoader.src = 'assets/js/loader.js?v=5';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

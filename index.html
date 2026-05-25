@@ -76,8 +76,8 @@
     <link rel="alternate" hreflang="x-default" href="https://www.kumpulenak.web.id/">
 
     <!-- Preload Critical Resources -->
-    <link rel="preload" href="assets/css/gallery.css?v=3" as="style" fetchpriority="high">
-    <link rel="preload" href="assets/js/gallery.js?v=3" as="script">
+    <link rel="preload" href="assets/css/gallery.css?v=5" as="style" fetchpriority="high">
+    <link rel="preload" href="assets/js/gallery.js?v=5" as="script">
     <link rel="preconnect" href="https://www.eporner.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.eporner.com">
     <link rel="dns-prefetch" href="https://images2.imgbox.com">
@@ -140,7 +140,7 @@
     </script>
 
     <!-- Gallery Styles -->
-    <link rel="stylesheet" href="assets/css/gallery.css?v=3">
+    <link rel="stylesheet" href="assets/css/gallery.css?v=5">
 
     <!-- Noscript Fallback -->
     <noscript>
@@ -274,26 +274,38 @@
 
     <!-- ===== VIDEO PLAYER MODAL ===== -->
     <div class="player-overlay" id="playerModal">
-        <div class="player-content">
-            <button class="player-close" id="playerCloseBtn">&times;</button>
-            <div class="player-iframe-wrapper">
-                <iframe id="playerIframe" src="" width="100%" height="400" frameborder="0" allowfullscreen
-                    allow="autoplay; encrypted-media"></iframe>
-            </div>
-            <div class="player-info">
-                <h3 class="player-title" id="playerTitle"></h3>
-                <div class="player-meta">
-                    <span id="playerDuration">⏱ --:--</span>
-                    <span id="playerViews">👁 0</span>
-                    <span id="playerDate">📅 ----</span>
+        <div class="player-modal-wrapper">
+            <!-- Ad Banner: TOP 728x90 -->
+            <div class="player-ad-slot player-ad-top" id="playerAdTop"></div>
+
+            <div class="player-content">
+                <button class="player-close" id="playerCloseBtn">&times;</button>
+                <div class="player-iframe-wrapper">
+                    <iframe id="playerIframe" src="" width="100%" height="400" frameborder="0" allowfullscreen
+                        allow="autoplay; encrypted-media"></iframe>
                 </div>
-                <a class="player-open-tab" id="playerOpenTab" href="#" target="_blank" rel="noopener noreferrer">
-                    🔗 DOWNLOAD
-                </a>
-                <a class="player-open-tab" id="playerFullPageBtn" href="#">
-                    🎬 Tonton di Halaman Penuh
-                </a>
+                <div class="player-info-row">
+                    <div class="player-info">
+                        <h3 class="player-title" id="playerTitle"></h3>
+                        <div class="player-meta">
+                            <span id="playerDuration">⏱ --:--</span>
+                            <span id="playerViews">👁 0</span>
+                            <span id="playerDate">📅 ----</span>
+                        </div>
+                        <a class="player-open-tab" id="playerOpenTab" href="#" target="_blank" rel="noopener noreferrer">
+                            🔗 DOWNLOAD
+                        </a>
+                        <a class="player-open-tab" id="playerFullPageBtn" href="#">
+                            🎬 Tonton di Halaman Penuh
+                        </a>
+                    </div>
+                    <!-- Ad Banner: 300x250 sidebar -->
+                    <div class="player-ad-slot player-ad-side" id="playerAdSide"></div>
+                </div>
             </div>
+
+            <!-- Ad Banner: BOTTOM 728x90 -->
+            <div class="player-ad-slot player-ad-bottom" id="playerAdBottom"></div>
         </div>
     </div>
 
@@ -301,7 +313,7 @@
     <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Kembali ke atas">⬆</button>
 
     <!-- Gallery Logic -->
-    <script src="assets/js/gallery.js?v=3"></script>
+    <script src="assets/js/gallery.js?v=5"></script>
 
 
 </body>

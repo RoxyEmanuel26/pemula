@@ -1601,7 +1601,16 @@ function renderSortBar() {
             contentWrapper.appendChild(sortBar);
         }
     } else {
-        existingBar.innerHTML = html;
+        // Re-build tombol sort dengan state active yang benar
+        existingBar.innerHTML = '';
+        sortOptions.forEach(function (opt) {
+            var isActive = currentSortOrder === opt.order;
+            var btn = document.createElement('button');
+            btn.className = 'sort-btn' + (isActive ? ' active' : '');
+            btn.textContent = opt.label;
+            btn.addEventListener('click', function() { changeSortOrder(opt.order); });
+            existingBar.appendChild(btn);
+        });
     }
 }
 
@@ -1946,7 +1955,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.js?v=2';
+    scriptLoader.src = 'assets/js/loader.js?v=3';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

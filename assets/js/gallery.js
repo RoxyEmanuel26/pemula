@@ -2005,7 +2005,7 @@ function injectVideoSchema(cardsToRender) {
             'name': card.name,
             'description': card.name + ' - Video streaming gratis di kumpulenak',
             'thumbnailUrl': card.image || '',
-            'uploadDate': card.date ? '2026-' + card.date.replace('/', '-') : '2026-01-01',
+            'uploadDate': card.date ? card.date + 'T00:00:00Z' : '2026-01-01T00:00:00Z',
             'duration': isoDuration,
             'contentUrl': 'https://www.kumpulenak.web.id/',
             'embedUrl': card.embedUrl || '',

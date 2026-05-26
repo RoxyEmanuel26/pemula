@@ -201,30 +201,27 @@
     // ==========================================
 
     var _popunderFired = false;
+    var _lastPopunderTime = 0; // Waktu terakhir popunder muncul di sesi tab saat ini
 
     function initSelfHostedPopunder() {
-        if (_popunderFired) return;
-        
-        // Aturan 1: Maksimal 1 popunder per tab/visit (mencegah spam saat user pindah halaman)
-        if (sessionStorage.getItem('popunderShown')) return;
-        
-        // Aturan 2: Maksimal 2 popunder per 24 jam untuk setiap user (Rekomendasi terbaik)
-        var maxPopsPerDay = 2; 
+        // Aturan: Maksimal 2 popunder per 2 menit untuk setiap user
+        var maxPopsPerWindow = 2; 
+        var timeWindowMs = 2 * 60 * 1000; // 2 Menit dalam milidetik
 
-        function checkDailyLimit() {
+        function checkLimit() {
             var now = new Date().getTime();
             var popHistory = [];
             try {
                 popHistory = JSON.parse(localStorage.getItem('popunderHistory') || '[]');
             } catch (e) {}
             
-            // Hapus riwayat yang sudah lebih dari 24 jam (86400000 ms)
+            // Hapus riwayat yang sudah lebih dari 2 menit
             popHistory = popHistory.filter(function(ts) {
-                return (now - ts) < 86400000;
+                return (now - ts) < timeWindowMs;
             });
             
             localStorage.setItem('popunderHistory', JSON.stringify(popHistory));
-            return popHistory.length < maxPopsPerDay;
+            return popHistory.length < maxPopsPerWindow;
         }
 
         function recordPopunder() {
@@ -236,14 +233,14 @@
             
             popHistory.push(now);
             localStorage.setItem('popunderHistory', JSON.stringify(popHistory));
-            sessionStorage.setItem('popunderShown', 'true');
         }
 
         function doPopunder() {
-            if (_popunderFired || sessionStorage.getItem('popunderShown') || !checkDailyLimit()) return;
-            _popunderFired = true;
+            if (!checkLimit()) return;
             
             recordPopunder();
+            _popunderFired = true;
+            _lastPopunderTime = new Date().getTime();
 
             var target = getRandomLink();
 
@@ -257,14 +254,17 @@
             }
         }
 
-        // Trigger pada klik pertama user
+        // Trigger pada klik user
         document.addEventListener('click', function popHandler(e) {
             // [SECURITY FIX] Hanya jalankan jika dari interaksi langsung (isTrusted)
             if (!e.isTrusted) return;
             
-            // Hapus event listener jika user sudah mencapai limit (sesi tab atau harian)
-            if (sessionStorage.getItem('popunderShown') || !checkDailyLimit()) {
-                document.removeEventListener('click', popHandler, true);
+            // Jangan spam bertubi-tubi dalam 1 detik (debouncing kecil)
+            var now = new Date().getTime();
+            if (now - _lastPopunderTime < 1000) return;
+
+            // Jika limit 2x per 2 menit tercapai, abaikan klik ini
+            if (!checkLimit()) {
                 return;
             }
 
@@ -278,7 +278,8 @@
             }
             
             doPopunder();
-            document.removeEventListener('click', popHandler, true);
+            // Catatan: Listener TIDAK dihapus (removeEventListener) agar bisa jalan lagi 
+            // nanti kalau limit waktu 2 menitnya sudah reset.
         }, true);
     }
 

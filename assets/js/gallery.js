@@ -1300,17 +1300,7 @@ function openPlayerModal(card) {
         "https://glamournakedemployee.com/r0ue7gdeb8?key=0f351b4656e9db04d06bdd25deb60f05",
         "https://glamournakedemployee.com/vfag6svjx?key=ba78cf78789f91aa7ace1942fce8a322",
         "https://glamournakedemployee.com/jpnevpwu8?key=53b3ae6972e09ad30eb53ce3f99890a5",
-        "https://glamournakedemployee.com/xdi7pkz9wh?key=46862d356a0f361ac92be23fe00a265a",
-        "https://omg10.com/4/10806721",
-        "https://omg10.com/4/10806736",
-        "https://omg10.com/4/10806719",
-        "https://omg10.com/4/10806723",
-        "https://omg10.com/4/10806731",
-        "https://omg10.com/4/10806726",
-        "https://omg10.com/4/10806729",
-        "https://omg10.com/4/10806728",
-        "https://omg10.com/4/10806730",
-        "https://omg10.com/4/10806727"
+        "https://glamournakedemployee.com/xdi7pkz9wh?key=46862d356a0f361ac92be23fe00a265a"
     ];
     openTab.href = randomLinks[Math.floor(Math.random() * randomLinks.length)];
 
@@ -1833,17 +1823,7 @@ function enhancedOpenPlayerModal(card) {
         "https://glamournakedemployee.com/r0ue7gdeb8?key=0f351b4656e9db04d06bdd25deb60f05",
         "https://glamournakedemployee.com/vfag6svjx?key=ba78cf78789f91aa7ace1942fce8a322",
         "https://glamournakedemployee.com/jpnevpwu8?key=53b3ae6972e09ad30eb53ce3f99890a5",
-        "https://glamournakedemployee.com/xdi7pkz9wh?key=46862d356a0f361ac92be23fe00a265a",
-        "https://omg10.com/4/10806721",
-        "https://omg10.com/4/10806736",
-        "https://omg10.com/4/10806719",
-        "https://omg10.com/4/10806723",
-        "https://omg10.com/4/10806731",
-        "https://omg10.com/4/10806726",
-        "https://omg10.com/4/10806729",
-        "https://omg10.com/4/10806728",
-        "https://omg10.com/4/10806730",
-        "https://omg10.com/4/10806727"
+        "https://glamournakedemployee.com/xdi7pkz9wh?key=46862d356a0f361ac92be23fe00a265a"
     ];
     openTab.href = randomLinks[Math.floor(Math.random() * randomLinks.length)];
 

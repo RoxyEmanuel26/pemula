@@ -6,7 +6,7 @@
 # Rewrite halaman video (kritis)
 # Semua URL /v/ID-slug akan disajikan oleh video.html
 # Status 200 = rewrite (URL di browser TIDAK berubah)
-/v/*  /video.html  200
+/v/*  /video  200
 
 # Catatan:
 # - Halaman statis (/about, /dmca, /privacy, /terms, /contact, /howto)

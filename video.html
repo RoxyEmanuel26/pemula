@@ -222,6 +222,16 @@
             document.getElementById('ogDesc').setAttribute('content', desc);
             document.getElementById('ogUrl').setAttribute('content', window.location.href);
             
+            // Dynamic Canonical Tag
+            let canonicalLink = document.querySelector('link[rel="canonical"]');
+            if (!canonicalLink) {
+                canonicalLink = document.createElement('link');
+                canonicalLink.setAttribute('rel', 'canonical');
+                document.head.appendChild(canonicalLink);
+            }
+            const cleanSlug = (video.title || '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().substring(0, 80);
+            canonicalLink.setAttribute('href', window.location.origin + '/v/' + video.id + '-' + cleanSlug);
+
             if (video.default_thumb && video.default_thumb.src && isSafeUrl(video.default_thumb.src)) {
                 document.getElementById('ogImage').setAttribute('content', video.default_thumb.src);
             }

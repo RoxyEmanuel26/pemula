@@ -1,0 +1,15 @@
+# ================================================
+# _redirects — Cloudflare Pages Routing Rules
+# Pengganti "rewrites" di vercel.json
+# ================================================
+
+# Rewrite halaman video (kritis)
+# Semua URL /v/ID-slug akan disajikan oleh video.html
+# Status 200 = rewrite (URL di browser TIDAK berubah)
+/v/*  /video.html  200
+
+# Catatan:
+# - Halaman statis (/about, /dmca, /privacy, /terms, /contact, /howto)
+#   TIDAK perlu ditulis di sini karena Cloudflare Pages otomatis
+#   melakukan clean URL (about.html → /about)
+# - File 404.html otomatis digunakan sebagai halaman error 404

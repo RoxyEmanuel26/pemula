@@ -1,0 +1,111 @@
+# ================================================
+# _headers — Cloudflare Pages HTTP Headers
+# Pengganti "headers" di vercel.json
+# ================================================
+
+# === Halaman Beranda ===
+/
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+# === Halaman Statis ===
+/about
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+/dmca
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+/contact
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+/privacy
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+/terms
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+/howto
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+# === Halaman Video ===
+/v/*
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://glamournakedemployee.com https://profitablecpmratenetwork.com https://al5sm.com https://fonts.googleapis.com; img-src * data: blob:; connect-src 'self' https://www.eporner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; frame-src https://glamournakedemployee.com; object-src 'none';
+
+# === Aset JavaScript ===
+/assets/js/*
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
+# === Aset CSS ===
+/assets/css/*
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
+# === Icons & Gambar ===
+/assets/icons/*
+  Cache-Control: public, max-age=2592000, immutable
+
+# === Web Manifest ===
+/site.webmanifest
+  Cache-Control: public, max-age=86400
+  Content-Type: application/manifest+json
+
+# === Robots.txt ===
+/robots.txt
+  Cache-Control: public, max-age=86400
+  Content-Type: text/plain
+
+# === Sitemap (root) ===
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+  X-Robots-Tag: noindex
+
+/sitemap_index.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+  X-Robots-Tag: noindex
+
+# === Sitemap (folder sitemaps/) ===
+/sitemaps/*
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+  X-Robots-Tag: noindex

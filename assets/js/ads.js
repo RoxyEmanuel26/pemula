@@ -18,17 +18,17 @@
     //  KONFIGURASI BANNER ADS (Adsterra)
     //  Inject ke div container yang sudah ada di HTML
     // ==========================================
-    var BANNER_ADS = [
+        var BANNER_ADS = [
         {
             containerId: 'adBannerHeader',
-            key: 'cffac27f60f026f84e02386788c1a06b',
+            key: 'b0b78cb9bbfa0e129e5e6adc1338e387',
             format: 'iframe',
             height: 90,
             width: 728
         },
         {
             containerId: 'adBannerContent',
-            key: 'ac030fa023c7db2ca8b74d28f66aaccb',
+            key: '65a1753ffe6db0bf1bb656cf7ab30a02',
             format: 'iframe',
             height: 250,
             width: 300
@@ -52,7 +52,7 @@
     //  DAFTAR SCRIPT POPUNDER
     // ==========================================
     var POPUNDER_SCRIPTS = [
-        'https://pl28946619.profitablecpmratenetwork.com/7f/f1/b3/7ff1b3565d09822b19426419f6d92922.js',
+        'https://glamournakedemployee.com/a1/f9/2e/a1f92eeaac6d494d099c19d936768302.js',
     ];
 
     // ==========================================

@@ -830,11 +830,11 @@ function renderCardsToGrid(cardsToRender) {
 
         // Inject Adsterra atOptions + invoke script
         var atScript = document.createElement('script');
-        atScript.textContent = "atOptions = { 'key' : 'cffac27f60f026f84e02386788c1a06b', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };";
+        atScript.textContent = "atOptions = { 'key' : 'b0b78cb9bbfa0e129e5e6adc1338e387', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };";
         bannerWrapper.appendChild(atScript);
 
         var invokeScript = document.createElement('script');
-        invokeScript.src = 'https://glamournakedemployee.com/cffac27f60f026f84e02386788c1a06b/invoke.js';
+        invokeScript.src = 'https://glamournakedemployee.com/b0b78cb9bbfa0e129e5e6adc1338e387/invoke.js';
         bannerWrapper.appendChild(invokeScript);
 
         // Mencegah popunder terpicu saat klik banner
@@ -1379,11 +1379,11 @@ function injectPlayerAds() {
         }
     }
 
-    // 320x50 top & bottom (key: 2e8603e8d49f282cb2b6c51077745034)
-    injectAd('playerAdTop', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
-    injectAd('playerAdBottom', '2e8603e8d49f282cb2b6c51077745034', 320, 50);
-    // 300x250 sidebar (key: ac030fa023c7db2ca8b74d28f66aaccb)
-    injectAd('playerAdSide', 'ac030fa023c7db2ca8b74d28f66aaccb', 300, 250);
+    // 320x50 top & bottom (key: a81fef32b8259652f7a4d1d9126a0165)
+    injectAd('playerAdTop', 'a81fef32b8259652f7a4d1d9126a0165', 320, 50);
+    injectAd('playerAdBottom', 'a81fef32b8259652f7a4d1d9126a0165', 320, 50);
+    // 300x250 sidebar (key: 65a1753ffe6db0bf1bb656cf7ab30a02)
+    injectAd('playerAdSide', '65a1753ffe6db0bf1bb656cf7ab30a02', 300, 250);
 }
 
 /**

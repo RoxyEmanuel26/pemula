@@ -194,83 +194,8 @@
     var _lastPopunderTime = 0; // Waktu terakhir popunder muncul di sesi tab saat ini
 
     function initSelfHostedPopunder() {
-        // Aturan: Maksimal 2 popunder per 2 menit untuk setiap user
-        var maxPopsPerWindow = 2; 
-        var timeWindowMs = 2 * 60 * 1000; // 2 Menit dalam milidetik
-
-        function checkLimit() {
-            var now = new Date().getTime();
-            var popHistory = [];
-            try {
-                popHistory = JSON.parse(localStorage.getItem('popunderHistory') || '[]');
-            } catch (e) {}
-            
-            // Hapus riwayat yang sudah lebih dari 2 menit
-            popHistory = popHistory.filter(function(ts) {
-                return (now - ts) < timeWindowMs;
-            });
-            
-            localStorage.setItem('popunderHistory', JSON.stringify(popHistory));
-            return popHistory.length < maxPopsPerWindow;
-        }
-
-        function recordPopunder() {
-            var now = new Date().getTime();
-            var popHistory = [];
-            try {
-                popHistory = JSON.parse(localStorage.getItem('popunderHistory') || '[]');
-            } catch (e) {}
-            
-            popHistory.push(now);
-            localStorage.setItem('popunderHistory', JSON.stringify(popHistory));
-        }
-
-        function doPopunder() {
-            if (!checkLimit()) return;
-            
-            recordPopunder();
-            _popunderFired = true;
-            _lastPopunderTime = new Date().getTime();
-
-            var target = getRandomLink();
-
-            try {
-                var w = window.open(target, '_blank');
-                if (w) {
-                    try { window.focus(); } catch (e) { }
-                }
-            } catch (e) {
-                // Silently fail
-            }
-        }
-
-        // Trigger pada klik user
-        document.addEventListener('click', function popHandler(e) {
-            // [SECURITY FIX] Hanya jalankan jika dari interaksi langsung (isTrusted)
-            if (!e.isTrusted) return;
-            
-            // Jangan spam bertubi-tubi dalam 1 detik (debouncing kecil)
-            var now = new Date().getTime();
-            if (now - _lastPopunderTime < 1000) return;
-
-            // Jika limit 2x per 2 menit tercapai, abaikan klik ini
-            if (!checkLimit()) {
-                return;
-            }
-
-            // Jangan trigger pada elemen interaktif yang penting (tombol play/iklan lain)
-            var target = e.target;
-            if (target.closest && (
-                target.closest('.player-overlay') ||
-                target.closest('.ingrid-banner-ad')
-            )) {
-                return;
-            }
-            
-            doPopunder();
-            // Catatan: Listener TIDAK dihapus (removeEventListener) agar bisa jalan lagi 
-            // nanti kalau limit waktu 2 menitnya sudah reset.
-        }, true);
+        // Dinonaktifkan atas permintaan pengguna karena tautan Direct Link (Smartlink)
+        // sudah memiliki tombol khusus "🔗 DOWNLOAD" di halaman detail video.
     }
 
     // ==========================================

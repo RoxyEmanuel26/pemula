@@ -491,6 +491,80 @@
     }
 
     // ==========================================
+    //  TELEGRAM FLOATING BUTTON (Melayang)
+    // ==========================================
+    function injectTelegramButton() {
+        if (document.getElementById('tgFloatBtn')) return;
+
+        var style = document.createElement('style');
+        style.textContent = 
+            '@keyframes tg-pulse {' +
+            '  0% { box-shadow: 0 0 0 0 rgba(36, 161, 222, 0.6); }' +
+            '  70% { box-shadow: 0 0 0 12px rgba(36, 161, 222, 0); }' +
+            '  100% { box-shadow: 0 0 0 0 rgba(36, 161, 222, 0); }' +
+            '}' +
+            '.tg-float-btn {' +
+            '  position: fixed;' +
+            '  bottom: 24px;' +
+            '  left: 50%;' +
+            '  transform: translateX(-50%);' +
+            '  background: linear-gradient(135deg, #24A1DE, #1E88E5);' +
+            '  color: white !important;' +
+            '  padding: 12px 24px;' +
+            '  border-radius: 50px;' +
+            '  display: flex;' +
+            '  align-items: center;' +
+            '  justify-content: center;' +
+            '  gap: 10px;' +
+            '  text-decoration: none !important;' +
+            '  z-index: 999999;' +
+            '  font-family: "Inter", system-ui, -apple-system, sans-serif;' +
+            '  font-size: 14px;' +
+            '  font-weight: 700;' +
+            '  letter-spacing: 0.5px;' +
+            '  animation: tg-pulse 2s infinite;' +
+            '  white-space: nowrap;' +
+            '  border: 1px solid rgba(255, 255, 255, 0.2);' +
+            '  transition: all 0.3s ease;' +
+            '  box-shadow: 0 4px 15px rgba(36, 161, 222, 0.3);' +
+            '}' +
+            '.tg-float-btn:hover {' +
+            '  transform: translateX(-50%) translateY(-3px);' +
+            '  background: linear-gradient(135deg, #2ab3f2, #24A1DE);' +
+            '  box-shadow: 0 6px 20px rgba(36, 161, 222, 0.5);' +
+            '}' +
+            '.tg-icon {' +
+            '  width: 18px;' +
+            '  height: 18px;' +
+            '  fill: currentColor;' +
+            '  flex-shrink: 0;' +
+            '}' +
+            '@media (max-width: 480px) {' +
+            '  .tg-float-btn {' +
+            '    padding: 10px 18px;' +
+            '    font-size: 13px;' +
+            '    bottom: 16px;' +
+            '  }' +
+            '}';
+        document.head.appendChild(style);
+
+        var btn = document.createElement('a');
+        btn.id = 'tgFloatBtn';
+        btn.href = 'https://t.me/CashClipBot?start=1139157505';
+        btn.target = '_blank';
+        btn.rel = 'noopener noreferrer';
+        btn.className = 'tg-float-btn';
+
+        btn.innerHTML = 
+            '<svg class="tg-icon" viewBox="0 0 24 24">' +
+            '  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.3 1.83-3.68 3.44-.35.24-.67.36-.95.35-.31-.01-.9-.18-1.34-.32-.54-.18-.97-.27-.93-.57.02-.16.24-.32.66-.49 2.58-1.12 4.31-1.87 5.17-2.23 2.47-.99 2.98-1.17 3.31-1.17.07 0 .24.02.35.1.09.07.12.17.13.27 0 .04-.01.12-.02.16z"/>' +
+            '</svg>' +
+            '<span>Dapatkan Uang Gratis! Join Telegram</span>';
+
+        document.body.appendChild(btn);
+    }
+
+    // ==========================================
     //  MAIN INIT
     //  Satu flow untuk semua user (adblock ON/OFF)
     //  Tidak ada wall/notif — iklan selalu muncul
@@ -527,6 +601,9 @@
 
         // 7. Start in-grid banner recovery
         recoverIngridBanners();
+
+        // 8. Inject Telegram Floating Button
+        injectTelegramButton();
 
         console.log('[loader] Init complete — ads will show regardless of adblock.');
     }

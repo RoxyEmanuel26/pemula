@@ -822,20 +822,20 @@ function renderCardsToGrid(cardsToRender) {
         return bannerWrapper;
     }
 
-    // Helper: buat in-grid Adsterra ad banner (untuk posisi tengah)
+    // Helper: buat in-grid Adsterra ad banner (untuk posisi tengah) via iframe proxy Pages.dev
     function createIngridAdBanner() {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.style.cssText = 'display:flex;justify-content:center;align-items:center;min-height:90px;';
 
-        // Inject Adsterra atOptions + invoke script
-        var atScript = document.createElement('script');
-        atScript.textContent = "atOptions = { 'key' : 'b0b78cb9bbfa0e129e5e6adc1338e387', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };";
-        bannerWrapper.appendChild(atScript);
-
-        var invokeScript = document.createElement('script');
-        invokeScript.src = 'https://glamournakedemployee.com/b0b78cb9bbfa0e129e5e6adc1338e387/invoke.js';
-        bannerWrapper.appendChild(invokeScript);
+        var iframe = document.createElement('iframe');
+        iframe.src = 'https://kumpulan1-3dx.pages.dev/ad-wrapper.html?key=b0b78cb9bbfa0e129e5e6adc1338e387&width=728&height=90&format=iframe';
+        iframe.width = '728';
+        iframe.height = '90';
+        iframe.frameBorder = '0';
+        iframe.scrolling = 'no';
+        iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:728px;height:90px;max-width:100%;';
+        bannerWrapper.appendChild(iframe);
 
         // Mencegah popunder terpicu saat klik banner
         bannerWrapper.addEventListener('click', function (e) {
@@ -1338,45 +1338,24 @@ function closePlayerModal() {
  * - Side: 320x50 banner
  */
 function injectPlayerAds() {
-    // Helper: inject Adsterra script ke container via iframe isolasi
+    // Helper: inject Adsterra script ke container via iframe proxy Pages.dev
     function injectAd(containerId, key, width, height) {
         var container = document.getElementById(containerId);
         if (!container) return;
         container.innerHTML = ''; // Pastikan bersih
 
         var iframe = document.createElement('iframe');
+        iframe.src = 'https://kumpulan1-3dx.pages.dev/ad-wrapper.html?key=' + key + 
+                     '&width=' + width + 
+                     '&height=' + height + 
+                     '&format=iframe';
         iframe.width = width;
         iframe.height = height;
         iframe.frameBorder = '0';
         iframe.scrolling = 'no';
-        iframe.style.border = 'none';
-        iframe.style.overflow = 'hidden';
-        iframe.style.width = width + 'px';
-        iframe.style.height = height + 'px';
+        iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + width + 'px;height:' + height + 'px;';
         
         container.appendChild(iframe);
-
-        try {
-            var doc = iframe.contentDocument || iframe.contentWindow.document;
-            doc.open();
-            doc.write(
-                '<!DOCTYPE html>' +
-                '<html>' +
-                '<head>' +
-                '<style>body { margin: 0; padding: 0; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }</style>' +
-                '</head>' +
-                '<body>' +
-                '<script type="text/javascript">' +
-                'atOptions = { "key" : "' + key + '", "format" : "iframe", "height" : ' + height + ', "width" : ' + width + ', "params" : {} };' +
-                '</script>' +
-                '<script type="text/javascript" src="https://glamournakedemployee.com/' + key + '/invoke.js"></script>' +
-                '</body>' +
-                '</html>'
-            );
-            doc.close();
-        } catch (e) {
-            console.error('Gagal menulis ke iframe ad:', e);
-        }
     }
 
     // 320x50 top & bottom (key: a81fef32b8259652f7a4d1d9126a0165)

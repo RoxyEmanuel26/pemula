@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Ad Frame</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var key = params.get('key');
+            var format = params.get('format') || 'iframe';
+            var width = parseInt(params.get('width'), 10);
+            var height = parseInt(params.get('height'), 10);
+
+            // Validasi parameter untuk mencegah script injection / XSS
+            var keyRegex = /^[a-f0-9]{32}$/i;
+            if (!key || !keyRegex.test(key) || isNaN(width) || isNaN(height)) {
+                console.error('[ad-wrapper] Invalid ad parameters');
+                window.parent.postMessage({ status: 'blocked', key: key }, '*');
+                return;
+            }
+
+            // Atur opsi Adsterra
+            window.atOptions = {
+                'key': key,
+                'format': format,
+                'height': height,
+                'width': width,
+                'params': {}
+            };
+
+            // Buat elemen script invoke.js secara dinamis
+            var s = document.createElement('script');
+            s.type = 'text/javascript';
+            s.src = '//glamournakedemployee.com/' + key + '/invoke.js';
+            
+            s.onload = function() {
+                // Tunggu sebentar lalu cek apakah elemen ad terbentuk
+                setTimeout(function() {
+                    var hasContent = document.body.children.length > 1 || 
+                                     document.querySelector('iframe') || 
+                                     document.querySelector('ins') ||
+                                     document.querySelector('a');
+                    if (hasContent) {
+                        window.parent.postMessage({ status: 'success', key: key }, '*');
+                    } else {
+                        window.parent.postMessage({ status: 'blocked', key: key }, '*');
+                    }
+                }, 1200);
+            };
+
+            s.onerror = function() {
+                window.parent.postMessage({ status: 'blocked', key: key }, '*');
+            };
+
+            document.body.appendChild(s);
+        })();
+    </script>
+</body>
+</html>

@@ -287,37 +287,48 @@
         wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
         container.appendChild(wrapper);
 
-        window.atOptions = {
-            'key': config.key,
-            'format': config.format,
-            'height': config.height,
-            'width': config.width,
-            'params': {}
-        };
+        // Load via the iframe proxy hosted on Pages.dev to bypass referrer block
+        var iframe = document.createElement('iframe');
+        iframe.src = 'https://kumpulan1-3dx.pages.dev/ad-wrapper.html?key=' + config.key + 
+                     '&width=' + config.width + 
+                     '&height=' + config.height + 
+                     '&format=' + (config.format || 'iframe');
+        iframe.width = config.width;
+        iframe.height = config.height;
+        iframe.frameBorder = '0';
+        iframe.scrolling = 'no';
+        iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + config.width + 'px;height:' + config.height + 'px;max-width:100%;';
 
-        var scriptEl = document.createElement('script');
-        scriptEl.type = 'text/javascript';
-        var parts = ['//', _invokeDomain, '/', config.key, '/invoke.js'];
-        scriptEl.src = parts.join('');
-
-        scriptEl.onerror = function () {
-            // Adsterra diblokir → inject fallback banner
+        var fallbackTriggered = false;
+        function triggerFallback() {
+            if (fallbackTriggered) return;
+            fallbackTriggered = true;
+            window.removeEventListener('message', messageListener);
             if (typeof onBlocked === 'function') {
                 onBlocked(config.containerId);
             }
-        };
+        }
 
-        wrapper.appendChild(scriptEl);
+        // Set timeout to check if iframe fails or is blocked
+        var adTimeout = setTimeout(function () {
+            console.log('[loader] Ad wrapper timeout for', config.containerId, '→ fallback');
+            triggerFallback();
+        }, 4500);
 
-        // Juga cek setelah 4 detik — kadang script load tapi iframe diblokir
-        setTimeout(function () {
-            var iframe = container.querySelector('iframe');
-            if (!iframe || iframe.offsetHeight === 0) {
-                if (typeof onBlocked === 'function') {
-                    onBlocked(config.containerId);
-                }
+        function messageListener(event) {
+            if (!event.data || event.data.key !== config.key) return;
+
+            if (event.data.status === 'success') {
+                clearTimeout(adTimeout);
+                window.removeEventListener('message', messageListener);
+            } else if (event.data.status === 'blocked') {
+                clearTimeout(adTimeout);
+                triggerFallback();
             }
-        }, 4000);
+        }
+
+        window.addEventListener('message', messageListener);
+        wrapper.appendChild(iframe);
     }
 
     function injectCustomBanner(config) {

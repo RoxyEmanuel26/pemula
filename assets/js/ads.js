@@ -43,7 +43,7 @@
         {
             containerId: 'adBannerCustom',
             imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            linkUrl: 'https://www.missav-j.web.id/',
+            linkUrl: 'https://1024terabox.com/s/164dxpOb-Fi34wLsXzvwkLA',
             alt: 'Download Terabox'
         }
     ];
@@ -59,7 +59,7 @@
     //  DAFTAR SCRIPT SOCIAL BAR
     // ==========================================
     var SOCIALBAR_SCRIPTS = [
-        // 'https://pl28946631.profitablecpmratenetwork.com/db/38/e3/db38e32a6ae0d31a9974402fe848e234.js',
+         'https://glamournakedemployee.com/b9/9c/76/b99c766634c3328f9a3691434f4f1bcb.js',
     ];
 
     // ==========================================

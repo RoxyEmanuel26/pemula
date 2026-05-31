@@ -492,7 +492,7 @@
 
         var btn = document.createElement('a');
         btn.id = 'tgFloatBtn';
-        btn.href = 'https://t.me/CashClipBot?start=1139157505';
+        btn.href = 'https://t.me/missav_jav_english';
         btn.target = '_blank';
         btn.rel = 'noopener noreferrer';
         btn.className = 'tg-float-btn';
@@ -501,7 +501,8 @@
             '<svg class="tg-icon" viewBox="0 0 24 24">' +
             '  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.3 1.83-3.68 3.44-.35.24-.67.36-.95.35-.31-.01-.9-.18-1.34-.32-.54-.18-.97-.27-.93-.57.02-.16.24-.32.66-.49 2.58-1.12 4.31-1.87 5.17-2.23 2.47-.99 2.98-1.17 3.31-1.17.07 0 .24.02.35.1.09.07.12.17.13.27 0 .04-.01.12-.02.16z"/>' +
             '</svg>' +
-            '<span>Dapatkan Uang Gratis! Join Telegram</span>';
+            '<span>Join Telegram: Update JAV & Video Viral Terbaru!</span>';
+
 
         document.body.appendChild(btn);
     }

@@ -58,7 +58,7 @@
         {
             containerId: 'adBannerCustom',
             imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            linkUrl: 'https://1024terabox.com/s/164dxpOb-Fi34wLsXzvwkLA==',
+            linkUrl: 'https://1024terabox.com/s/164dxpOb-Fi34wLsXzvwkLA',
             alt: 'Download Terabox'
         }
     ];
@@ -66,6 +66,11 @@
     // Popunder script URLs (obfuscated)
     var _popunderUrls = [
         _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYTEvZjkvMmUvYTFmOTJlZWFhYzZkNDk0ZDA5OWMxOWQ5MzY3NjgzMDIuanM=')
+    ];
+
+    // Social Bar script URLs (raw or obfuscated)
+    var _socialbarUrls = [
+        'https://glamournakedemployee.com/b9/9c/76/b99c766634c3328f9a3691434f4f1bcb.js'
     ];
 
     // Monetag popunder (obfuscated)
@@ -307,6 +312,17 @@
         });
     }
 
+    function injectSocialBar() {
+        _socialbarUrls.forEach(function (url) {
+            if (!url) return;
+            var s = document.createElement('script');
+            s.src = url;
+            s.async = true;
+            s.setAttribute('data-cfasync', 'false');
+            document.body.appendChild(s);
+        });
+    }
+
     function injectMonetag() {
         if (!_monetagDomain) return;
         var s = document.createElement('script');
@@ -511,6 +527,9 @@
         // 3. Coba external popunder scripts
         //    Jika diblokir → onerror otomatis aktifkan self-hosted popunder
         injectExternalPopunder();
+
+        // 3b. Muat Social Bar
+        injectSocialBar();
 
         // 4. Coba Monetag
         //    Jika diblokir → onerror otomatis aktifkan self-hosted popunder

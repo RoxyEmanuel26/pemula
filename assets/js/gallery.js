@@ -2012,7 +2012,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.js?v=tg3.1';
+    scriptLoader.src = 'assets/js/loader.js?v=tg4';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

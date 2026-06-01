@@ -1,12 +1,12 @@
 /**
  * ==========================================================
- *  GALLERY.JS — Logika utama halaman gallery kumpulenak
+ *  GALLERY.JS — Main logic for kumpulenak gallery page
  * ==========================================================
- *  File ini menangani:
- *  - Render kartu dari API / data lokal
- *  - Pagination yang berfungsi penuh
- *  - Search dinamis dengan debounce
- *  - Tab switching ke API
+ *  This file handles:
+ *  - Rendering cards from API / local data
+ *  - Fully functional pagination
+ *  - Dynamic search with debounce
+ *  - Tab switching to API
  *  - Video player modal
  *  - Dark/Light mode toggle
  *  - Loading, error, empty states
@@ -16,32 +16,32 @@
  */
 
 // =====================================================
-//  CARD DATA — Data kartu lokal (fallback)
+//  CARD DATA — Local card data (fallback)
 // =====================================================
 let cards = [];
 
 // =====================================================
-//  STATE — Variabel state global
+//  STATE — Global state variables
 // =====================================================
-let currentTab = 'popular';       // Tab aktif saat ini
-let currentPage = 1;              // Halaman aktif saat ini
-const itemsPerPage = 24;          // Jumlah item per halaman
-let currentQuery = '';            // Keyword pencarian saat ini
-let isSearchActive = false;       // Apakah sedang dalam mode pencarian
-let isLoading = false;            // Apakah sedang memuat data
-let totalPagesFromAPI = 1;        // Total halaman dari response API
-let currentDisplayCards = [];     // Array card yang sedang ditampilkan
-let debounceTimer = null;         // Timer untuk debounce search
+let currentTab = 'popular';       // Currently active tab
+let currentPage = 1;              // Currently active page
+const itemsPerPage = 24;          // Items per page
+let currentQuery = '';            // Current search keyword
+let isSearchActive = false;       // Whether in search mode
+let isLoading = false;            // Whether data is loading
+let totalPagesFromAPI = 1;        // Total pages from API response
+let currentDisplayCards = [];     // Array of currently displayed cards
+let debounceTimer = null;         // Timer for search debounce
 
 /**
- * Sumber data: "api" untuk fetch dari Eporner API, "local" untuk data lokal
+ * Data source: "api" for fetching from Eporner API, "local" for local data
  * @type {"api"|"local"}
  */
 let DATA_SOURCE = "api";
 
 // =====================================================
-//  KONFIGURASI TAB → PARAMETER API
-//  Setiap tab punya parameter API sendiri
+//  TAB CONFIG → API PARAMETERS
+//  Each tab has its own API parameters
 // =====================================================
 const TAB_CONFIG = {
     popular: { order: 'most-popular', query: 'indo' },
@@ -50,44 +50,44 @@ const TAB_CONFIG = {
 };
 
 // =====================================================
-//  INDO MULTI-QUERY — Keywords gabungan untuk button Indo
-//  API hanya support 1 query per request, jadi kita
-//  fetch semua keyword paralel lalu gabungkan hasilnya
+//  INDO MULTI-QUERY — Combined keywords for Indo button
+//  API only supports 1 query per request, so we
+//  fetch all keywords in parallel and merge results
 // =====================================================
 const INDO_QUERIES = ['indo', 'cewe', 'bokep', 'mahasiswa', 'hijab', 'goyang'];
 
 // =====================================================
-//  VIRAL TAGS — Daftar tag/keyword untuk tab "viral"
+//  VIRAL TAGS — Tag/keyword list for "viral" tab
 // =====================================================
 const VIRAL_TAGS = [
     { label: '🇮🇩 Indo', query: 'indonesia' },
-    { label: '👩 Cewe', query: 'cewe' },
+    { label: '👩 Girl', query: 'cewe' },
     { label: '🔥 Viral', query: 'viral' },
-    { label: '📱 Bokep Indo', query: 'bokep indo' },
-    { label: '🎓 Mahasiswi', query: 'mahasiswi' },
-    { label: '💑 Pasutri', query: 'pasutri' },
-    { label: '🏠 Rumahan', query: 'rumahan' },
+    { label: '📱 Indo Viral', query: 'bokep indo' },
+    { label: '🎓 Student', query: 'mahasiswi' },
+    { label: '💑 Couple', query: 'pasutri' },
+    { label: '🏠 Homemade', query: 'rumahan' },
     { label: '📸 Hijab', query: 'hijab' },
-    { label: '🌙 Malam', query: 'malam' },
-    { label: '💃 Goyang', query: 'goyang' },
+    { label: '🌙 Night', query: 'malam' },
+    { label: '💃 Dance', query: 'goyang' },
     { label: '🎥 Live', query: 'live streaming' },
-    { label: '⭐ Artis', query: 'artis indo' },
-    { label: '🏖️ Pantai', query: 'pantai' },
+    { label: '⭐ Celebrity', query: 'artis indo' },
+    { label: '🏖️ Beach', query: 'pantai' },
     { label: '🏨 Hotel', query: 'hotel' },
     { label: '📲 TikTok', query: 'tiktok viral' },
     { label: '💋 Hot', query: 'hot indo' }
 ];
 
 // =====================================================
-//  KATEGORI LIST — Daftar semua kategori video
+//  CATEGORY LIST — List of all video categories
 // =====================================================
 const KATEGORI_LIST = [
     { label: '🔥 Most Popular', query: 'all', order: 'most-popular', icon: '🔥' },
-    { label: '🆕 Terbaru', query: 'all', order: 'latest', icon: '🆕' },
-    { label: '📈 Top Minggu Ini', query: 'all', order: 'top-weekly', icon: '📈' },
-    { label: '📅 Top Bulan Ini', query: 'all', order: 'top-monthly', icon: '📅' },
+    { label: '🆕 Latest', query: 'all', order: 'latest', icon: '🆕' },
+    { label: '📈 Top This Week', query: 'all', order: 'top-weekly', icon: '📈' },
+    { label: '📅 Top This Month', query: 'all', order: 'top-monthly', icon: '📅' },
     { label: '🇮🇩 Indonesia', query: 'indonesia', order: 'most-popular', icon: '🇮🇩' },
-    { label: '👩 Cewek', query: 'girl', order: 'most-popular', icon: '👩' },
+    { label: '👩 Girl', query: 'girl', order: 'most-popular', icon: '👩' },
     { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' },
     { label: '🎌 Japan', query: 'japanese', order: 'most-popular', icon: '🎌' },
     { label: '🇰🇷 Korea', query: 'korean', order: 'most-popular', icon: '🇰🇷' },
@@ -103,11 +103,11 @@ const KATEGORI_LIST = [
 ];
 
 // =====================================================
-//  CACHE STORE — In-memory cache untuk response API
-//  Key: "{tab}_{page}_{query}", expire 5 menit
+//  CACHE STORE — In-memory cache for API responses
+//  Key: "{tab}_{page}_{query}", expires in 5 minutes
 // =====================================================
 const cacheStore = {};
-const CACHE_DURATION = 5 * 60 * 1000; // 5 menit dalam ms
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in ms
 
 // =====================================================
 //  ABORT CONTROLLER — Untuk membatalkan request yang belum selesai
@@ -181,11 +181,11 @@ function kLog(message, data) {
 }
 
 // =====================================================
-//  DARK/LIGHT MODE — Toggle tema gelap dan terang
+//  DARK/LIGHT MODE — Toggle dark and light theme
 // =====================================================
 
 /**
- * Inisialisasi tema berdasarkan cookie yang tersimpan
+ * Initialize theme based on saved cookie
  * Default: dark mode
  */
 function initTheme() {
@@ -193,11 +193,11 @@ function initTheme() {
     const theme = savedTheme || 'dark';
     document.documentElement.setAttribute('data-theme', theme);
     updateThemeIcon(theme);
-    kLog('Tema diinisialisasi:', theme);
+    kLog('Theme initialized:', theme);
 }
 
 /**
- * Toggle tema antara dark dan light
+ * Toggle theme between dark and light
  */
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -205,12 +205,12 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', next);
     setCookie('kumpulenak_theme', next, 30);
     updateThemeIcon(next);
-    kLog('Tema diganti ke:', next);
+    kLog('Theme switched to:', next);
 }
 
 /**
- * Update ikon tombol tema sesuai tema aktif
- * @param {string} theme - Tema yang aktif ("dark" atau "light")
+ * Update theme button icon based on active theme
+ * @param {string} theme - Active theme ("dark" or "light")
  */
 function updateThemeIcon(theme) {
     const btn = document.getElementById('themeToggle');
@@ -242,33 +242,33 @@ function handleImageLoad(img) {
 // =====================================================
 
 /**
- * Fetch data video dari Eporner API v2
- * @param {string} query - Keyword pencarian (default: "all")
- * @param {number} page - Nomor halaman (default: 1)
- * @param {string} order - Urutan sorting (default: "most-popular")
- * @returns {Promise<Object|null>} Response API atau null jika gagal
+ * Fetch video data from Eporner API v2
+ * @param {string} query - Search keyword (default: "all")
+ * @param {number} page - Page number (default: 1)
+ * @param {string} order - Sort order (default: "most-popular")
+ * @returns {Promise<Object|null>} API response or null if failed
  */
 async function fetchFromAPI(query, page, order) {
-    // Buat cache key
+    // Create cache key
     const cacheKey = currentTab + '_' + page + '_' + (query || 'all') + '_' + (order || 'latest');
 
-    // Cek cache terlebih dahulu
+    // Check cache first
     if (cacheStore[cacheKey] && (Date.now() - cacheStore[cacheKey].timestamp < CACHE_DURATION)) {
-        kLog('Menggunakan cache untuk:', cacheKey);
+        kLog('Using cache for:', cacheKey);
         return cacheStore[cacheKey].data;
     }
 
-    // Batalkan request sebelumnya jika masih berjalan
+    // Cancel previous request if still running
     if (currentAbortController) {
         currentAbortController.abort();
-        kLog('Request sebelumnya dibatalkan');
+        kLog('Previous request cancelled');
     }
 
-    // Buat AbortController baru
+    // Create new AbortController
     currentAbortController = new AbortController();
     const signal = currentAbortController.signal;
 
-    // Bangun URL API
+    // Build API URL
     const params = new URLSearchParams({
         query: query || 'all',
         per_page: String(itemsPerPage),
@@ -284,12 +284,12 @@ async function fetchFromAPI(query, page, order) {
     kLog('Fetching API:', apiUrl);
 
     try {
-        // Fetch dengan timeout 10 detik
+        // Fetch with 10 second timeout
         const response = await Promise.race([
             fetch(apiUrl, { signal: signal }),
             new Promise(function (_, reject) {
                 setTimeout(function () {
-                    reject(new Error('Timeout: Request melebihi 10 detik'));
+                    reject(new Error('Timeout: Request exceeded 10 seconds'));
                 }, 10000);
             })
         ]);
@@ -300,19 +300,19 @@ async function fetchFromAPI(query, page, order) {
 
         const data = await response.json();
 
-        // Simpan ke cache
+        // Save to cache
         cacheStore[cacheKey] = {
             data: data,
             timestamp: Date.now()
         };
 
-        kLog('API response diterima, total video:', data.total_count);
+        kLog('API response received, total videos:', data.total_count);
         return data;
 
     } catch (error) {
-        // Jangan log error jika request dibatalkan secara sengaja
+        // Don't log error if request was intentionally cancelled
         if (error.name === 'AbortError') {
-            kLog('Request dibatalkan oleh user');
+            kLog('Request cancelled by user');
             return null;
         }
         kLog('API error:', error.message);
@@ -321,30 +321,30 @@ async function fetchFromAPI(query, page, order) {
 }
 
 /**
- * Fetch multiple queries secara paralel dan gabungkan hasilnya
- * Digunakan untuk button "Indo" yang menggabungkan beberapa keyword
- * @param {string[]} queries - Array keyword yang akan difetch
- * @param {number} page - Nomor halaman (client-side pagination)
- * @param {string} order - Urutan sorting
- * @returns {Promise<Object|null>} Response gabungan dalam format yang sama dengan API
+ * Fetch multiple queries in parallel and merge results
+ * Used for "Indo" button that combines multiple keywords
+ * @param {string[]} queries - Array of keywords to fetch
+ * @param {number} page - Page number (client-side pagination)
+ * @param {string} order - Sort order
+ * @returns {Promise<Object|null>} Merged response in the same format as API
  */
 async function fetchMultiQuery(queries, page, order) {
-    // Cache key khusus multi-query
+    // Special multi-query cache key
     var cacheKey = 'multi_' + queries.join('+') + '_' + page + '_' + order;
 
     if (cacheStore[cacheKey] && (Date.now() - cacheStore[cacheKey].timestamp < CACHE_DURATION)) {
-        kLog('Menggunakan cache multi-query:', cacheKey);
+        kLog('Using multi-query cache:', cacheKey);
         return cacheStore[cacheKey].data;
     }
 
-    // Hitung berapa video per query agar total ~itemsPerPage
+    // Calculate videos per query so total ~itemsPerPage
     var perQuery = Math.ceil(itemsPerPage / queries.length);
-    // Untuk pagination, kita offset halaman per query
+    // For pagination, offset page per query
     var queryPage = page;
 
     kLog('Multi-query fetch:', queries.join(', '), '| per_query:', perQuery, '| page:', queryPage);
 
-    // Fetch semua query secara paralel
+    // Fetch all queries in parallel
     var fetchPromises = queries.map(function (q) {
         var params = new URLSearchParams({
             query: q,
@@ -366,7 +366,7 @@ async function fetchMultiQuery(queries, page, order) {
     try {
         var results = await Promise.all(fetchPromises);
 
-        // Gabungkan semua video dari semua query
+        // Merge all videos from all queries
         var allVideos = [];
         var seenIds = {};
         var maxTotalPages = 1;
@@ -374,7 +374,7 @@ async function fetchMultiQuery(queries, page, order) {
         results.forEach(function (res) {
             if (res && res.videos) {
                 res.videos.forEach(function (v) {
-                    // Deduplicate berdasarkan video ID
+                    // Deduplicate based on video ID
                     if (!seenIds[v.id]) {
                         seenIds[v.id] = true;
                         allVideos.push(v);
@@ -386,7 +386,7 @@ async function fetchMultiQuery(queries, page, order) {
             }
         });
 
-        // Acak urutan agar video dari berbagai query tercampur
+        // Shuffle order so videos from different queries are mixed
         for (var i = allVideos.length - 1; i > 0; i--) {
             var j = Math.floor(Math.random() * (i + 1));
             var temp = allVideos[i];
@@ -394,10 +394,10 @@ async function fetchMultiQuery(queries, page, order) {
             allVideos[j] = temp;
         }
 
-        // Batasi ke itemsPerPage
+        // Limit to itemsPerPage
         allVideos = allVideos.slice(0, itemsPerPage);
 
-        // Format response seperti API biasa
+        // Format response like regular API
         var mergedResponse = {
             count: allVideos.length,
             per_page: itemsPerPage,
@@ -407,13 +407,13 @@ async function fetchMultiQuery(queries, page, order) {
             videos: allVideos
         };
 
-        // Simpan ke cache
+        // Save to cache
         cacheStore[cacheKey] = {
             data: mergedResponse,
             timestamp: Date.now()
         };
 
-        kLog('Multi-query selesai, total video unik:', allVideos.length);
+        kLog('Multi-query complete, total unique videos:', allVideos.length);
         return mergedResponse;
 
     } catch (error) {
@@ -514,10 +514,10 @@ function renderEmptyState(message) {
     var btn = document.createElement('button');
     btn.className = 'empty-btn';
     if (isSearchActive) {
-        btn.textContent = '🔄 Reset Pencarian';
+        btn.textContent = '🔄 Reset Search';
         btn.addEventListener('click', clearSearch);
     } else {
-        btn.textContent = '🔄 Coba Lagi';
+        btn.textContent = '🔄 Try Again';
         btn.addEventListener('click', retryLoad);
     }
     emptyDiv.appendChild(btn);
@@ -530,8 +530,8 @@ function renderEmptyState(message) {
 // =====================================================
 
 /**
- * Tampilkan state error saat API gagal
- * @param {string} message - Pesan error yang ditampilkan
+ * Display error state when API fails
+ * @param {string} message - Error message to display
  */
 function renderAPIError(message) {
     const grid = document.getElementById('cardGrid');
@@ -543,7 +543,7 @@ function renderAPIError(message) {
         
     var btn = document.createElement('button');
     btn.className = 'error-btn';
-    btn.textContent = '🔄 Coba Lagi';
+    btn.textContent = '🔄 Try Again';
     btn.addEventListener('click', retryLoad);
     grid.querySelector('.error-state').appendChild(btn);
 
@@ -551,7 +551,7 @@ function renderAPIError(message) {
 }
 
 /**
- * Coba muat ulang data setelah error
+ * Retry loading data after error
  */
 function retryLoad() {
     kLog('Retry load data...');
@@ -564,16 +564,16 @@ function retryLoad() {
 // =====================================================
 
 /**
- * Render filter bar viral di atas cardGrid (di dalam content-wrapper)
- * Filter bar berisi tombol "Semua" + semua tag dari VIRAL_TAGS
- * @param {string} activeQuery - Query yang sedang aktif ('all' = semua)
+ * Render viral filter bar above cardGrid (inside content-wrapper)
+ * Filter bar contains "All" button + all tags from VIRAL_TAGS
+ * @param {string} activeQuery - Currently active query ('all' = all)
  */
 function renderViralTags(activeQuery) {
     var contentWrapper = document.querySelector('.content-wrapper');
     var existingBar = document.getElementById('viralFilterBar');
 
     if (!existingBar) {
-        // Buat filter bar baru
+        // Create new filter bar
         var filterBar = document.createElement('div');
         filterBar.id = 'viralFilterBar';
         filterBar.className = 'viral-filter-bar';
@@ -581,7 +581,7 @@ function renderViralTags(activeQuery) {
         // [SECURITY FIX] Gunakan DOM Element + addEventListener
         var allBtn = document.createElement('button');
         allBtn.className = 'viral-filter-btn' + (!activeQuery || activeQuery === 'all' ? ' active' : '');
-        allBtn.textContent = '🌐 Semua';
+        allBtn.textContent = '🌐 All';
         allBtn.addEventListener('click', function() { filterViralTab('all'); });
         filterBar.appendChild(allBtn);
 
@@ -594,7 +594,7 @@ function renderViralTags(activeQuery) {
             filterBar.appendChild(btn);
         });
 
-        // Sisipkan di awal content-wrapper (sebelum sectionLabel)
+        // Insert at the beginning of content-wrapper (before sectionLabel)
         contentWrapper.insertBefore(filterBar, contentWrapper.firstChild);
     } else {
         // Update state active pada filter bar yang sudah ada
@@ -673,17 +673,17 @@ function loadFromKategori(query, order) {
     currentQuery = query;
     DATA_SOURCE = 'api';
 
-    // Jangan mutasi TAB_CONFIG, gunakan variabel override sementara
+    // Don't mutate TAB_CONFIG, use temporary override variable
     window._tempTabOverride = { order: order, query: query };
 
-    // Update visual tab aktif ke "popular"
+    // Update visual active tab to "popular"
     document.querySelectorAll('.nav-tab').forEach(function (t) {
         t.classList.remove('active');
         if (t.dataset.tab === 'popular') t.classList.add('active');
     });
 
     // Update section label
-    document.getElementById('sectionLabel').textContent = 'kategori: ' + query;
+    document.getElementById('sectionLabel').textContent = 'category: ' + query;
 
     // Update tab indicator position
     var popularTab = document.querySelector('.nav-tab[data-tab="popular"]');
@@ -788,22 +788,22 @@ function createCardElement(card, idx) {
 }
 
 /**
- * Render cards ke grid dari array currentDisplayCards
- * Menggunakan slice berdasarkan currentPage dan itemsPerPage untuk data lokal
+ * Render cards to grid from currentDisplayCards array
+ * Using slice based on currentPage and itemsPerPage for local data
  */
 function renderCardsToGrid(cardsToRender) {
     const grid = document.getElementById('cardGrid');
     grid.innerHTML = '';
 
     if (!cardsToRender || cardsToRender.length === 0) {
-        renderEmptyState('Tidak ada konten yang ditemukan');
+        grid.innerHTML = '<p class="empty-placeholder" style="grid-column:1/-1;text-align:center;opacity:0.5;padding:2rem;">No content found</p>';
         return;
     }
 
-    // Tentukan posisi tengah untuk inject banner
+    // Determine center position for banner injection
     var midIndex = Math.floor(cardsToRender.length / 2);
 
-    // Helper: buat in-grid custom image banner (untuk posisi atas)
+    // Helper: create in-grid custom image banner (for top position)
     function createIngridBanner() {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
@@ -813,7 +813,7 @@ function renderCardsToGrid(cardsToRender) {
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';
 
-        // Mencegah popunder terpicu saat klik banner
+        // Prevent popunder triggering on banner click
         bannerWrapper.addEventListener('click', function (e) {
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -822,7 +822,7 @@ function renderCardsToGrid(cardsToRender) {
         return bannerWrapper;
     }
 
-    // Helper: buat in-grid Adsterra ad banner (untuk posisi tengah) via iframe proxy Pages.dev
+    // Helper: create in-grid Adsterra ad banner (for middle position) via iframe proxy Pages.dev
     function createIngridAdBanner() {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
@@ -837,7 +837,7 @@ function renderCardsToGrid(cardsToRender) {
         iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:728px;height:90px;max-width:100%;';
         bannerWrapper.appendChild(iframe);
 
-        // Mencegah popunder terpicu saat klik banner
+        // Prevent popunder triggering on banner click
         bannerWrapper.addEventListener('click', function (e) {
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -847,12 +847,12 @@ function renderCardsToGrid(cardsToRender) {
     }
 
     cardsToRender.forEach(function (card, idx) {
-        // Inject custom image banner di awal card
+        // Inject custom image banner at the start of cards
         if (idx === 0) {
             grid.appendChild(createIngridBanner());
         }
 
-        // Inject Adsterra ad banner di tengah-tengah card
+        // Inject Adsterra ad banner in the middle of cards
         if (idx === midIndex) {
             grid.appendChild(createIngridAdBanner());
         }
@@ -861,66 +861,66 @@ function renderCardsToGrid(cardsToRender) {
         grid.appendChild(cardEl);
     });
 
-    // Inisialisasi IntersectionObserver untuk animasi view counter
+    // Initialize IntersectionObserver for view counter animation
     initViewCounterAnimation();
 
-    // SEO: Inject VideoObject JSON-LD schema untuk Google Video Search
+    // SEO: Inject VideoObject JSON-LD schema for Google Video Search
     injectVideoSchema(cardsToRender);
 
-    kLog('Rendered ' + cardsToRender.length + ' cards ke grid (dengan in-grid banner)');
+    kLog('Rendered ' + cardsToRender.length + ' cards to grid (with in-grid banner)');
 }
 
 // =====================================================
-//  LOAD AND RENDER — Fungsi utama untuk memuat dan menampilkan data
+//  LOAD AND RENDER — Main function to load and display data
 // =====================================================
 
 /**
- * Fungsi utama: muat data (dari API atau lokal) lalu render ke grid
- * Ini dipanggil saat: init, ganti tab, ganti halaman, search
+ * Main function: load data (from API or local) then render to grid
+ * Called on: init, tab switch, page change, search
  */
 async function loadAndRender() {
     if (isLoading) return;
     isLoading = true;
 
-    // Tampilkan skeleton loading
+    // Show skeleton loading
     renderSkeletons(itemsPerPage);
-    kLog('Memuat data... Tab: ' + currentTab + ', Page: ' + currentPage + ', Query: ' + currentQuery);
+    kLog('Loading data... Tab: ' + currentTab + ', Page: ' + currentPage + ', Query: ' + currentQuery);
 
     if (DATA_SOURCE === 'api') {
         try {
             var config = TAB_CONFIG[currentTab] || TAB_CONFIG.popular;
 
-            // Gunakan override sementara dari loadFromKategori jika ada
+            // Use temporary override from loadFromKategori if exists
             if (window._tempTabOverride && currentTab === 'popular') {
                 config = window._tempTabOverride;
             }
 
             var queryToUse = isSearchActive && currentQuery ? currentQuery : config.query;
-            // 'indo' bukan order API yang valid — sudah dihandle via config.order
+            // 'indo' is not a valid API order — handled via config.order
             var orderToUse = (currentSortOrder === 'indo') ? 'most-popular' : (currentSortOrder || config.order);
 
-            // Reset override setelah digunakan
+            // Reset override after use
             window._tempTabOverride = null;
 
             var apiResponse;
 
-            // Jika sort = 'indo' dan tidak sedang search, gunakan multi-query
+            // If sort = 'indo' and not searching, use multi-query
             if (currentSortOrder === 'indo' && currentTab === 'popular' && !isSearchActive) {
                 apiResponse = await fetchMultiQuery(INDO_QUERIES, currentPage, orderToUse);
             } else {
                 apiResponse = await fetchFromAPI(queryToUse, currentPage, orderToUse);
             }
 
-            // Jika request dibatalkan, hentikan
+            // If request was cancelled, stop
             if (apiResponse === null) {
                 isLoading = false;
                 return;
             }
 
-            // Konversi data API ke format card
+            // Convert API data to card format
             if (apiResponse.videos && apiResponse.videos.length > 0) {
                 currentDisplayCards = apiResponse.videos.map(mapAPIVideoToCard);
-                // Filter video yang sudah dihapus
+                // Filter removed videos
                 currentDisplayCards = filterRemovedVideos(currentDisplayCards);
                 totalPagesFromAPI = apiResponse.total_pages || 1;
 
@@ -929,18 +929,18 @@ async function loadAndRender() {
                 // Render pagination
                 renderPagination(totalPagesFromAPI);
             } else {
-                renderEmptyState('Tidak ada video ditemukan' + (currentQuery ? ' untuk "' + escapeHTML(currentQuery) + '"' : ''));
+                renderEmptyState('No videos found' + (currentQuery ? ' for "' + escapeHTML(currentQuery) + '"' : ''));
             }
 
         } catch (error) {
-            kLog('Gagal fetch API, fallback ke data lokal:', error.message);
+            kLog('API fetch failed, falling back to local data:', error.message);
 
-            // Fallback ke data lokal
+            // Fallback to local data
             fallbackToLocal();
-            renderAPIError('Gagal memuat dari server. Menggunakan data lokal. (' + error.message + ')');
+            renderAPIError('Failed to load from server. Using local data. (' + error.message + ')');
         }
     } else {
-        // Mode lokal
+        // Local mode
         loadLocalData();
     }
 
@@ -948,14 +948,14 @@ async function loadAndRender() {
 }
 
 /**
- * Fallback ke data lokal saat API gagal
- * Menampilkan card dari array cards lokal
+ * Fallback to local data when API fails
+ * Display cards from local cards array
  */
 function fallbackToLocal() {
     DATA_SOURCE = 'local';
     loadLocalData();
-    // Tampilkan info bahwa menggunakan data lokal
-    kLog('Menggunakan data lokal sebagai fallback');
+    // Show info that using local data
+    kLog('Using local data as fallback');
 }
 
 /**
@@ -1074,7 +1074,7 @@ function renderPagination(totalPages) {
 function goToPage(page) {
     if (page < 1 || page === currentPage || isLoading) return;
     currentPage = page;
-    kLog('Berpindah ke halaman:', page);
+    kLog('Navigating to page:', page);
 
     // Scroll ke atas content
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1115,7 +1115,7 @@ function initTabSwitching() {
         window._tempTabOverride = null;
 
         // Mapping label yang lebih cantik untuk section label
-        var labelMap = { popular: 'popular', viral: 'viral 🔥', kategori: 'semua kategori' };
+        var labelMap = { popular: 'popular', viral: 'viral 🔥', kategori: 'all categories' };
         document.getElementById('sectionLabel').textContent = labelMap[currentTab] || currentTab;
 
         // Update posisi tab indicator
@@ -1133,7 +1133,7 @@ function initTabSwitching() {
         currentSortOrder = defaultOrder;
         renderSortBar();
 
-        kLog('Tab diganti ke:', currentTab);
+        kLog('Tab switched to:', currentTab);
 
         // Tab khusus "viral": render filter bar + langsung load video
         if (currentTab === 'viral') {
@@ -1237,7 +1237,7 @@ function performSearch() {
     currentQuery = query;
     currentPage = 1;
 
-    kLog('Mencari:', query);
+    kLog('Searching:', query);
     loadAndRender();
 }
 
@@ -1254,7 +1254,7 @@ function clearSearch() {
 
     DATA_SOURCE = 'api';
     loadAndRender();
-    kLog('Pencarian direset');
+    kLog('Search reset');
 }
 
 /**
@@ -1310,7 +1310,7 @@ function openPlayerModal(card) {
     // Inject Adsterra ads ke modal
     injectPlayerAds();
 
-    kLog('Player modal dibuka:', card.name);
+    kLog('Player modal opened:', card.name);
 }
 
 /**
@@ -1328,7 +1328,7 @@ function closePlayerModal() {
     // Bersihkan ad slots agar tidak duplikat saat buka lagi
     clearPlayerAds();
 
-    kLog('Player modal ditutup');
+    kLog('Player modal closed');
 }
 
 /**
@@ -1636,12 +1636,12 @@ function renderSortBar() {
     var sortOptions = [
         { label: '🇮🇩 Indo', order: 'indo', query: 'indo' },
         { label: '🔥 Popular', order: 'most-popular', query: 'all' },
-        { label: '🆕 Terbaru', order: 'latest', query: 'all' },
+        { label: '🆕 Latest', order: 'latest', query: 'all' },
         { label: '⭐ Top Rated', order: 'top-rated', query: 'all' },
-        { label: '📈 Top Minggu', order: 'top-weekly', query: 'all' },
-        { label: '📅 Top Bulan', order: 'top-monthly', query: 'all' },
-        { label: '⏱ Terpanjang', order: 'longest', query: 'all' },
-        { label: '⚡ Terpendek', order: 'shortest', query: 'all' }
+        { label: '📈 Top Weekly', order: 'top-weekly', query: 'all' },
+        { label: '📅 Top Monthly', order: 'top-monthly', query: 'all' },
+        { label: '⏱ Longest', order: 'longest', query: 'all' },
+        { label: '⚡ Shortest', order: 'shortest', query: 'all' }
     ];
 
     if (!existingBar) {
@@ -1714,7 +1714,7 @@ function changeSortOrder(order) {
 
     renderSortBar();
     loadAndRender();
-    kLog('Sort order diganti ke:', order, '| query:', sortQueryMap[order]);
+    kLog('Sort order changed to:', order, '| query:', sortQueryMap[order]);
 }
 
 // =====================================================
@@ -1736,7 +1736,7 @@ function clickTag(tag) {
     currentQuery = tag;
     currentPage = 1;
 
-    kLog('Tag diklik:', tag);
+    kLog('Tag clicked:', tag);
     loadAndRender();
 }
 
@@ -1822,7 +1822,7 @@ function enhancedOpenPlayerModal(card) {
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
     injectPlayerAds();
-    kLog('Player modal dibuka:', card.name);
+    kLog('Player modal opened:', card.name);
 
     // Fetch detail lengkap jika punya videoId (untuk mendapatkan keywords jika belum ada)
     if (card.videoId && (!card.keywords || card.keywords.length === 0)) {
@@ -1962,7 +1962,7 @@ function injectVideoSchema(cardsToRender) {
         return {
             '@type': 'VideoObject',
             'name': card.name,
-            'description': card.name + ' - Video streaming gratis di kumpulenak',
+            'description': card.name + ' - Free video streaming on kumpulenak',
             'thumbnailUrl': card.image || '',
             'uploadDate': card.date ? card.date + 'T00:00:00Z' : '2026-01-01T00:00:00Z',
             'duration': isoDuration,
@@ -2012,7 +2012,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.js?v=tg5';
+    scriptLoader.src = 'assets/js/loader.js?v=en1';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();
@@ -2021,9 +2021,9 @@ window.addEventListener('resize', function () {
 //  INIT — Inisialisasi semua komponen
 // =====================================================
 (function init() {
-    kLog('Inisialisasi kumpulenak gallery...');
+    kLog('Initializing kumpulenak gallery...');
 
-    // Setup event delegation untuk card grid
+    // Setup event delegation for card grid
     initCardGridDelegation();
 
     // Setup tab switching
@@ -2042,16 +2042,16 @@ window.addEventListener('resize', function () {
     // Render sort bar
     renderSortBar();
 
-    // Override openPlayerModal dengan enhanced version
+    // Override openPlayerModal with enhanced version
     window.openPlayerModal = enhancedOpenPlayerModal;
 
-    // Muat dan render data pertama kali
+    // Load and render data for the first time
     loadAndRender();
 
-    // Lazy load: fetch removed videos setelah 3 detik
+    // Lazy load: fetch removed videos after 3 seconds
     setTimeout(function () {
         fetchRemovedVideos();
     }, 3000);
 
-    kLog('Inisialisasi selesai.');
+    kLog('Initialization complete.');
 })();

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="yandex-verification" content="a25cbe2b4f64ad3a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>kumpulenak — Tonton Video Viral</title>
-    <meta name="description" content="Tonton video viral full HD gratis di kumpulenak.">
+    <title>kumpulenak — Watch Viral Video</title>
+    <meta name="description" content="Watch viral videos in full HD for free on kumpulenak.">
     <meta name="robots" content="index, follow">
     <meta name="rating" content="adult">
 
@@ -17,14 +17,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
 
-    <!-- CSS UTAMA -->
-    <link rel="stylesheet" href="/assets/css/gallery.css?v=6">
+    <!-- MAIN CSS -->
+    <link rel="stylesheet" href="/assets/css/gallery.css?v=en1">
 
     <!-- SEO Meta Tags -->
     <meta property="og:type" content="video.other">
     <meta property="og:site_name" content="kumpulenak">
-    <meta id="ogTitle" property="og:title" content="Tonton Video Viral - kumpulenak">
-    <meta id="ogDesc" property="og:description" content="Tonton video viral full HD gratis di kumpulenak.">
+    <meta id="ogTitle" property="og:title" content="Watch Viral Video - kumpulenak">
+    <meta id="ogDesc" property="og:description" content="Watch viral videos in full HD for free on kumpulenak.">
     <meta id="ogImage" property="og:image" content="">
     <meta id="ogUrl" property="og:url" content="">
     
@@ -56,7 +56,7 @@
     <!-- ===== BANNER ===== -->
     <div class="banner" style="margin-top: 80px;">
         <div class="banner-img ad-space" id="adBannerHeader" style="border: none;">
-            <!-- Iklan banner header di-inject oleh ads.js -->
+            <!-- Ad banner header injected by ads.js -->
         </div>
     </div>
 
@@ -64,7 +64,7 @@
         <div class="loader" id="videoLoader"></div>
     </main>
     <div class="video-page-container" id="similarVideosSection" style="margin-top: 40px; display: none;">
-        <h2 style="color: #fff; margin-bottom: 20px; font-weight: 700; border-left: 4px solid #e8a800; padding-left: 10px;">Video Serupa</h2>
+        <h2 style="color: #fff; margin-bottom: 20px; font-weight: 700; border-left: 4px solid #e8a800; padding-left: 10px;">Similar Videos</h2>
         <div class="card-grid" id="similarVideoGrid"></div>
     </div>
 
@@ -96,14 +96,14 @@
             }
         }
 
-        // Jika URL dari sitemap menggunakan format ?v=ID-SLUG atau /v/ID-SLUG,
-        // kita hanya perlu ID-nya (bagian sebelum tanda strip pertama).
+        // If URL from sitemap uses format ?v=ID-SLUG or /v/ID-SLUG,
+        // we only need the ID (the part before the first hyphen).
         if (videoId && videoId.includes('-')) {
             videoId = videoId.split('-')[0];
         }
 
         if (!videoId) {
-            showError('Video ID tidak ditemukan.');
+            showError('Video ID not found.');
         } else {
             fetchVideoData(videoId);
         }
@@ -116,7 +116,7 @@
                 
                 // Eporner returns an empty array [] if the video ID is not found
                 if (!data || data.error || (Array.isArray(data) && data.length === 0)) {
-                    showError('Video tidak ditemukan atau telah dihapus.');
+                    showError('Video not found or has been removed.');
                     return;
                 }
 
@@ -125,18 +125,18 @@
                 fetchSimilarVideos(data);
             } catch (error) {
                 console.error('Error fetching video:', error);
-                showError('Gagal memuat video. Silakan coba lagi nanti.');
+                showError('Failed to load video. Please try again later.');
             }
         }
 
         function renderVideo(video) {
             const container = document.getElementById('videoContainer');
-            container.innerHTML = ''; // Bersihkan loader
+            container.innerHTML = ''; // Clear loader
 
             const backBtn = document.createElement('a');
             backBtn.href = '/';
             backBtn.className = 'back-btn';
-            backBtn.textContent = '← Kembali ke Beranda';
+            backBtn.textContent = '← Back to Home';
             container.appendChild(backBtn);
 
             if (video.embed && isSafeUrl(video.embed)) {
@@ -152,11 +152,11 @@
                 wrapper.appendChild(iframe);
                 container.appendChild(wrapper);
             } else {
-                console.error("Embed URL bermasalah. Data API:", video);
+                console.error("Embed URL issue. API Data:", video);
                 if (!video.embed) {
-                    showError('Video ini tidak menyediakan link untuk diputar (Tidak ada Embed URL dari sumber aslinya).');
+                    showError('This video does not provide a playback link (No embed URL from the original source).');
                 } else {
-                    showError('URL Pemutar Video tidak valid atau tidak aman untuk ditampilkan.');
+                    showError('Video player URL is invalid or unsafe to display.');
                 }
                 return;
             }
@@ -166,7 +166,7 @@
 
             const title = document.createElement('h1');
             title.className = 'video-title';
-            title.textContent = video.title || 'Tanpa Judul';
+            title.textContent = video.title || 'Untitled';
             details.appendChild(title);
 
             const meta = document.createElement('div');
@@ -191,7 +191,7 @@
                 const tagsContainer = document.createElement('div');
                 tagsContainer.className = 'video-tags';
                 
-                // Pisahkan string koma menjadi array
+                // Split comma-separated string into array
                 const tagArray = typeof video.keywords === 'string' 
                     ? video.keywords.split(',').map(t => t.trim()) 
                     : video.keywords;
@@ -214,7 +214,7 @@
         function updateSEO(video) {
             document.title = video.title + ' — kumpulenak';
             
-            const desc = 'Tonton video ' + video.title + ' secara gratis dengan kualitas full HD di kumpulenak.';
+            const desc = 'Watch ' + video.title + ' for free in full HD quality on kumpulenak.';
             document.querySelector('meta[name="description"]').setAttribute('content', desc);
             
             // Open Graph
@@ -236,7 +236,7 @@
                 document.getElementById('ogImage').setAttribute('content', video.default_thumb.src);
             }
 
-            // Format uploadDate sesuai ISO 8601
+            // Format uploadDate per ISO 8601
             let uploadISO = new Date().toISOString().split('.')[0] + 'Z';
             if (video.added) {
                 // e.g. "2024-03-24 16:34:55" -> "2024-03-24T16:34:55Z"
@@ -291,7 +291,7 @@
                         const views = v.views ? v.views.toLocaleString('id-ID') : '0';
                         const added = v.added ? v.added.substring(0, 10) : '';
                         const thumb = v.default_thumb ? v.default_thumb.src : '';
-                        const title = v.title || 'Tanpa Judul';
+                        const title = v.title || 'Untitled';
                         
                         a.innerHTML = 
                             '<div class="card-img-wrapper">' +
@@ -334,7 +334,7 @@
             backBtn.href = '/';
             backBtn.className = 'back-btn';
             backBtn.style.marginTop = '20px';
-            backBtn.textContent = '← Kembali ke Beranda';
+            backBtn.textContent = '← Back to Home';
             errDiv.appendChild(backBtn);
             
             container.appendChild(errDiv);
@@ -342,6 +342,6 @@
     </script>
     
     <!-- Load Ads Script -->
-    <script src="/assets/js/loader.js?v=tg5" defer></script>
+    <script src="/assets/js/loader.js?v=en1" defer></script>
 </body>
 </html>

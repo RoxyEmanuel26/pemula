@@ -63,30 +63,30 @@
     ];
 
     // ==========================================
-    //  FUNGSI: Inject Banner Ad ke Container
-    //  Adsterra membutuhkan atOptions di window scope
-    //  SEBELUM invoke.js dimuat. Kita set window.atOptions
-    //  lalu append invoke.js ke <body> (bukan ke container).
-    //  invoke.js akan otomatis inject iframe di bawah script.
-    //  Jadi kita buat wrapper div di dalam container, lalu
-    //  append script-script ke wrapper tsb.
+    //  FUNCTION: Inject Banner Ad into Container
+    //  Adsterra requires atOptions in window scope
+    //  BEFORE invoke.js is loaded. We set window.atOptions
+    //  then append invoke.js to <body> (not to container).
+    //  invoke.js will automatically inject iframe below script.
+    //  So we create wrapper div inside container, then
+    //  append scripts to that wrapper.
     // ==========================================
     function injectBannerAd(config) {
         var container = document.getElementById(config.containerId);
         if (!container) {
-            console.warn('[ads.js] Container #' + config.containerId + ' tidak ditemukan');
+            console.warn('[ads.js] Container #' + config.containerId + ' not found');
             return;
         }
 
-        // Bersihkan container
+        // Clear container
         container.innerHTML = '';
 
-        // Buat wrapper div untuk ad
+        // Create wrapper div for ad
         var wrapper = document.createElement('div');
         wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
         container.appendChild(wrapper);
 
-        // Set atOptions di window scope — ini WAJIB untuk Adsterra
+        // Set atOptions in window scope — required for Adsterra
         window.atOptions = {
             'key': config.key,
             'format': config.format,
@@ -95,15 +95,15 @@
             'params': {}
         };
 
-        // Buat invoke.js script dan append ke wrapper
-        // invoke.js akan membaca window.atOptions dan inject iframe
+        // Create invoke.js script and append to wrapper
+        // invoke.js will read window.atOptions and inject iframe
         var invokeScript = document.createElement('script');
         invokeScript.type = 'text/javascript';
         invokeScript.src = '//glamournakedemployee.com/' + config.key + '/invoke.js';
 
         invokeScript.onerror = function () {
-            console.warn('[ads.js] Gagal memuat banner: ' + config.containerId);
-            // Tampilkan fallback/placeholder jika gagal
+            console.warn('[ads.js] Failed to load banner: ' + config.containerId);
+            // Show fallback/placeholder if failed
             wrapper.innerHTML = '<div style="width:' + config.width + 'px;max-width:100%;height:' + config.height + 'px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
         };
 
@@ -111,13 +111,13 @@
     }
 
     // ==========================================
-    //  FUNGSI: Inject Custom Image Banner
-    //  Banner gambar statis dengan link klik
+    //  FUNCTION: Inject Custom Image Banner
+    //  Static image banner with click link
     // ==========================================
     function injectCustomBanner(config) {
         var container = document.getElementById(config.containerId);
         if (!container) {
-            console.warn('[ads.js] Container #' + config.containerId + ' tidak ditemukan');
+            console.warn('[ads.js] Container #' + config.containerId + ' not found');
             return;
         }
 
@@ -133,11 +133,11 @@
         img.style.cssText = 'width:100%;height:auto;display:block;border-radius:12px;';
 
         img.onerror = function () {
-            console.warn('[ads.js] Gagal memuat custom banner: ' + config.containerId);
+            console.warn('[ads.js] Failed to load custom banner: ' + config.containerId);
             container.innerHTML = '<div style="width:100%;height:90px;background:linear-gradient(135deg,#1a1a2e,#222);border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;">Ad Space</div>';
         };
 
-        // Mencegah popunder terpicu saat klik banner custom
+        // Prevent popunder triggering on custom banner click
         link.addEventListener('click', function (e) {
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -158,26 +158,26 @@
     }
 
     // ==========================================
-    //  FUNGSI: Inject Banner Ads secara berurutan
-    //  Adsterra menggunakan satu global atOptions,
-    //  jadi kita harus inject satu per satu dengan delay
-    //  agar invoke.js sempat membaca atOptions sebelum
-    //  kita override untuk banner berikutnya
+    //  FUNCTION: Inject Banner Ads sequentially
+    //  Adsterra uses a single global atOptions,
+    //  so we must inject one by one with delay
+    //  so invoke.js has time to read atOptions before
+    //  we override for the next banner
     // ==========================================
     function injectBannerAdsSequentially(ads, index) {
         if (index >= ads.length) return;
 
         injectBannerAd(ads[index]);
 
-        // Delay 1.5 detik sebelum inject banner berikutnya
-        // agar invoke.js banner pertama sempat membaca atOptions
+        // Delay 1.5 seconds before injecting next banner
+        // so invoke.js for first banner has time to read atOptions
         setTimeout(function () {
             injectBannerAdsSequentially(ads, index + 1);
         }, 1500);
     }
 
     // ==========================================
-    //  FUNGSI: Muat Script Eksternal (async)
+    //  FUNCTION: Load External Scripts (async)
     // ==========================================
     function loadScripts(scriptUrls) {
         scriptUrls.forEach(function (url) {
@@ -191,26 +191,26 @@
     }
 
     // ==========================================
-    //  INIT — Muat semua iklan
+    //  INIT — Load all ads
     // ==========================================
     function initAds() {
-        console.log('[ads.js] Memulai inject iklan...');
+        console.log('[ads.js] Starting ad injection...');
 
-        // 1. Inject banner ads secara berurutan (sequential)
+        // 1. Inject banner ads sequentially
         injectBannerAdsSequentially(BANNER_ADS, 0);
 
-        // 1b. Inject custom banner ads (gambar sendiri)
+        // 1b. Inject custom banner ads (custom images)
         CUSTOM_BANNER_ADS.forEach(function (config) {
             injectCustomBanner(config);
         });
 
-        // 2. Muat popunder scripts
+        // 2. Load popunder scripts
         loadScripts(POPUNDER_SCRIPTS);
 
-        // 3. Muat social bar scripts
+        // 3. Load social bar scripts
         loadScripts(SOCIALBAR_SCRIPTS);
 
-        console.log('[ads.js] Semua iklan dimuat.');
+        console.log('[ads.js] All ads loaded.');
     }
 
     if (document.readyState === 'complete') {

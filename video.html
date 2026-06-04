@@ -68,6 +68,29 @@
         <div class="card-grid" id="similarVideoGrid"></div>
     </div>
 
+    <!-- Noscript SEO Fallback Content -->
+    <noscript>
+        <div class="video-page-container" style="margin-top: 20px; color: #aaa;">
+            <h2 style="color: #fff; margin-bottom: 15px;">Watch Premium 18+ NSFW Videos for Free — kumpulenak</h2>
+            <p>Welcome to <strong>kumpulenak</strong>, the largest premium adult gallery platform. Enjoy fast streaming of viral videos, hot adult photos, and uncensored adult content in full HD quality.</p>
+            
+            <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Popular Categories & Filters</h3>
+            <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0;">
+                <li><a href="/?q=indonesia" style="color: #e8a800; text-decoration: none;">🇮🇩 Indonesian Viral</a></li>
+                <li><a href="/?q=viral" style="color: #e8a800; text-decoration: none;">🔥 Latest Viral</a></li>
+                <li><a href="/?q=japanese" style="color: #e8a800; text-decoration: none;">🎌 Japanese Uncensored</a></li>
+                <li><a href="/?q=korean" style="color: #e8a800; text-decoration: none;">🇰🇷 Korean Adult</a></li>
+                <li><a href="/?q=amateur" style="color: #e8a800; text-decoration: none;">🏠 Homemade Amateur</a></li>
+                <li><a href="/?q=hijab" style="color: #e8a800; text-decoration: none;">📸 Hijab Hot</a></li>
+                <li><a href="/?q=student" style="color: #e8a800; text-decoration: none;">🎓 Student Leaks</a></li>
+                <li><a href="/?q=couple" style="color: #e8a800; text-decoration: none;">💑 Hot Couples</a></li>
+            </ul>
+
+            <p style="margin-top: 15px;">Please enable JavaScript in your browser to view the video player, comments, and full interactive features of this gallery page.</p>
+            <a href="/" style="display: inline-block; margin-top: 15px; color: #e8a800; font-weight: 600; text-decoration: none;">← Back to Homepage</a>
+        </div>
+    </noscript>
+
     <!-- Script Injection (JSON-LD) -->
     <script id="jsonLdScript" type="application/ld+json"></script>
 
@@ -212,7 +235,13 @@
         }
 
         function updateSEO(video) {
-            document.title = video.title + ' — kumpulenak';
+            // Trim title if too long (max 60 chars) to prevent search result titles from exceeding 70-80 chars
+            let rawTitle = video.title || 'Untitled';
+            let displayTitle = rawTitle;
+            if (displayTitle.length > 60) {
+                displayTitle = displayTitle.substring(0, 57) + '...';
+            }
+            document.title = displayTitle + ' — kumpulenak';
             
             const desc = 'Watch ' + video.title + ' for free in full HD quality on kumpulenak.';
             document.querySelector('meta[name="description"]').setAttribute('content', desc);

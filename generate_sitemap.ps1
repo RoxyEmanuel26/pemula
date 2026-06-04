@@ -3,13 +3,13 @@ $baseUrl = 'https://www.kumpulenak.web.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
 $perPage = 100
-$maxConcurrent = 10
-$maxPagesPerQuery = 10
+$maxConcurrent = 50
+$maxPagesPerQuery = 50
 
 Write-Host ""
 Write-Host "============================================"
 Write-Host "  kumpulenak Sitemap Generator v6.0"
-Write-Host "  PARALLEL MULTI-THREADED (10 threads)"
+Write-Host "  PARALLEL MULTI-THREADED (50 threads)"
 Write-Host "  Website: $baseUrl"
 Write-Host "  Time: $dateStr"
 Write-Host "============================================"

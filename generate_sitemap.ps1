@@ -3,11 +3,13 @@ $baseUrl = 'https://www.kumpulenak.web.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
 $perPage = 100
+$maxConcurrent = 10
+$maxPagesPerQuery = 10
 
 Write-Host ""
 Write-Host "============================================"
-Write-Host "  kumpulenak Sitemap Generator v5.0"
-Write-Host "  FULL CRAWL - Auto Save & Resume"
+Write-Host "  kumpulenak Sitemap Generator v6.0"
+Write-Host "  PARALLEL MULTI-THREADED (10 threads)"
 Write-Host "  Website: $baseUrl"
 Write-Host "  Time: $dateStr"
 Write-Host "============================================"
@@ -24,40 +26,6 @@ $searchQueries = @(
     'hentai', 'cosplay', 'yoga', 'dance', 'shower',
     'hotel', 'car', 'office', 'public', 'beach'
 )
-
-$stateFile = "sitemap_state.json"
-$state = @{
-    completedQueries = @()
-    sitemapVideoFiles = @()
-    grandTotalVideos = 0
-    grandTotalRequests = 0
-    grandTotalDupes = 0
-}
-
-if (Test-Path $stateFile) {
-    Write-Host "[INFO] Found previous state file. Resuming from last checkpoint..."
-    $savedState = Get-Content $stateFile -Raw | ConvertFrom-Json
-    if ($savedState.completedQueries) { $state.completedQueries = @($savedState.completedQueries) }
-    if ($savedState.sitemapVideoFiles) { $state.sitemapVideoFiles = @($savedState.sitemapVideoFiles) }
-    if ($savedState.grandTotalVideos) { $state.grandTotalVideos = $savedState.grandTotalVideos }
-    if ($savedState.grandTotalRequests) { $state.grandTotalRequests = $savedState.grandTotalRequests }
-    if ($savedState.grandTotalDupes) { $state.grandTotalDupes = $savedState.grandTotalDupes }
-}
-
-function Save-State {
-    $state | ConvertTo-Json -Depth 10 | Set-Content $stateFile -Encoding UTF8
-}
-
-function Update-MasterIndex {
-    Write-Host "      -> Updating sitemap_index.xml (Master Index)..."
-    $indexXml = "<?xml version='1.0' encoding='UTF-8'?>`n<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
-    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_pages.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
-    foreach ($sf in $state.sitemapVideoFiles) {
-        $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/$sf</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
-    }
-    $indexXml += "</sitemapindex>"
-    [System.IO.File]::WriteAllText('sitemap_index.xml', $indexXml, [System.Text.Encoding]::UTF8)
-}
 
 function Generate-StaticSitemaps {
     Write-Host "[SITEMAP] Generating static sitemaps (pages, categories, tags)..."
@@ -97,43 +65,64 @@ function Generate-StaticSitemaps {
     }
 }
 
-# Always generate static sitemaps at the start (refresh every run)
-Generate-StaticSitemaps
-Update-MasterIndex
-Write-Host ""
-
-Write-Host "[API] Starting FULL CRAWL..."
-Write-Host "      $($searchQueries.Count) categories | Delay: $delaySeconds sec/request"
-Write-Host ""
-
-$globalTitleSet = @{}
-
-foreach ($query in $searchQueries) {
-    if ($state.completedQueries -contains $query) {
-        Write-Host "  [$query] Already completed in previous session. Skipping..."
-        Write-Host ""
-        continue
+function Update-MasterIndex($sitemapVideoFiles) {
+    Write-Host "      -> Updating sitemap_index.xml (Master Index)..."
+    $indexXml = "<?xml version='1.0' encoding='UTF-8'?>`n<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
+    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_pages.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
+    foreach ($sf in $sitemapVideoFiles) {
+        $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/$sf</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
     }
+    $indexXml += "</sitemapindex>"
+    [System.IO.File]::WriteAllText('sitemap_index.xml', $indexXml, [System.Text.Encoding]::UTF8)
+}
+
+# Generate static sitemaps at start
+Generate-StaticSitemaps
+
+Write-Host ""
+Write-Host "[API] Starting Parallel Crawling using RunspacePool..."
+Write-Host "      Threads limit : $maxConcurrent"
+Write-Host "      Pages limit   : $maxPagesPerQuery per category"
+Write-Host "      Total queries : $($searchQueries.Count)"
+Write-Host ""
+
+# Thread-safe collections
+$globalTitleSet = New-Object 'System.Collections.Concurrent.ConcurrentDictionary[string, bool]'
+
+# Script block to run inside each thread
+$scriptBlock = {
+    param(
+        $query,
+        $baseUrl,
+        $dateStr,
+        $perPage,
+        $delaySeconds,
+        $maxPagesPerQuery,
+        $globalTitleSet
+    )
 
     $safeQuery = $query -replace '[^a-zA-Z0-9]', '_'
     $fileName = "sitemap_video_${safeQuery}.xml"
-
-    Write-Host "  [$query] Fetching..."
     $categoryVideos = @{}
     $page = 1
     $totalPages = 1
     $dupeCount = 0
+    $requestCount = 0
+    $localSitemapFiles = @()
 
-    while ($page -le $totalPages) {
+    Write-Host "  [$query] Starting..."
+
+    while ($page -le $totalPages -and $page -le $maxPagesPerQuery) {
         $apiUrl = "https://www.eporner.com/api/v2/video/search/?query=$([uri]::EscapeDataString($query))&per_page=$perPage&page=$page&thumbsize=small&order=most-popular&format=json"
-
+        
         try {
+            # Disable pipeline buffering and invoke GET request
             $response = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 30
-            $state.grandTotalRequests++
+            $requestCount++
 
             if ($page -eq 1 -and $response.total_pages) {
                 $totalPages = [int]$response.total_pages
-                Write-Host "         Available: $($response.total_count) videos ($totalPages pages)"
+                Write-Host "  [$query] Total: $($response.total_count) videos ($totalPages pages available, limiting to $maxPagesPerQuery)"
             }
 
             if ($response.videos -and $response.videos.Count -gt 0) {
@@ -141,7 +130,8 @@ foreach ($query in $searchQueries) {
                     if ($categoryVideos.ContainsKey($v.id)) { continue }
 
                     $titleLower = $v.title.ToLower().Trim()
-                    if ($globalTitleSet.ContainsKey($titleLower)) {
+                    # TryAdd returns false if key already exists, ensuring thread-safe deduplication
+                    if (-not $globalTitleSet.TryAdd($titleLower, $true)) {
                         $dupeCount++
                         continue
                     }
@@ -157,18 +147,13 @@ foreach ($query in $searchQueries) {
                         slug  = $slug
                         added = $addedDate
                     }
-                    $globalTitleSet[$titleLower] = $true
-                }
-
-                if ($page % 10 -eq 0) {
-                    Write-Host "         Page $page/$totalPages... ($($categoryVideos.Count) unique)"
                 }
             } else {
                 break
             }
         } catch {
-            Write-Host "         [!] Error on page ${page}, skipping..."
-            Start-Sleep -Seconds 5
+            Write-Host "  [$query] [!] Error on page ${page}, skipping..."
+            Start-Sleep -Seconds 3
             $page++
             continue
         }
@@ -176,8 +161,6 @@ foreach ($query in $searchQueries) {
         $page++
         Start-Sleep -Seconds $delaySeconds
     }
-
-    $state.grandTotalDupes += $dupeCount
 
     if ($categoryVideos.Count -gt 0) {
         $chunkSize = 49000
@@ -199,27 +182,90 @@ foreach ($query in $searchQueries) {
             }
             $xml += "</urlset>"
             
+            # Ensure safe output file writing
             [System.IO.File]::WriteAllText("sitemaps/$currentFileName", $xml, [System.Text.Encoding]::UTF8)
-            $state.sitemapVideoFiles += $currentFileName
-            Write-Host "      -> $currentFileName ($($chunkVideos.Count) URLs)"
+            $localSitemapFiles += $currentFileName
         }
-        $state.grandTotalVideos += $categoryVideos.Count
-        Write-Host "      Duplicates skipped: $dupeCount"
+        Write-Host "  [$query] Completed. Saved $($localSitemapFiles.Count) sitemap file(s), $($categoryVideos.Count) unique videos."
     } else {
-        Write-Host "      -> SKIP (0 new videos)"
+        Write-Host "  [$query] Completed. 0 new videos."
     }
-    
-    # 1. Update completed category in state
-    $state.completedQueries += $query
-    # 2. Save progress to JSON file
-    Save-State
-    # 3. Update master index immediately so it's always up-to-date if process is interrupted
-    Update-MasterIndex
-    
-    Write-Host ""
+
+    return [PSCustomObject]@{
+        Query = $query
+        VideoCount = $categoryVideos.Count
+        RequestCount = $requestCount
+        DupeCount = $dupeCount
+        SitemapFiles = $localSitemapFiles
+    }
 }
 
-# Also regenerate the root sitemap.xml with the same static pages (no hreflang)
+# Create the RunspacePool
+$sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+$pool = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspacePool(1, $maxConcurrent, $sessionState, $Host)
+$pool.Open()
+
+$runspaces = @()
+
+# Dispatch all queries as jobs to the runspace pool
+foreach ($query in $searchQueries) {
+    $pipeline = [System.Management.Automation.PowerShell]::Create()
+    $pipeline.RunspacePool = $pool
+    
+    $pipeline.AddScript($scriptBlock) | Out-Null
+    $pipeline.AddParameter("query", $query) | Out-Null
+    $pipeline.AddParameter("baseUrl", $baseUrl) | Out-Null
+    $pipeline.AddParameter("dateStr", $dateStr) | Out-Null
+    $pipeline.AddParameter("perPage", $perPage) | Out-Null
+    $pipeline.AddParameter("delaySeconds", $delaySeconds) | Out-Null
+    $pipeline.AddParameter("maxPagesPerQuery", $maxPagesPerQuery) | Out-Null
+    $pipeline.AddParameter("globalTitleSet", $globalTitleSet) | Out-Null
+    
+    $handle = $pipeline.BeginInvoke()
+    $runspaces += @{
+        Pipeline = $pipeline
+        Handle   = $handle
+        Query    = $query
+    }
+}
+
+Write-Host "Dispatched $($runspaces.Count) crawling tasks. Waiting for all to complete..."
+Write-Host ""
+
+# Monitor and gather results
+$state = @{
+    sitemapVideoFiles = @()
+    grandTotalVideos = 0
+    grandTotalRequests = 0
+    grandTotalDupes = 0
+}
+
+foreach ($r in $runspaces) {
+    # Block until this thread completes and get returned custom object
+    $results = $r.Pipeline.EndInvoke($r.Handle)
+    
+    if ($results) {
+        $state.grandTotalVideos += $results.VideoCount
+        $state.grandTotalRequests += $results.RequestCount
+        $state.grandTotalDupes += $results.DupeCount
+        foreach ($sf in $results.SitemapFiles) {
+            $state.sitemapVideoFiles += $sf
+        }
+    }
+    
+    $r.Pipeline.Dispose()
+}
+
+$pool.Close()
+$pool.Dispose()
+
+# Sort video sitemap files alphabetically
+$state.sitemapVideoFiles = $state.sitemapVideoFiles | Sort-Object
+
+# Update the master index
+Update-MasterIndex $state.sitemapVideoFiles
+
+# Update root sitemap.xml
 Write-Host "[SITEMAP] Updating root sitemap.xml..."
 $rootSitemapXml = @"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -240,6 +286,12 @@ $rootSitemapXml = @"
 "@
 [System.IO.File]::WriteAllText('sitemap.xml', $rootSitemapXml, [System.Text.Encoding]::UTF8)
 
+# Clean up sitemap_state.json if it exists since we do not need resuming now
+$stateFile = "sitemap_state.json"
+if (Test-Path $stateFile) {
+    Remove-Item $stateFile -Force
+}
+
 Write-Host ""
 Write-Host "============================================"
 Write-Host "  ALL COMPLETE!"
@@ -247,12 +299,8 @@ Write-Host "============================================"
 Write-Host "  Video sitemaps       : $($state.sitemapVideoFiles.Count) files"
 Write-Host "  Total unique videos  : $($state.grandTotalVideos)"
 Write-Host "  API requests         : $($state.grandTotalRequests)"
+Write-Host "  Duplicate titles     : $($state.grandTotalDupes)"
 Write-Host "  sitemap_index.xml    : master (Ready to submit to Google!)"
 Write-Host "  sitemap.xml          : root (Updated!)"
 Write-Host "============================================"
 Write-Host ""
-
-# Remove state file since process is complete
-if (Test-Path $stateFile) {
-    Remove-Item $stateFile -Force
-}

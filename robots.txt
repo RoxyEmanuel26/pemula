@@ -16,6 +16,8 @@ Disallow: /assets/js/ads.js
 Disallow: /assets/js/ads.min.js
 Disallow: /assets/js/loader.js
 Disallow: /assets/js/loader.min.js
+Disallow: /*?q=
+Disallow: /*?
 Disallow: /.env
 Crawl-delay: 1
 

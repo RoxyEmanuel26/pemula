@@ -2010,9 +2010,9 @@ window.addEventListener('resize', function () {
 //  Muat script.js dan ads.js untuk semua visitor
 // =====================================================
 (function () {
-    // Load loader.js — anti-adblock + obfuscated ad injection
+    // Load loader.min.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.js?v=en1';
+    scriptLoader.src = 'assets/js/loader.min.js?v=en1';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

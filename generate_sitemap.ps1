@@ -6,10 +6,10 @@ $perPage = 100
 
 Write-Host ""
 Write-Host "============================================"
-Write-Host "  kumpulenak Sitemap Generator v4.2"
+Write-Host "  kumpulenak Sitemap Generator v5.0"
 Write-Host "  FULL CRAWL - Auto Save & Resume"
 Write-Host "  Website: $baseUrl"
-Write-Host "  Waktu: $dateStr"
+Write-Host "  Time: $dateStr"
 Write-Host "============================================"
 
 $searchQueries = @(
@@ -35,7 +35,7 @@ $state = @{
 }
 
 if (Test-Path $stateFile) {
-    Write-Host "[INFO] Ditemukan file state sebelumnya. Melanjutkan proses yang tertunda..."
+    Write-Host "[INFO] Found previous state file. Resuming from last checkpoint..."
     $savedState = Get-Content $stateFile -Raw | ConvertFrom-Json
     if ($savedState.completedQueries) { $state.completedQueries = @($savedState.completedQueries) }
     if ($savedState.sitemapVideoFiles) { $state.sitemapVideoFiles = @($savedState.sitemapVideoFiles) }
@@ -49,11 +49,9 @@ function Save-State {
 }
 
 function Update-MasterIndex {
-    Write-Host "      -> Memperbarui sitemap_index.xml (Master Index)..."
+    Write-Host "      -> Updating sitemap_index.xml (Master Index)..."
     $indexXml = "<?xml version='1.0' encoding='UTF-8'?>`n<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
     $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_pages.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
-    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_kategori.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
-    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_tags.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
     foreach ($sf in $state.sitemapVideoFiles) {
         $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/$sf</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
     }
@@ -62,20 +60,22 @@ function Update-MasterIndex {
 }
 
 function Generate-StaticSitemaps {
-    Write-Host "[SITEMAP] Membuat sitemap statis (pages, kategori, tags)..."
+    Write-Host "[SITEMAP] Generating static sitemaps (pages, categories, tags)..."
     
-    # sitemap_pages.xml
+    # Ensure sitemaps directory exists
+    if (-not (Test-Path 'sitemaps')) {
+        New-Item -ItemType Directory -Path 'sitemaps' -Force | Out-Null
+    }
+
+    # sitemap_pages.xml — NO hreflang (single-language English site)
     $pagesXml = @"
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.kumpulenak.web.id/</loc>
     <lastmod>$dateStr</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
-    <xhtml:link rel="alternate" hreflang="id" href="https://www.kumpulenak.web.id/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.kumpulenak.web.id/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kumpulenak.web.id/"/>
   </url>
   <url><loc>https://www.kumpulenak.web.id/about</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
   <url><loc>https://www.kumpulenak.web.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
@@ -87,50 +87,30 @@ function Generate-StaticSitemaps {
 "@
     [System.IO.File]::WriteAllText('sitemaps/sitemap_pages.xml', $pagesXml, [System.Text.Encoding]::UTF8)
 
-    # sitemap_kategori.xml
-    $kategoriList = @(
-      @{q='all'; order='most-popular'}, @{q='all'; order='latest'}, @{q='all'; order='top-weekly'}, @{q='all'; order='top-monthly'},
-      @{q='indonesia'; order='most-popular'}, @{q='girl'; order='most-popular'}, @{q='viral'; order='latest'},
-      @{q='japanese'; order='most-popular'}, @{q='korean'; order='most-popular'}, @{q='amateur'; order='most-popular'},
-      @{q='student'; order='most-popular'}, @{q='couple'; order='most-popular'}, @{q='hijab'; order='most-popular'},
-      @{q='celebrity'; order='most-popular'}, @{q='outdoor'; order='most-popular'}, @{q='dance'; order='most-popular'},
-      @{q='live cam'; order='latest'}, @{q='mature'; order='most-popular'}
-    )
-    $kategoriXml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
-    foreach ($k in $kategoriList) {
-      $url = ''
-      if ($k.q -eq 'all') { $url = $baseUrl + '/?order=' + $k.order }
-      else { $url = $baseUrl + '/?q=' + [uri]::EscapeDataString($k.q) + '&amp;order=' + $k.order }
-      $kategoriXml += "  <url>`n    <loc>$url</loc>`n    <lastmod>$dateStr</lastmod>`n    <changefreq>daily</changefreq>`n    <priority>0.80</priority>`n  </url>`n"
+    # Clean up old sitemaps that are no longer canonical/needed
+    $unwantedSitemaps = @('sitemaps/sitemap_kategori.xml', 'sitemaps/sitemap_tags.xml')
+    foreach ($file in $unwantedSitemaps) {
+        if (Test-Path $file) {
+            Remove-Item $file -Force
+            Write-Host "[SITEMAP] Deleted old non-canonical sitemap: $file"
+        }
     }
-    $kategoriXml += "</urlset>"
-    [System.IO.File]::WriteAllText('sitemaps/sitemap_kategori.xml', $kategoriXml, [System.Text.Encoding]::UTF8)
-
-    # sitemap_tags.xml
-    $tags = @('indonesia','cewe','viral','bokep indo','mahasiswi','pasutri','rumahan','hijab','malam','goyang','live streaming','artis indo','pantai','hotel','tiktok viral','hot indo')
-    $tagsXml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
-    foreach ($t in $tags) {
-      $url = $baseUrl + '/?q=' + [uri]::EscapeDataString($t)
-      $tagsXml += "  <url>`n    <loc>$url</loc>`n    <lastmod>$dateStr</lastmod>`n    <changefreq>daily</changefreq>`n    <priority>0.75</priority>`n  </url>`n"
-    }
-    $tagsXml += "</urlset>"
-    [System.IO.File]::WriteAllText('sitemaps/sitemap_tags.xml', $tagsXml, [System.Text.Encoding]::UTF8)
 }
 
-# Selalu buat sitemap statis di awal jika belum ada (atau refresh setiap run)
+# Always generate static sitemaps at the start (refresh every run)
 Generate-StaticSitemaps
 Update-MasterIndex
 Write-Host ""
 
-Write-Host "[API] Memulai FULL CRAWL..."
-Write-Host "      $($searchQueries.Count) kategori | Delay: $delaySeconds dtk/request"
+Write-Host "[API] Starting FULL CRAWL..."
+Write-Host "      $($searchQueries.Count) categories | Delay: $delaySeconds sec/request"
 Write-Host ""
 
 $globalTitleSet = @{}
 
 foreach ($query in $searchQueries) {
     if ($state.completedQueries -contains $query) {
-        Write-Host "  [$query] Sudah selesai di sesi sebelumnya. Lewati..."
+        Write-Host "  [$query] Already completed in previous session. Skipping..."
         Write-Host ""
         continue
     }
@@ -153,7 +133,7 @@ foreach ($query in $searchQueries) {
 
             if ($page -eq 1 -and $response.total_pages) {
                 $totalPages = [int]$response.total_pages
-                Write-Host "         Tersedia: $($response.total_count) video ($totalPages halaman)"
+                Write-Host "         Available: $($response.total_count) videos ($totalPages pages)"
             }
 
             if ($response.videos -and $response.videos.Count -gt 0) {
@@ -181,13 +161,13 @@ foreach ($query in $searchQueries) {
                 }
 
                 if ($page % 10 -eq 0) {
-                    Write-Host "         Halaman $page/$totalPages... ($($categoryVideos.Count) unik)"
+                    Write-Host "         Page $page/$totalPages... ($($categoryVideos.Count) unique)"
                 }
             } else {
                 break
             }
         } catch {
-            Write-Host "         [!] Error halaman ${page}, skip..."
+            Write-Host "         [!] Error on page ${page}, skipping..."
             Start-Sleep -Seconds 5
             $page++
             continue
@@ -214,7 +194,7 @@ foreach ($query in $searchQueries) {
             
             $xml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
             foreach ($v in $chunkVideos) {
-                $videoUrl = "$baseUrl/video?v=$($v.id)-$($v.slug)"
+                $videoUrl = "$baseUrl/v/$($v.id)-$($v.slug)"
                 $xml += "  <url>`n    <loc>$videoUrl</loc>`n    <lastmod>$($v.added)</lastmod>`n    <changefreq>monthly</changefreq>`n    <priority>0.70</priority>`n  </url>`n"
             }
             $xml += "</urlset>"
@@ -224,32 +204,55 @@ foreach ($query in $searchQueries) {
             Write-Host "      -> $currentFileName ($($chunkVideos.Count) URLs)"
         }
         $state.grandTotalVideos += $categoryVideos.Count
-        Write-Host "      Total duplikat diskip: $dupeCount"
+        Write-Host "      Duplicates skipped: $dupeCount"
     } else {
-        Write-Host "      -> SKIP (0 video baru)"
+        Write-Host "      -> SKIP (0 new videos)"
     }
     
-    # 1. Update state category yang selesai
+    # 1. Update completed category in state
     $state.completedQueries += $query
-    # 2. Save progres ke file JSON
+    # 2. Save progress to JSON file
     Save-State
-    # 3. Update master index secara langsung agar selalu up-to-date saat di-stop paksa
+    # 3. Update master index immediately so it's always up-to-date if process is interrupted
     Update-MasterIndex
     
     Write-Host ""
 }
 
+# Also regenerate the root sitemap.xml with the same static pages (no hreflang)
+Write-Host "[SITEMAP] Updating root sitemap.xml..."
+$rootSitemapXml = @"
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.kumpulenak.web.id/</loc>
+    <lastmod>$dateStr</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.00</priority>
+  </url>
+  <url><loc>https://www.kumpulenak.web.id/about</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.50</priority></url>
+  <url><loc>https://www.kumpulenak.web.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://www.kumpulenak.web.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.kumpulenak.web.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.kumpulenak.web.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.kumpulenak.web.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+</urlset>
+"@
+[System.IO.File]::WriteAllText('sitemap.xml', $rootSitemapXml, [System.Text.Encoding]::UTF8)
+
+Write-Host ""
 Write-Host "============================================"
-Write-Host "  SEMUA SELESAI!"
+Write-Host "  ALL COMPLETE!"
 Write-Host "============================================"
-Write-Host "  Video sitemaps       : $($state.sitemapVideoFiles.Count) file"
-Write-Host "  Total video unik     : $($state.grandTotalVideos)"
+Write-Host "  Video sitemaps       : $($state.sitemapVideoFiles.Count) files"
+Write-Host "  Total unique videos  : $($state.grandTotalVideos)"
 Write-Host "  API requests         : $($state.grandTotalRequests)"
-Write-Host "  sitemap_index.xml    : master (Siap didaftarkan ke Google!)"
+Write-Host "  sitemap_index.xml    : master (Ready to submit to Google!)"
+Write-Host "  sitemap.xml          : root (Updated!)"
 Write-Host "============================================"
 Write-Host ""
 
-# Hapus file state karena sudah tuntas
+# Remove state file since process is complete
 if (Test-Path $stateFile) {
     Remove-Item $stateFile -Force
 }

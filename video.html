@@ -285,7 +285,11 @@
                 "uploadDate": uploadISO,
                 "duration": "PT" + (video.length_sec || 0) + "S",
                 "embedUrl": video.embed || window.location.href,
-                "interactionCount": video.views || "0"
+                "interactionStatistic": {
+                    "@type": "InteractionCounter",
+                    "interactionType": { "@type": "WatchAction" },
+                    "userInteractionCount": parseInt(String(video.views || "0").replace(/\D/g, '')) || 0
+                }
             };
 
             document.getElementById('jsonLdScript').textContent = JSON.stringify(schema);

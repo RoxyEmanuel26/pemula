@@ -865,7 +865,7 @@ function renderCardsToGrid(cardsToRender) {
     initViewCounterAnimation();
 
     // SEO: Inject VideoObject JSON-LD schema for Google Video Search
-    injectVideoSchema(cardsToRender);
+    // injectVideoSchema(cardsToRender);
 
     kLog('Rendered ' + cardsToRender.length + ' cards to grid (with in-grid banner)');
 }

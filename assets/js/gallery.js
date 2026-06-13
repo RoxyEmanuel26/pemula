@@ -1617,39 +1617,41 @@ function initThumbnailPreview() {
 
             // Jadwalkan pemutaran video jika hover berlangsung lebih dari 400ms
             hoverPlayTimeout = setTimeout(function () {
-                var cardEl = wrapper.closest('.card');
-                if (!cardEl) return;
-                var idx = parseInt(cardEl.dataset.index);
-                if (isNaN(idx)) return;
-                var card = currentDisplayCards[idx];
-                if (!card) return;
-
-                // Dapatkan src thumbnail default
-                var thumbSrc = wrapper.getAttribute('data-default-thumb') || (card.default_thumb && card.default_thumb.src);
+                // Dapatkan src thumbnail default langsung dari wrapper attribute
+                var thumbSrc = wrapper.getAttribute('data-default-thumb');
                 if (!thumbSrc) return;
 
                 // Ekstrak numeric ID dari thumbSrc menggunakan Regex
+                // Contoh: .../17184661/15_360.jpg → 17184661
                 var match = thumbSrc.match(/\/(\d+)\/[^\/]+$/);
-                var numericId = match ? match[1] : null;
-                if (!numericId) return;
+                if (!match) return;
+                var numericId = match[1];
 
-                // Buat preview URL
+                // Buat preview URL: direktori thumbnail + numericId-preview.mp4
                 var lastSlashIdx = thumbSrc.lastIndexOf("/");
                 var previewUrl = thumbSrc.substring(0, lastSlashIdx) + '/' + numericId + '-preview.mp4';
+
+                // Cek apakah wrapper masih aktif (user mungkin sudah pindah)
+                if (wrapper !== activeWrapper) return;
 
                 // Buat HTML5 video element
                 var video = document.createElement('video');
                 video.className = 'hover-video-iframe';
-                video.src = previewUrl;
-                video.autoplay = true;
+                video.crossOrigin = 'anonymous';
                 video.muted = true;
                 video.loop = true;
                 video.playsInline = true;
+                video.setAttribute('playsinline', '');
+                video.setAttribute('webkit-playsinline', '');
+                video.preload = 'auto';
                 video.style.objectFit = 'cover';
                 video.style.pointerEvents = 'none';
 
                 // Ketika video mulai diputar, fade in dan hentikan cycle thumbnail
+                var videoReady = false;
                 var handlePlay = function () {
+                    if (videoReady) return;
+                    videoReady = true;
                     video.style.opacity = '1';
                     if (thumbPreviewInterval) {
                         clearInterval(thumbPreviewInterval);
@@ -1661,9 +1663,23 @@ function initThumbnailPreview() {
                 };
 
                 video.addEventListener('playing', handlePlay);
-                video.addEventListener('loadeddata', handlePlay);
+                video.addEventListener('loadeddata', function () {
+                    if (video.readyState >= 2) handlePlay();
+                });
 
+                // Jika video gagal load, biarkan thumbnail cycling tetap berjalan
+                video.addEventListener('error', function () {
+                    if (video.parentNode) video.remove();
+                });
+
+                // Append dulu, lalu set source dan play
                 wrapper.appendChild(video);
+                video.src = previewUrl;
+                video.load();
+                var playPromise = video.play();
+                if (playPromise && playPromise.catch) {
+                    playPromise.catch(function () { /* autoplay blocked, ignore */ });
+                }
             }, 400);
 
         } catch (err) { /* silently ignore parse errors */ }

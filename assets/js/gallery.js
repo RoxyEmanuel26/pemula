@@ -44,7 +44,7 @@ let DATA_SOURCE = "api";
 //  Each tab has its own API parameters
 // =====================================================
 const TAB_CONFIG = {
-    popular: { order: 'most-popular', query: 'all' },
+    popular: { order: 'top-weekly', query: 'all' },
     viral: { order: 'latest', query: 'all' },
     kategori: { order: 'top-weekly', query: 'all' }
 };
@@ -142,6 +142,33 @@ function isSafeUrl(url) {
         return u.protocol === 'https:' || u.protocol === 'http:';
     } catch {
         return false;
+    }
+}
+
+// Decoder untuk memulihkan teks UTF-8 yang mengalami Mojibake dari API Eporner
+function decodeMojibake(str) {
+    if (!str) return '';
+    if (typeof TextDecoder === 'undefined') return str;
+    
+    // Peta byte Windows-1252 ke Unicode untuk rentang 0x80 - 0x9F
+    var win1252Map = {
+        0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 
+        0x2020: 0x86, 0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 
+        0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 
+        0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 
+        0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C, 
+        0x017E: 0x9E, 0x0178: 0x9F
+    };
+
+    var bytes = new Uint8Array(str.split('').map(function (c) {
+        var code = c.charCodeAt(0);
+        return win1252Map[code] || (code < 256 ? code : 0x3F);
+    }));
+
+    try {
+        return new TextDecoder('utf-8').decode(bytes);
+    } catch (e) {
+        return str;
     }
 }
 
@@ -432,7 +459,7 @@ function mapAPIVideoToCard(video) {
     // Parse keywords string ke array (max 4 tag)
     var keywordsArr = [];
     if (video.keywords) {
-        keywordsArr = video.keywords.split(',').map(function (k) { return k.trim(); }).filter(function (k) { return k.length > 0 && k.length < 30; }).slice(0, 4);
+        keywordsArr = video.keywords.split(',').map(function (k) { return decodeMojibake(k.trim()); }).filter(function (k) { return k.length > 0 && k.length < 30; }).slice(0, 4);
     }
     // Ambil semua thumbnail URLs
     var thumbsArr = [];
@@ -440,7 +467,7 @@ function mapAPIVideoToCard(video) {
         thumbsArr = video.thumbs.map(function (t) { return t.src; });
     }
     return {
-        name: video.title || 'Untitled',
+        name: decodeMojibake(video.title || 'Untitled'),
         image: (video.default_thumb && isSafeUrl(video.default_thumb.src)) ? video.default_thumb.src : '',
         link: isSafeUrl(video.url) ? video.url : '#',
         date: video.added ? video.added.slice(0, 10) : '',
@@ -1595,26 +1622,35 @@ function initThumbnailPreview() {
                 var idx = parseInt(cardEl.dataset.index);
                 if (isNaN(idx)) return;
                 var card = currentDisplayCards[idx];
-                if (!card || !card.embedUrl) return;
+                if (!card) return;
 
-                // Buat iframe player
-                var iframe = document.createElement('iframe');
-                iframe.className = 'hover-video-iframe';
-                
-                // Tambahkan autoplay=1 dan mute=1 agar diizinkan oleh kebijakan browser
-                var embedUrl = card.embedUrl;
-                if (embedUrl.indexOf('?') !== -1) {
-                    embedUrl += '&autoplay=1&mute=1';
-                } else {
-                    embedUrl += '?autoplay=1&mute=1';
-                }
-                
-                iframe.src = embedUrl;
-                iframe.allow = 'autoplay; fullscreen';
+                // Dapatkan src thumbnail default
+                var thumbSrc = wrapper.getAttribute('data-default-thumb') || (card.default_thumb && card.default_thumb.src);
+                if (!thumbSrc) return;
 
-                // Ketika iframe berhasil dimuat, fade in dan hentikan cycle thumbnail
-                iframe.onload = function () {
-                    iframe.style.opacity = '1';
+                // Ekstrak numeric ID dari thumbSrc menggunakan Regex
+                var match = thumbSrc.match(/\/(\d+)\/[^\/]+$/);
+                var numericId = match ? match[1] : null;
+                if (!numericId) return;
+
+                // Buat preview URL
+                var lastSlashIdx = thumbSrc.lastIndexOf("/");
+                var previewUrl = thumbSrc.substring(0, lastSlashIdx) + '/' + numericId + '-preview.mp4';
+
+                // Buat HTML5 video element
+                var video = document.createElement('video');
+                video.className = 'hover-video-iframe';
+                video.src = previewUrl;
+                video.autoplay = true;
+                video.muted = true;
+                video.loop = true;
+                video.playsInline = true;
+                video.style.objectFit = 'cover';
+                video.style.pointerEvents = 'none';
+
+                // Ketika video mulai diputar, fade in dan hentikan cycle thumbnail
+                var handlePlay = function () {
+                    video.style.opacity = '1';
                     if (thumbPreviewInterval) {
                         clearInterval(thumbPreviewInterval);
                         thumbPreviewInterval = null;
@@ -1624,7 +1660,10 @@ function initThumbnailPreview() {
                     }
                 };
 
-                wrapper.appendChild(iframe);
+                video.addEventListener('playing', handlePlay);
+                video.addEventListener('loadeddata', handlePlay);
+
+                wrapper.appendChild(video);
             }, 400);
 
         } catch (err) { /* silently ignore parse errors */ }
@@ -1653,9 +1692,14 @@ function initThumbnailPreview() {
             hoverPlayTimeout = null;
         }
 
-        // Hapus iframe hover video player jika ada
+        // Hapus iframe / video hover video player jika ada
         var existingIframe = wrapper.querySelector('.hover-video-iframe');
         if (existingIframe) {
+            if (existingIframe.tagName === 'VIDEO') {
+                existingIframe.pause();
+                existingIframe.src = '';
+                existingIframe.load();
+            }
             existingIframe.remove();
         }
 
@@ -1676,7 +1720,7 @@ function initThumbnailPreview() {
 // =====================================================
 
 /** @type {string} Urutan sorting aktif saat ini */
-var currentSortOrder = 'most-popular';
+var currentSortOrder = 'top-weekly';
 
 /**
  * Render sort bar di bawah section label
@@ -2071,7 +2115,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.min.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.min.js?v=en2';
+    scriptLoader.src = 'assets/js/loader.min.js?v=en3';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

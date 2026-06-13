@@ -2071,7 +2071,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.min.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.min.js?v=en1';
+    scriptLoader.src = 'assets/js/loader.min.js?v=en2';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

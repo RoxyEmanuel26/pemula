@@ -1758,3 +1758,17 @@ body {
 .noscript-seo ul li a:hover {
     background: rgba(232, 168, 0, 0.3);
 }
+
+/* ===== HOVER VIDEO PREVIEW IFRAME ===== */
+.hover-video-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}

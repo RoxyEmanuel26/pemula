@@ -44,7 +44,7 @@ let DATA_SOURCE = "api";
 //  Each tab has its own API parameters
 // =====================================================
 const TAB_CONFIG = {
-    popular: { order: 'most-popular', query: 'indo' },
+    popular: { order: 'most-popular', query: 'all' },
     viral: { order: 'latest', query: 'all' },
     kategori: { order: 'top-weekly', query: 'all' }
 };
@@ -1115,7 +1115,7 @@ function initTabSwitching() {
         window._tempTabOverride = null;
 
         // Mapping label yang lebih cantik untuk section label
-        var labelMap = { popular: 'popular', viral: 'viral 🔥', kategori: 'all categories' };
+        var labelMap = { popular: 'Best Videos', viral: 'viral 🔥', kategori: 'all categories' };
         document.getElementById('sectionLabel').textContent = labelMap[currentTab] || currentTab;
 
         // Update posisi tab indicator
@@ -1527,6 +1527,8 @@ function initViewCounterAnimation() {
 /** @type {number|null} */
 var thumbPreviewInterval = null;
 var thumbCurrentIndex = 0;
+/** @type {number|null} Timer untuk menunda autoplay video */
+var hoverPlayTimeout = null;
 
 /**
  * Inisialisasi thumbnail preview pada card grid
@@ -1543,10 +1545,14 @@ function initThumbnailPreview() {
         var wrapper = e.target.closest('.card-img-wrapper[data-thumbs]');
         if (!wrapper || wrapper === activeWrapper) return; // Sudah aktif, skip
 
-        // Bersihkan interval sebelumnya jika ada
+        // Bersihkan interval dan timeout sebelumnya jika ada
         if (thumbPreviewInterval) {
             clearInterval(thumbPreviewInterval);
             thumbPreviewInterval = null;
+        }
+        if (hoverPlayTimeout) {
+            clearTimeout(hoverPlayTimeout);
+            hoverPlayTimeout = null;
         }
         // Reset wrapper sebelumnya
         if (activeWrapper) {
@@ -1566,13 +1572,14 @@ function initThumbnailPreview() {
             var progressBar = wrapper.querySelector('.thumb-progress-bar');
             if (!img) return;
 
-            // Tampilkan progress bar
+            // Tampilkan progress bar untuk cycling thumbnail
             if (progressBar) {
                 progressBar.classList.add('active');
                 progressBar.style.setProperty('--thumb-count', thumbs.length);
                 progressBar.style.setProperty('--thumb-index', '0');
             }
 
+            // Segera mulai cycling thumbnail (sebagai visual feedback cepat)
             thumbPreviewInterval = setInterval(function () {
                 thumbCurrentIndex = (thumbCurrentIndex + 1) % thumbs.length;
                 img.src = thumbs[thumbCurrentIndex];
@@ -1580,6 +1587,46 @@ function initThumbnailPreview() {
                     progressBar.style.setProperty('--thumb-index', thumbCurrentIndex);
                 }
             }, 800);
+
+            // Jadwalkan pemutaran video jika hover berlangsung lebih dari 400ms
+            hoverPlayTimeout = setTimeout(function () {
+                var cardEl = wrapper.closest('.card');
+                if (!cardEl) return;
+                var idx = parseInt(cardEl.dataset.index);
+                if (isNaN(idx)) return;
+                var card = currentDisplayCards[idx];
+                if (!card || !card.embedUrl) return;
+
+                // Buat iframe player
+                var iframe = document.createElement('iframe');
+                iframe.className = 'hover-video-iframe';
+                
+                // Tambahkan autoplay=1 dan mute=1 agar diizinkan oleh kebijakan browser
+                var embedUrl = card.embedUrl;
+                if (embedUrl.indexOf('?') !== -1) {
+                    embedUrl += '&autoplay=1&mute=1';
+                } else {
+                    embedUrl += '?autoplay=1&mute=1';
+                }
+                
+                iframe.src = embedUrl;
+                iframe.allow = 'autoplay; fullscreen';
+
+                // Ketika iframe berhasil dimuat, fade in dan hentikan cycle thumbnail
+                iframe.onload = function () {
+                    iframe.style.opacity = '1';
+                    if (thumbPreviewInterval) {
+                        clearInterval(thumbPreviewInterval);
+                        thumbPreviewInterval = null;
+                    }
+                    if (progressBar) {
+                        progressBar.classList.remove('active');
+                    }
+                };
+
+                wrapper.appendChild(iframe);
+            }, 400);
+
         } catch (err) { /* silently ignore parse errors */ }
     });
 
@@ -1600,6 +1647,18 @@ function initThumbnailPreview() {
     });
 
     function resetThumbPreview(wrapper) {
+        // Hapus timeout hover
+        if (hoverPlayTimeout) {
+            clearTimeout(hoverPlayTimeout);
+            hoverPlayTimeout = null;
+        }
+
+        // Hapus iframe hover video player jika ada
+        var existingIframe = wrapper.querySelector('.hover-video-iframe');
+        if (existingIframe) {
+            existingIframe.remove();
+        }
+
         var defaultThumb = wrapper.getAttribute('data-default-thumb');
         var img = wrapper.querySelector('img');
         var progressBar = wrapper.querySelector('.thumb-progress-bar');
@@ -1617,7 +1676,7 @@ function initThumbnailPreview() {
 // =====================================================
 
 /** @type {string} Urutan sorting aktif saat ini */
-var currentSortOrder = 'indo';
+var currentSortOrder = 'most-popular';
 
 /**
  * Render sort bar di bawah section label

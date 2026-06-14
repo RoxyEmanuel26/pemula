@@ -1,0 +1,26 @@
+# kumpulenak
+
+> Platform galeri video viral dan streaming dewasa (18+) premium yang cepat, bersih, dan dioptimalkan untuk perangkat mobile.
+
+## Info & Links
+- [Homepage](https://www.kumpulenak.web.id/)
+- [How to Download](https://www.kumpulenak.web.id/howto)
+- [About Us](https://www.kumpulenak.web.id/about)
+- [Contact](https://www.kumpulenak.web.id/contact)
+- [DMCA Takedown Policy](https://www.kumpulenak.web.id/dmca)
+
+## Platform Overview
+kumpulenak is a free, ad-supported adult video aggregator and streaming gallery. It specializes in trending viral adult content, Japanese Adult Video (JAV), amateur videos, and social media trends, streamed in high-definition (HD) quality. The platform features instant hover-to-play video previews and is highly optimized for mobile devices.
+
+## Content Categories & Search Queries
+The platform aggregates and catalogs content across several major tags:
+- **Indonesian Viral**: Amateur and trending local adult content.
+- **Japanese (JAV)**: Uncensored and censored Japanese adult videos.
+- **Amateur & Homemade**: Homemade videos and amateur couple content.
+- **Asian & East Asian**: Korean, Chinese, and Southeast Asian adult videos.
+- **Other popular tags**: Hijab, student leaks, massage, outdoor, hotel, hotel tapes, and couple videos.
+
+## Features
+- **Instant Video Previews**: Muted MP4 video previews load automatically when hovering over video cards (desktop) or cycling thumbnails (mobile).
+- **Fast CDN Streaming**: Assets and dynamic pages are cached globally using Cloudflare Pages to ensure fast page load times and optimal Core Web Vitals.
+- **Telegram Integration**: Connected to a dedicated updates channel (t.me/missav_jav_english) for instant notifications.

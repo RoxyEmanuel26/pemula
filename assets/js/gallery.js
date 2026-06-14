@@ -1931,12 +1931,15 @@ function enhancedOpenPlayerModal(card) {
         var slug = (card.name || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         var vid = card.videoId ? card.videoId + '-' : '';
         // Menggunakan clean URL /video?v= agar bekerja di Vercel (cleanUrls:true)
-        fullPageBtn.href = '/video?v=' + vid + slug;
+        fullPageBtn.href = '/v/' + vid + slug;
         fullPageBtn.target = '_blank';
     }
 
     // Render tags jika sudah ada di card
     renderPlayerTags(card.keywords || []);
+
+    // Inject referral share buttons into modal
+    injectModalShareButtons(card);
 
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
@@ -1952,6 +1955,58 @@ function enhancedOpenPlayerModal(card) {
             }
         });
     }
+}
+
+/**
+ * Inject share buttons (WhatsApp, Telegram, Copy Link) into modal player
+ * @param {Object} card - Video card object
+ */
+function injectModalShareButtons(card) {
+    var shareRow = document.getElementById('playerShareRow');
+    if (!shareRow) return;
+    shareRow.innerHTML = '';
+
+    var slug = (card.name || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    var vid = card.videoId ? card.videoId + '-' : '';
+    var shareUrl = window.location.origin + '/v/' + vid + slug;
+
+    // WhatsApp
+    var waBtn = document.createElement('a');
+    waBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Tonton video viral ini gratis! \uD83D\uDD25\n' + shareUrl + '?ref=modal');
+    waBtn.target = '_blank';
+    waBtn.rel = 'noopener noreferrer';
+    waBtn.style.cssText = 'background:#25D366;color:#fff;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity 0.3s;';
+    waBtn.textContent = '\uD83D\uDCAC WhatsApp';
+    waBtn.addEventListener('click', function() {
+        if (window.trackEvent) window.trackEvent('video_share_whatsapp', { video_title: card.name || '', share_url: shareUrl + '?ref=modal' });
+    });
+
+    // Telegram
+    var tgBtn = document.createElement('a');
+    tgBtn.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl + '?ref=modal') + '&text=' + encodeURIComponent('Watch ' + (card.name || 'this') + ' on kumpulenak! \uD83D\uDD25');
+    tgBtn.target = '_blank';
+    tgBtn.rel = 'noopener noreferrer';
+    tgBtn.style.cssText = 'background:#229ED9;color:#fff;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity 0.3s;';
+    tgBtn.textContent = '\u2708\uFE0F Telegram';
+    tgBtn.addEventListener('click', function() {
+        if (window.trackEvent) window.trackEvent('video_share_telegram', { video_title: card.name || '', share_url: shareUrl + '?ref=modal' });
+    });
+
+    // Copy Link
+    var cpBtn = document.createElement('button');
+    cpBtn.style.cssText = 'background:transparent;color:#aaa;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;border:1px solid #555;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.3s;';
+    cpBtn.textContent = '\uD83D\uDD17 Copy Link';
+    cpBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(shareUrl + '?ref=copy').then(function() {
+            cpBtn.textContent = '\u2705 Copied!';
+            setTimeout(function() { cpBtn.textContent = '\uD83D\uDD17 Copy Link'; }, 2000);
+        });
+        if (window.trackEvent) window.trackEvent('video_share_copy', { video_title: card.name || '', share_url: shareUrl + '?ref=copy' });
+    });
+
+    shareRow.appendChild(waBtn);
+    shareRow.appendChild(tgBtn);
+    shareRow.appendChild(cpBtn);
 }
 
 /**
@@ -2078,11 +2133,13 @@ function injectVideoSchema(cardsToRender) {
             }
         }
 
+        var thumbUrl = (card.image && isSafeUrl(card.image)) ? card.image : window.location.origin + '/assets/icons/og-image.png';
+
         return {
             '@type': 'VideoObject',
             'name': card.name,
             'description': card.name + ' - Free video streaming on kumpulenak',
-            'thumbnailUrl': card.image || '',
+            'thumbnailUrl': [thumbUrl],
             'uploadDate': card.date ? card.date + 'T00:00:00Z' : '2026-01-01T00:00:00Z',
             'duration': isoDuration,
             'contentUrl': 'https://www.kumpulenak.web.id/',
@@ -2091,6 +2148,14 @@ function injectVideoSchema(cardsToRender) {
                 '@type': 'InteractionCounter',
                 'interactionType': { '@type': 'WatchAction' },
                 'userInteractionCount': parseInt(String(card.views || '0').replace(/\D/g, '')) || 0
+            },
+            'publisher': {
+                '@type': 'Organization',
+                'name': 'kumpulenak',
+                'logo': {
+                    '@type': 'ImageObject',
+                    'url': window.location.origin + '/assets/icons/android-chrome-512x512.png'
+                }
             }
         };
     });
@@ -2131,7 +2196,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.min.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.min.js?v=en6';
+    scriptLoader.src = 'assets/js/loader.min.js?v=en7';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

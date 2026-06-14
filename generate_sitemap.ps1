@@ -140,12 +140,49 @@ $scriptBlock = {
                     if ($slug.Length -gt 80) { $slug = $slug.Substring(0, 80).TrimEnd('-') }
 
                     $addedDate = $dateStr.Substring(0, 10)
-                    if ($v.added -and $v.added.Length -ge 10) { $addedDate = $v.added.Substring(0, 10) }
+                    $publicationDate = "${addedDate}T00:00:00Z"
+                    if ($v.added -and $v.added.Length -ge 19) {
+                        $datePart = $v.added.Substring(0, 10)
+                        $timePart = $v.added.Substring(11, 8)
+                        $publicationDate = "${datePart}T${timePart}Z"
+                        $addedDate = $datePart
+                    } elseif ($v.added -and $v.added.Length -ge 10) {
+                        $datePart = $v.added.Substring(0, 10)
+                        $publicationDate = "${datePart}T00:00:00Z"
+                        $addedDate = $datePart
+                    }
+
+                    $titleVal = ""
+                    if ($v.title) { $titleVal = $v.title }
+
+                    $thumbVal = ""
+                    if ($v.default_thumb -and $v.default_thumb.src) {
+                        $thumbVal = $v.default_thumb.src
+                    } elseif ($v.thumbs -and $v.thumbs.Count -gt 0 -and $v.thumbs[0].src) {
+                        $thumbVal = $v.thumbs[0].src
+                    }
+
+                    $embedVal = ""
+                    if ($v.embed) {
+                        $embedVal = $v.embed
+                    } else {
+                        $embedVal = "https://www.eporner.com/embed/$($v.id)/"
+                    }
+
+                    $durationVal = 0
+                    if ($v.length_sec) {
+                        $durationVal = [int]$v.length_sec
+                    }
 
                     $categoryVideos[$v.id] = @{
-                        id    = $v.id
-                        slug  = $slug
-                        added = $addedDate
+                        id        = $v.id
+                        slug      = $slug
+                        added     = $addedDate
+                        title     = $titleVal
+                        thumbnail = $thumbVal
+                        embed     = $embedVal
+                        duration  = $durationVal
+                        published = $publicationDate
                     }
                 }
             } else {
@@ -175,10 +212,34 @@ $scriptBlock = {
                 $currentFileName = $fileName.Replace(".xml", "_$($i+1).xml")
             }
             
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
+            $xml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9' xmlns:video='http://www.google.com/schemas/sitemap-video/1.1'>`n"
             foreach ($v in $chunkVideos) {
                 $videoUrl = "$baseUrl/v/$($v.id)-$($v.slug)"
-                $xml += "  <url>`n    <loc>$videoUrl</loc>`n    <lastmod>$($v.added)</lastmod>`n    <changefreq>monthly</changefreq>`n    <priority>0.70</priority>`n  </url>`n"
+                
+                # XML escape all dynamic values
+                $escapedLoc = [System.Security.SecurityElement]::Escape($videoUrl)
+                $escapedThumb = [System.Security.SecurityElement]::Escape($v.thumbnail)
+                $escapedTitle = [System.Security.SecurityElement]::Escape($v.title)
+                $escapedEmbed = [System.Security.SecurityElement]::Escape($v.embed)
+                
+                # Generate clean description (max 2048 chars)
+                $descriptionRaw = "Watch $($v.title) for free in full HD quality on kumpulenak."
+                $escapedDesc = [System.Security.SecurityElement]::Escape($descriptionRaw)
+                
+                $xml += "  <url>`n"
+                $xml += "    <loc>$escapedLoc</loc>`n"
+                $xml += "    <lastmod>$($v.added)</lastmod>`n"
+                $xml += "    <changefreq>monthly</changefreq>`n"
+                $xml += "    <priority>0.70</priority>`n"
+                $xml += "    <video:video>`n"
+                $xml += "      <video:thumbnail_loc>$escapedThumb</video:thumbnail_loc>`n"
+                $xml += "      <video:title>$escapedTitle</video:title>`n"
+                $xml += "      <video:description>$escapedDesc</video:description>`n"
+                $xml += "      <video:embed_loc>$escapedEmbed</video:embed_loc>`n"
+                $xml += "      <video:duration>$($v.duration)</video:duration>`n"
+                $xml += "      <video:publication_date>$($v.published)</video:publication_date>`n"
+                $xml += "    </video:video>`n"
+                $xml += "  </url>`n"
             }
             $xml += "</urlset>"
             

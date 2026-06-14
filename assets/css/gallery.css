@@ -1047,8 +1047,6 @@ body {
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    background: linear-gradient(135deg, #e8a800, #d49a00);
-    color: #000;
     text-decoration: none;
     border-radius: 8px;
     font-size: 13px;
@@ -1056,9 +1054,27 @@ body {
     transition: all 0.2s;
 }
 
-.player-open-tab:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(232, 168, 0, 0.3);
+.player-open-tab-primary {
+    background: linear-gradient(135deg, #009900, #006600);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 153, 0, 0.35);
+}
+
+.player-open-tab-primary:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px rgba(0, 153, 0, 0.5);
+}
+
+.player-open-tab-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.player-open-tab-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1.5px);
 }
 
 

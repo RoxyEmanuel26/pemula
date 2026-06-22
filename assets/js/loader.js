@@ -58,7 +58,7 @@
         {
             containerId: 'adBannerCustom',
             imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            linkUrl: 'https://www.missav-j.web.id',
+            linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
             alt: 'Download Terabox'
         }
     ];
@@ -109,10 +109,12 @@
         adBannerHeader: [
             {
                 image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
+                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
                 alt: 'Premium Content'
             },
             {
                 image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
+                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
                 alt: 'Exclusive Download'
             }
         ],
@@ -120,10 +122,12 @@
         adBannerContent: [
             {
                 image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
+                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
                 alt: 'Premium Content'
             },
             {
                 image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
+                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
                 alt: 'Exclusive Download'
             }
         ]
@@ -143,7 +147,7 @@
 
         // Pilih random banner
         var banner = banners[Math.floor(Math.random() * banners.length)];
-        var link = getRandomLink();
+        var link = banner.linkUrl || getRandomLink();
 
         container.innerHTML = '';
 
@@ -176,10 +180,12 @@
         anchor.addEventListener('click', function (e) {
             e.stopPropagation();
             e.stopImmediatePropagation();
-            // Ganti link untuk klik berikutnya
-            setTimeout(function () {
-                anchor.href = getRandomLink();
-            }, 100);
+            if (!banner.linkUrl) {
+                // Ganti link untuk klik berikutnya
+                setTimeout(function () {
+                    anchor.href = getRandomLink();
+                }, 100);
+            }
         }, true);
 
         anchor.appendChild(img);
@@ -409,14 +415,13 @@
                     // Re-inject in-grid banner
                     banner.innerHTML = '';
                     var link = document.createElement('a');
-                    link.href = getRandomLink();
+                    link.href = 'https://www.teraboxpage.com/myknow/kumpulenak1';
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer';
                     link.className = 'ingrid-banner-link';
                     link.addEventListener('click', function (e) {
                         e.stopPropagation();
                         e.stopImmediatePropagation();
-                        setTimeout(function () { link.href = getRandomLink(); }, 100);
                     }, true);
 
                     var img = document.createElement('img');

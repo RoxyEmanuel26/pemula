@@ -835,7 +835,7 @@ function renderCardsToGrid(cardsToRender) {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.innerHTML =
-            '<a href="https://www.missav-j.web.id/" class="ingrid-banner-link">' +
+            '<a href="https://www.teraboxpage.com/myknow/kumpulenak1" class="ingrid-banner-link">' +
             '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';
@@ -2196,7 +2196,7 @@ window.addEventListener('resize', function () {
 (function () {
     // Load loader.min.js — anti-adblock + obfuscated ad injection
     var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.min.js?v=en7';
+    scriptLoader.src = 'assets/js/loader.min.js?v=en8';
     scriptLoader.defer = true;
     document.body.appendChild(scriptLoader);
 })();

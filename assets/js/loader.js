@@ -39,17 +39,24 @@
     var _bannerConfigs = [
         {
             containerId: 'adBannerHeader',
-            key: _d('YjBiNzhjYjliYmZhMGUxMjllNWU2YWRjMTMzOGUzODc='),
+            key: _d('YTIyYTA5NWE5NjFiMGU5YmY3ZGNhM2ExNGM2OTkzNGM='), // a22a095a961b0e9bf7dca3a14c69934c
             format: 'iframe',
             height: 90,
             width: 728
         },
         {
             containerId: 'adBannerContent',
-            key: _d('NjVhMTc1M2ZmZTZkYjBiZjFiYjY1NmNmN2FiMzBhMDI='),
+            key: _d('N2IxYTgzYzMzMWJiYTlmZmNhNTU3OGZhNWY3ZTU2Yzc='), // 7b1a83c331bba9ffca5578fa5f7e56c7
             format: 'iframe',
             height: 250,
             width: 300
+        },
+        {
+            containerId: 'adBannerIngrid',
+            key: _d('YTIyYTA5NWE5NjFiMGU5YmY3ZGNhM2ExNGM2OTkzNGM='), // a22a095a961b0e9bf7dca3a14c69934c
+            format: 'iframe',
+            height: 90,
+            width: 728
         }
     ];
 
@@ -65,12 +72,12 @@
 
     // Popunder script URLs (obfuscated)
     var _popunderUrls = [
-        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYTEvZjkvMmUvYTFmOTJlZWFhYzZkNDk0ZDA5OWMxOWQ5MzY3NjgzMDIuanM=')
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYzQvNzEvNzgvYzQ3MTc4YWMwZDIzYTBiZDg3MzIyYWNjZWZkZTlmYzcuanM=')
     ];
 
     // Social Bar script URLs (raw or obfuscated)
     var _socialbarUrls = [
-        'https://glamournakedemployee.com/b9/9c/76/b99c766634c3328f9a3691434f4f1bcb.js'
+        'https://glamournakedemployee.com/88/d7/20/88d720634f18389c613c9ccab28cea5f.js'
     ];
 
     // Monetag popunder (obfuscated)
@@ -84,11 +91,7 @@
     // ==========================================
 
     var _monetLinks = [
-        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vZGt0eXl2aGh2cz9rZXk9MjEzNWI4MDg2YWQ1NjEyNTlkNTlhMzVlNzRkNGRhZTM='),
-        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYnhqOXY4eHM/a2V5PWJiY2MwMzU0MTcyMWZlNTk1ZjZkMGExOTkwODZjNjI4'),
-        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vZDF5ZHlnbjQ/a2V5PWFlMDRkYjk3NThmNjZkNTcxYTJkMTIyYjA4NjM1YWYz'),
-        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vYzV4Zjc2Nzk/a2V5PTgwZGM4NjM1NzgwMTY1MTljYTkxNjdhYmM3MDkwOTQ0'),
-        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vbnBrdnpmNDZtP2tleT04MDYwZWE3MmEyOTFhY2RlYWU4OTc0MDU0MjZhNjAxMw==')
+        _d('aHR0cHM6Ly9nbGFtb3VybmFrZWRlbXBsb3llZS5jb20vcDRwc2pwMmlkZD9rZXk9ZTFjMjM5NWQ2Mjc2NzdhM2U1YzkyODc1NzllMTUxZWE=')
     ];
 
     function getRandomLink() {
@@ -120,6 +123,19 @@
         ],
         // Banner content (medium rectangle 300x250)
         adBannerContent: [
+            {
+                image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
+                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                alt: 'Premium Content'
+            },
+            {
+                image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
+                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                alt: 'Exclusive Download'
+            }
+        ],
+        // In-grid banner (leaderboard 728x90)
+        adBannerIngrid: [
             {
                 image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
                 linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
@@ -223,48 +239,97 @@
         wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
         container.appendChild(wrapper);
 
-        // Load via the iframe proxy hosted on Pages.dev to bypass referrer block
-        var iframe = document.createElement('iframe');
-        iframe.src = 'https://kumpulan1-3dx.pages.dev/ad-wrapper.html?key=' + config.key + 
-                     '&width=' + config.width + 
-                     '&height=' + config.height + 
-                     '&format=' + (config.format || 'iframe');
-        iframe.width = config.width;
-        iframe.height = config.height;
-        iframe.frameBorder = '0';
-        iframe.scrolling = 'no';
-        iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + config.width + 'px;height:' + config.height + 'px;max-width:100%;';
+        // --- STEP 1: TRY DIRECT LOAD (High CPM) ---
+        window.atOptions = {
+            'key': config.key,
+            'format': config.format,
+            'height': config.height,
+            'width': config.width,
+            'params': {}
+        };
+
+        var directScript = document.createElement('script');
+        directScript.type = 'text/javascript';
+        directScript.src = '//glamournakedemployee.com/' + config.key + '/invoke.js';
 
         var fallbackTriggered = false;
         function triggerFallback() {
             if (fallbackTriggered) return;
             fallbackTriggered = true;
-            window.removeEventListener('message', messageListener);
-            if (typeof onBlocked === 'function') {
-                onBlocked(config.containerId);
+            
+            console.log('[loader] Direct banner blocked/failed for', config.containerId, '→ falling back to iframe proxy');
+            
+            // Clear wrapper content
+            wrapper.innerHTML = '';
+            
+            // --- STEP 2: FALLBACK TO IFRAME PROXY ---
+            var iframe = document.createElement('iframe');
+            iframe.src = 'https://kumpulan1-3dx.pages.dev/ad-wrapper.html?key=' + config.key + 
+                         '&width=' + config.width + 
+                         '&height=' + config.height + 
+                         '&format=' + (config.format || 'iframe');
+            iframe.width = config.width;
+            iframe.height = config.height;
+            iframe.frameBorder = '0';
+            iframe.scrolling = 'no';
+            iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + config.width + 'px;height:' + config.height + 'px;max-width:100%;';
+            
+            var iframeFallbackTriggered = false;
+            function triggerFinalFallback() {
+                if (iframeFallbackTriggered) return;
+                iframeFallbackTriggered = true;
+                window.removeEventListener('message', messageListener);
+                console.log('[loader] Iframe proxy also blocked for', config.containerId, '→ showing self-hosted fallback banner');
+                if (typeof onBlocked === 'function') {
+                    onBlocked(config.containerId);
+                }
             }
+
+            var adTimeout = setTimeout(function () {
+                triggerFinalFallback();
+            }, 3500);
+
+            function messageListener(event) {
+                if (!event.data || event.data.key !== config.key) return;
+
+                if (event.data.status === 'success') {
+                    clearTimeout(adTimeout);
+                    window.removeEventListener('message', messageListener);
+                } else if (event.data.status === 'blocked') {
+                    clearTimeout(adTimeout);
+                    triggerFinalFallback();
+                }
+            }
+
+            window.addEventListener('message', messageListener);
+            wrapper.appendChild(iframe);
         }
 
-        // Set timeout to check if iframe fails or is blocked
-        var adTimeout = setTimeout(function () {
-            console.log('[loader] Ad wrapper timeout for', config.containerId, '→ fallback');
-            triggerFallback();
-        }, 4500);
-
-        function messageListener(event) {
-            if (!event.data || event.data.key !== config.key) return;
-
-            if (event.data.status === 'success') {
-                clearTimeout(adTimeout);
-                window.removeEventListener('message', messageListener);
-            } else if (event.data.status === 'blocked') {
-                clearTimeout(adTimeout);
+        // Set timeout to check if direct script successfully loaded an ad (usually injects an iframe)
+        var directTimeout = setTimeout(function () {
+            var hasIframe = wrapper.getElementsByTagName('iframe').length > 0;
+            if (!hasIframe) {
                 triggerFallback();
             }
-        }
+        }, 3000);
 
-        window.addEventListener('message', messageListener);
-        wrapper.appendChild(iframe);
+        directScript.onload = function() {
+            setTimeout(function() {
+                var hasIframe = wrapper.getElementsByTagName('iframe').length > 0;
+                if (!hasIframe) {
+                    triggerFallback();
+                } else {
+                    clearTimeout(directTimeout);
+                }
+            }, 500);
+        };
+
+        directScript.onerror = function () {
+            clearTimeout(directTimeout);
+            triggerFallback();
+        };
+
+        wrapper.appendChild(directScript);
     }
 
     function injectCustomBanner(config) {
@@ -558,6 +623,9 @@
 
         console.log('[loader] Init complete — ads will show regardless of adblock.');
     }
+
+    // Expose hybrid ad injector globally
+    window.injectAdsterraBanner = injectAdsterraBanner;
 
     // Run when page is ready
     if (document.readyState === 'complete') {

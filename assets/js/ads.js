@@ -21,14 +21,14 @@
         var BANNER_ADS = [
         {
             containerId: 'adBannerHeader',
-            key: 'b0b78cb9bbfa0e129e5e6adc1338e387',
+            key: 'a22a095a961b0e9bf7dca3a14c69934c',
             format: 'iframe',
             height: 90,
             width: 728
         },
         {
             containerId: 'adBannerContent',
-            key: '65a1753ffe6db0bf1bb656cf7ab30a02',
+            key: '7b1a83c331bba9ffca5578fa5f7e56c7',
             format: 'iframe',
             height: 250,
             width: 300
@@ -52,14 +52,14 @@
     //  DAFTAR SCRIPT POPUNDER
     // ==========================================
     var POPUNDER_SCRIPTS = [
-        'https://glamournakedemployee.com/a1/f9/2e/a1f92eeaac6d494d099c19d936768302.js',
+        'https://glamournakedemployee.com/c4/71/78/c47178ac0d23a0bd87322accefde9fc7.js',
     ];
 
     // ==========================================
     //  DAFTAR SCRIPT SOCIAL BAR
     // ==========================================
     var SOCIALBAR_SCRIPTS = [
-         'https://glamournakedemployee.com/b9/9c/76/b99c766634c3328f9a3691434f4f1bcb.js',
+         'https://glamournakedemployee.com/88/d7/20/88d720634f18389c613c9ccab28cea5f.js',
     ];
 
     // ==========================================

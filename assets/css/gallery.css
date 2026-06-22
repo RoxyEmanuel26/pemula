@@ -1809,46 +1809,53 @@ body {
     justify-content: center;
     gap: 12px;
     width: 100%;
-    background: linear-gradient(135deg, #e8a800, #ff5500);
-    color: #000 !important;
+    background: linear-gradient(90deg, #ff2e93 0%, #a830ff 100%);
+    color: #fff !important;
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 700;
     text-decoration: none !important;
     padding: 14px 28px;
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(232, 168, 0, 0.35);
+    border-radius: 9999px; /* Pill shape */
+    box-shadow: 0 6px 20px rgba(255, 46, 147, 0.25), 0 6px 20px rgba(168, 48, 255, 0.25);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: buttonPulse 2.5s infinite;
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
 }
 
 .jav-btn:hover {
-    transform: translateY(-3px) scale(1.01);
-    box-shadow: 0 10px 25px rgba(255, 85, 0, 0.55);
-    background: linear-gradient(135deg, #ffc107, #ff6b00);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(255, 46, 147, 0.5), 0 10px 25px rgba(168, 48, 255, 0.5);
+    background: linear-gradient(90deg, #ff409f, #b34dff);
 }
 
 .jav-btn:active {
     transform: translateY(-1px);
 }
 
-.jav-btn-icon {
-    font-size: 18px;
-    transition: transform 0.3s ease;
+.jav-btn-fire {
+    font-size: 20px;
     display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
 }
 
-.jav-btn:hover .jav-btn-icon {
-    transform: translateX(4px);
+.jav-btn:hover .jav-btn-fire {
+    animation: flameWiggle 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes flameWiggle {
+    0% { transform: rotate(-8deg) scale(1); }
+    100% { transform: rotate(8deg) scale(1.2); }
 }
 
 @keyframes buttonPulse {
     0%, 100% {
-        box-shadow: 0 6px 20px rgba(232, 168, 0, 0.35);
+        box-shadow: 0 6px 20px rgba(255, 46, 147, 0.25), 0 6px 20px rgba(168, 48, 255, 0.25);
     }
     50% {
-        box-shadow: 0 6px 30px rgba(255, 85, 0, 0.6);
+        box-shadow: 0 6px 30px rgba(255, 46, 147, 0.5), 0 6px 30px rgba(168, 48, 255, 0.5);
     }
 }
 
@@ -1857,7 +1864,6 @@ body {
     .jav-btn {
         font-size: 15px;
         padding: 12px 24px;
-        border-radius: 10px;
     }
     .jav-btn-container {
         margin: 12px auto 20px;

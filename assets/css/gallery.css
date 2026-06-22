@@ -1791,3 +1791,86 @@ body {
     display: block;
     background: transparent;
 }
+
+/* ===== JAV REDIRECT BUTTON ===== */
+.jav-btn-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 15px auto 25px;
+    width: 100%;
+    max-width: 600px;
+    padding: 0 15px;
+}
+
+.jav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    background: linear-gradient(135deg, #e8a800, #ff5500);
+    color: #000 !important;
+    font-size: 16px;
+    font-weight: 800;
+    text-decoration: none !important;
+    padding: 14px 28px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(232, 168, 0, 0.35);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: buttonPulse 2.5s infinite;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.jav-btn:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 10px 25px rgba(255, 85, 0, 0.55);
+    background: linear-gradient(135deg, #ffc107, #ff6b00);
+}
+
+.jav-btn:active {
+    transform: translateY(-1px);
+}
+
+.jav-btn-icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.jav-btn:hover .jav-btn-icon {
+    transform: translateX(4px);
+}
+
+@keyframes buttonPulse {
+    0%, 100% {
+        box-shadow: 0 6px 20px rgba(232, 168, 0, 0.35);
+    }
+    50% {
+        box-shadow: 0 6px 30px rgba(255, 85, 0, 0.6);
+    }
+}
+
+/* Tablet & Mobile optimization */
+@media (max-width: 768px) {
+    .jav-btn {
+        font-size: 15px;
+        padding: 12px 24px;
+        border-radius: 10px;
+    }
+    .jav-btn-container {
+        margin: 12px auto 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .jav-btn {
+        font-size: 14px;
+        padding: 12px 18px;
+        gap: 8px;
+    }
+    .jav-btn-container {
+        margin: 8px auto 16px;
+    }
+}

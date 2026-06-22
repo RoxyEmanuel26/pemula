@@ -239,97 +239,55 @@
         wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
         container.appendChild(wrapper);
 
-        // --- STEP 1: TRY DIRECT LOAD (High CPM) ---
-        window.atOptions = {
-            'key': config.key,
-            'format': config.format,
-            'height': config.height,
-            'width': config.width,
-            'params': {}
-        };
-
-        var directScript = document.createElement('script');
-        directScript.type = 'text/javascript';
-        directScript.src = '//glamournakedemployee.com/' + config.key + '/invoke.js';
-
+        // --- STEP 1: TRY DIRECT LOAD (High CPM via same-origin local iframe) ---
+        var localIframe = document.createElement('iframe');
+        localIframe.width = config.width;
+        localIframe.height = config.height;
+        localIframe.frameBorder = '0';
+        localIframe.scrolling = 'no';
+        localIframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + config.width + 'px;height:' + config.height + 'px;max-width:100%;';
+        
         var fallbackTriggered = false;
         function triggerFallback() {
             if (fallbackTriggered) return;
             fallbackTriggered = true;
             
-            console.log('[loader] Direct banner blocked/failed for', config.containerId, '→ falling back to iframe proxy');
+            console.log('[loader] Direct banner blocked/failed for', config.containerId, '→ showing self-hosted fallback banner');
             
-            // Clear wrapper content
             wrapper.innerHTML = '';
             
-            // --- STEP 2: FALLBACK TO IFRAME PROXY ---
-            var iframe = document.createElement('iframe');
-            iframe.src = 'https://kumpulan1-3dx.pages.dev/ad-wrapper.html?key=' + config.key + 
-                         '&width=' + config.width + 
-                         '&height=' + config.height + 
-                         '&format=' + (config.format || 'iframe');
-            iframe.width = config.width;
-            iframe.height = config.height;
-            iframe.frameBorder = '0';
-            iframe.scrolling = 'no';
-            iframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + config.width + 'px;height:' + config.height + 'px;max-width:100%;';
-            
-            var iframeFallbackTriggered = false;
-            function triggerFinalFallback() {
-                if (iframeFallbackTriggered) return;
-                iframeFallbackTriggered = true;
-                window.removeEventListener('message', messageListener);
-                console.log('[loader] Iframe proxy also blocked for', config.containerId, '→ showing self-hosted fallback banner');
-                if (typeof onBlocked === 'function') {
-                    onBlocked(config.containerId);
-                }
+            if (typeof onBlocked === 'function') {
+                onBlocked(config.containerId);
             }
-
-            var adTimeout = setTimeout(function () {
-                triggerFinalFallback();
-            }, 3500);
-
-            function messageListener(event) {
-                if (!event.data || event.data.key !== config.key) return;
-
-                if (event.data.status === 'success') {
-                    clearTimeout(adTimeout);
-                    window.removeEventListener('message', messageListener);
-                } else if (event.data.status === 'blocked') {
-                    clearTimeout(adTimeout);
-                    triggerFinalFallback();
-                }
-            }
-
-            window.addEventListener('message', messageListener);
-            wrapper.appendChild(iframe);
         }
 
-        // Set timeout to check if direct script successfully loaded an ad (usually injects an iframe)
-        var directTimeout = setTimeout(function () {
-            var hasIframe = wrapper.getElementsByTagName('iframe').length > 0;
-            if (!hasIframe) {
-                triggerFallback();
-            }
-        }, 3000);
+        wrapper.appendChild(localIframe);
 
-        directScript.onload = function() {
-            setTimeout(function() {
-                var hasIframe = wrapper.getElementsByTagName('iframe').length > 0;
-                if (!hasIframe) {
-                    triggerFallback();
-                } else {
-                    clearTimeout(directTimeout);
+        try {
+            var doc = localIframe.contentWindow.document;
+            doc.open();
+            doc.write('<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body>');
+            doc.write('<script>window.atOptions = { "key": "' + config.key + '", "format": "' + config.format + '", "height": ' + config.height + ', "width": ' + config.width + ', "params": {} };<\/script>');
+            doc.write('<script src="//glamournakedemployee.com/' + config.key + '/invoke.js"><\/script>');
+            doc.write('</body></html>');
+            doc.close();
+
+            var directTimeout = setTimeout(function () {
+                try {
+                    var innerDoc = localIframe.contentWindow.document;
+                    var bodyContent = innerDoc.body.innerHTML;
+                    // If invoke.js was blocked, body only contains our scripts, no new iframe or ad container
+                    if (bodyContent.indexOf('iframe') === -1 && bodyContent.indexOf('img') === -1) {
+                        triggerFallback();
+                    }
+                } catch (e) {
+                    // Cross-origin error means Adsterra successfully redirected the iframe to its own domain
                 }
-            }, 500);
-        };
+            }, 3000);
 
-        directScript.onerror = function () {
-            clearTimeout(directTimeout);
+        } catch (err) {
             triggerFallback();
-        };
-
-        wrapper.appendChild(directScript);
+        }
     }
 
     function injectCustomBanner(config) {

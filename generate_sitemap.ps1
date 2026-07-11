@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$baseUrl = 'https://www.kumpulenak.web.id'
+$baseUrl = 'https://www.lusthub.my.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
 $perPage = 100
@@ -8,7 +8,7 @@ $maxPagesPerQuery = 50
 
 Write-Host ""
 Write-Host "============================================"
-Write-Host "  kumpulenak Sitemap Generator v6.0"
+Write-Host "  lusthub.my.id Sitemap Generator v6.0"
 Write-Host "  PARALLEL MULTI-THREADED (50 threads)"
 Write-Host "  Website: $baseUrl"
 Write-Host "  Time: $dateStr"
@@ -40,17 +40,17 @@ function Generate-StaticSitemaps {
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.kumpulenak.web.id/</loc>
+    <loc>https://www.lusthub.my.id/</loc>
     <lastmod>$dateStr</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
   </url>
-  <url><loc>https://www.kumpulenak.web.id/about</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://www.lusthub.my.id/about</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
+  <url><loc>https://www.lusthub.my.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
 </urlset>
 "@
     [System.IO.File]::WriteAllText('sitemaps/sitemap_pages.xml', $pagesXml, [System.Text.Encoding]::UTF8)
@@ -223,7 +223,7 @@ $scriptBlock = {
                 $escapedEmbed = [System.Security.SecurityElement]::Escape($v.embed)
                 
                 # Generate clean description (max 2048 chars)
-                $descriptionRaw = "Watch $($v.title) for free in full HD quality on kumpulenak."
+                $descriptionRaw = "Watch $($v.title) for free in full HD quality on lusthub.my.id."
                 $escapedDesc = [System.Security.SecurityElement]::Escape($descriptionRaw)
                 
                 $xml += "  <url>`n"
@@ -332,17 +332,17 @@ $rootSitemapXml = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.kumpulenak.web.id/</loc>
+    <loc>https://www.lusthub.my.id/</loc>
     <lastmod>$dateStr</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
   </url>
-  <url><loc>https://www.kumpulenak.web.id/about</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.50</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.kumpulenak.web.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/about</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.50</priority></url>
+  <url><loc>https://www.lusthub.my.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://www.lusthub.my.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
 </urlset>
 "@
 [System.IO.File]::WriteAllText('sitemap.xml', $rootSitemapXml, [System.Text.Encoding]::UTF8)

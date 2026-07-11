@@ -1,5 +1,5 @@
 # ==============================================
-# robots.txt — kumpulenak.web.id
+# robots.txt — lusthub.my.id
 # Optimized for maximum SEO crawl coverage
 # ==============================================
 
@@ -22,8 +22,8 @@ Disallow: /.env
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://www.kumpulenak.web.id/sitemap.xml
-Sitemap: https://www.kumpulenak.web.id/sitemap_index.xml
+Sitemap: https://www.lusthub.my.id/sitemap.xml
+Sitemap: https://www.lusthub.my.id/sitemap_index.xml
 
 # ==============================================
 # Specific bot rules

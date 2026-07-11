@@ -53,8 +53,8 @@ export async function onRequest(context) {
             ? decodedTitle.substring(0, 57) + '...' 
             : decodedTitle;
             
-        const titleText = `${displayTitle} — kumpulenak`;
-        const descriptionText = `Watch ${decodedTitle} for free in full HD quality on kumpulenak.`;
+        const titleText = `${displayTitle} — lusthub.my.id`;
+        const descriptionText = `Watch ${decodedTitle} for free in full HD quality on lusthub.my.id.`;
         const thumbUrl = (video.default_thumb && video.default_thumb.src) ? video.default_thumb.src : '';
         
         // Generate clean URL slug
@@ -88,7 +88,7 @@ export async function onRequest(context) {
             },
             "publisher": {
                 "@type": "Organization",
-                "name": "kumpulenak",
+                "name": "lusthub.my.id",
                 "logo": {
                     "@type": "ImageObject",
                     "url": `${url.origin}/assets/icons/android-chrome-512x512.png`

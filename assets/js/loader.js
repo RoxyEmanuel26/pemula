@@ -65,7 +65,7 @@
         {
             containerId: 'adBannerCustom',
             imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+            linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
             alt: 'Download Terabox'
         }
     ];
@@ -112,12 +112,12 @@
         adBannerHeader: [
             {
                 image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
-                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
                 alt: 'Premium Content'
             },
             {
                 image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
                 alt: 'Exclusive Download'
             }
         ],
@@ -125,12 +125,12 @@
         adBannerContent: [
             {
                 image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
-                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
                 alt: 'Premium Content'
             },
             {
                 image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
                 alt: 'Exclusive Download'
             }
         ],
@@ -138,12 +138,12 @@
         adBannerIngrid: [
             {
                 image: 'https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png',
-                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
                 alt: 'Premium Content'
             },
             {
                 image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-                linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+                linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
                 alt: 'Exclusive Download'
             }
         ]
@@ -360,7 +360,7 @@
                     // Re-inject in-grid banner
                     banner.innerHTML = '';
                     var link = document.createElement('a');
-                    link.href = 'https://www.teraboxpage.com/myknow/kumpulenak1';
+                    link.href = 'https://www.teraboxpage.com/myknow/lusthub.my.id1';
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer';
                     link.className = 'ingrid-banner-link';

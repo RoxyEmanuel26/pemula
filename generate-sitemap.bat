@@ -1,9 +1,9 @@
 @echo off
-title kumpulenak - Sitemap Generator v5.0 FULL CRAWL
+title lusthub.my.id - Sitemap Generator v5.0 FULL CRAWL
 color 0A
 
 echo ============================================
-echo   kumpulenak Sitemap Generator v5.0
+echo   lusthub.my.id Sitemap Generator v5.0
 echo   FULL CRAWL - Fetch ALL videos
 echo ============================================
 echo.

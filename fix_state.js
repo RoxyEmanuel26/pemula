@@ -29,7 +29,7 @@ const state = {
 fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 
 // Also generate sitemap_index.xml
-const baseUrl = 'https://www.kumpulenak.web.id';
+const baseUrl = 'https://www.lusthub.my.id';
 const dateStr = new Date().toISOString().replace(/\.\d+Z$/, '+00:00'); // Close enough for lastmod
 let indexXml = `<?xml version='1.0' encoding='UTF-8'?>\n<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n`;
 indexXml += `  <sitemap>\n    <loc>${baseUrl}/sitemaps/sitemap_pages.xml</loc>\n    <lastmod>${dateStr}</lastmod>\n  </sitemap>\n`;

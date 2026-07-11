@@ -43,7 +43,7 @@
         {
             containerId: 'adBannerCustom',
             imageUrl: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            linkUrl: 'https://www.teraboxpage.com/myknow/kumpulenak1',
+            linkUrl: 'https://www.teraboxpage.com/myknow/lusthub.my.id1',
             alt: 'Download Terabox'
         }
     ];

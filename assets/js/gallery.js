@@ -1,6 +1,6 @@
 /**
  * ==========================================================
- *  GALLERY.JS — Main logic for kumpulenak gallery page
+ *  GALLERY.JS — Main logic for lusthub.my.id gallery page
  * ==========================================================
  *  This file handles:
  *  - Rendering cards from API / local data
@@ -195,15 +195,15 @@ function setCookie(name, value, days) {
 }
 
 /**
- * Log pesan ke console dengan prefix [kumpulenak]
+ * Log pesan ke console dengan prefix [lusthub.my.id]
  * @param {string} message - Pesan yang akan dilog
  * @param {*} [data] - Data tambahan (opsional)
  */
 function kLog(message, data) {
     if (data !== undefined) {
-        console.log('[kumpulenak] ' + message, data);
+        console.log('[lusthub.my.id] ' + message, data);
     } else {
-        console.log('[kumpulenak] ' + message);
+        console.log('[lusthub.my.id] ' + message);
     }
 }
 
@@ -216,7 +216,7 @@ function kLog(message, data) {
  * Default: dark mode
  */
 function initTheme() {
-    const savedTheme = getCookie('kumpulenak_theme');
+    const savedTheme = getCookie('lusthub_theme');
     const theme = savedTheme || 'dark';
     document.documentElement.setAttribute('data-theme', theme);
     updateThemeIcon(theme);
@@ -230,7 +230,7 @@ function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    setCookie('kumpulenak_theme', next, 30);
+    setCookie('lusthub_theme', next, 30);
     updateThemeIcon(next);
     kLog('Theme switched to:', next);
 }
@@ -835,7 +835,7 @@ function renderCardsToGrid(cardsToRender) {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.innerHTML =
-            '<a href="https://www.teraboxpage.com/myknow/kumpulenak1" class="ingrid-banner-link">' +
+            '<a href="https://www.teraboxpage.com/myknow/lusthub.my.id1" class="ingrid-banner-link">' +
             '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" ' +
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';
@@ -1967,7 +1967,7 @@ function injectModalShareButtons(card) {
 
     // Telegram
     var tgBtn = document.createElement('a');
-    tgBtn.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl + '?ref=modal') + '&text=' + encodeURIComponent('Watch ' + (card.name || 'this') + ' on kumpulenak! \uD83D\uDD25');
+    tgBtn.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl + '?ref=modal') + '&text=' + encodeURIComponent('Watch ' + (card.name || 'this') + ' on lusthub.my.id! \uD83D\uDD25');
     tgBtn.target = '_blank';
     tgBtn.rel = 'noopener noreferrer';
     tgBtn.style.cssText = 'background:#229ED9;color:#fff;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity 0.3s;';
@@ -2041,7 +2041,7 @@ var removedVideoIds = new Set();
  */
 async function fetchRemovedVideos() {
     // Cek sessionStorage dulu
-    var cached = sessionStorage.getItem('kumpulenak_removed');
+    var cached = sessionStorage.getItem('lusthub_removed');
     if (cached) {
         try {
             var arr = JSON.parse(cached);
@@ -2060,7 +2060,7 @@ async function fetchRemovedVideos() {
             var ids = data.map(function (v) { return v.id; });
             removedVideoIds = new Set(ids);
             // Simpan ke sessionStorage (max 1 jam)
-            sessionStorage.setItem('kumpulenak_removed', JSON.stringify(ids));
+            sessionStorage.setItem('lusthub_removed', JSON.stringify(ids));
             kLog('Removed videos di-fetch:', removedVideoIds.size);
         }
     } catch (error) {
@@ -2122,11 +2122,11 @@ function injectVideoSchema(cardsToRender) {
         return {
             '@type': 'VideoObject',
             'name': card.name,
-            'description': card.name + ' - Free video streaming on kumpulenak',
+            'description': card.name + ' - Free video streaming on lusthub.my.id',
             'thumbnailUrl': [thumbUrl],
             'uploadDate': card.date ? card.date + 'T00:00:00Z' : '2026-01-01T00:00:00Z',
             'duration': isoDuration,
-            'contentUrl': 'https://www.kumpulenak.web.id/',
+            'contentUrl': 'https://www.lusthub.my.id/',
             'embedUrl': card.embedUrl || '',
             'interactionStatistic': {
                 '@type': 'InteractionCounter',
@@ -2135,7 +2135,7 @@ function injectVideoSchema(cardsToRender) {
             },
             'publisher': {
                 '@type': 'Organization',
-                'name': 'kumpulenak',
+                'name': 'lusthub.my.id',
                 'logo': {
                     '@type': 'ImageObject',
                     'url': window.location.origin + '/assets/icons/android-chrome-512x512.png'
@@ -2189,7 +2189,7 @@ window.addEventListener('resize', function () {
 //  INIT — Inisialisasi semua komponen
 // =====================================================
 (function init() {
-    kLog('Initializing kumpulenak gallery...');
+    kLog('Initializing lusthub.my.id gallery...');
 
     // Setup event delegation for card grid
     initCardGridDelegation();

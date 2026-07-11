@@ -15,15 +15,17 @@
     //  1. CONFIGURATION
     // ==========================================
 
+    const isMobile = window.innerWidth <= 768;
+
     const CONFIG = {
         popLimit: 3, // Max popunders per session/cooldown
         popCooldown: 6 * 60 * 60 * 1000, // 6 hours in milliseconds
         
-        // Adsterra Banners
+        // Adsterra Banners (Responsive: Desktop vs Mobile)
         banners: {
-            'adBannerHeader': { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
+            'adBannerHeader': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'adBannerContent': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 },
-            'adBannerIngrid': { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
+            'adBannerIngrid': isMobile ? { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdTop': { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 },
             'playerAdBottom': { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 },
             'playerAdSide': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 }
@@ -317,33 +319,35 @@
     }
 
     // ==========================================
-    //  8. PUBLIC API EXPORT
+    //  8. PUBLIC API EXPORT (Single Source of Truth)
     // ==========================================
     
     // Dipanggil oleh gallery.js saat elemen dinamis (seperti pop-up player modal) dibuat
-    window.injectAdsterraBanner = function({ containerId, key, format, height, width }) {
-        // Karena dipanggil dinamis, kita observe jika bisa, atau langsung load jika darurat
-        const el = document.getElementById(containerId);
-        if (!el) return;
-        
-        // Kita match key config
-        const confKey = Object.keys(CONFIG.banners).find(k => CONFIG.banners[k].key === key && CONFIG.banners[k].w === width);
-        if (confKey) {
-            el.id = confKey + '_' + Math.random().toString(36).substr(2, 5); // ensure unique ID
-            CONFIG.banners[el.id] = { key, w: width, h: height };
+    window.LusthubAds = {
+        observe: function(containerId) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+
+            const conf = CONFIG.banners[containerId];
+            if (!conf) {
+                kLog('Unknown ad unit ID: ' + containerId);
+                return;
+            }
+
+            if (el.dataset.adLoaded) {
+                // If modal is reopened, we might need to reset
+                el.dataset.adLoaded = '';
+                el.innerHTML = '';
+            }
+
             if (adObserver) {
                 adObserver.observe(el);
             } else {
-                loadAdsterraDeferred(el.id, key, width, height);
+                loadAdsterraDeferred(containerId, conf.key, conf.w, conf.h);
             }
-        } else {
-            // Custom ad not in config
-            loadAdsterraDeferred(containerId, key, width, height);
-        }
+        },
+        loadImmediate: loadAdsterraDeferred
     };
-    
-    // Explicit call to load specific banners instantly (if needed)
-    window.loadAdsterraDeferred = loadAdsterraDeferred;
 
     // ==========================================
     //  9. INITIALIZATION

@@ -860,15 +860,9 @@ function renderCardsToGrid(cardsToRender) {
         bannerWrapper.id = 'adBannerIngrid';
         bannerWrapper.style.cssText = 'display:flex;justify-content:center;align-items:center;min-height:90px;';
 
-        // Check if window.injectAdsterraBanner is already defined
-        if (window.injectAdsterraBanner) {
-            window.injectAdsterraBanner({
-                containerId: 'adBannerIngrid',
-                key: 'a22a095a961b0e9bf7dca3a14c69934c',
-                format: 'iframe',
-                height: 90,
-                width: 728
-            });
+        // Use ad-manager API if available
+        if (window.LusthubAds) {
+            window.LusthubAds.observe('adBannerIngrid');
         }
 
         // Prevent popunder triggering on banner click
@@ -1363,29 +1357,11 @@ function closePlayerModal() {
  * - Side: 320x50 banner
  */
 function injectPlayerAds() {
-    // Check if window.injectAdsterraBanner is defined (hybrid loading)
-    if (window.injectAdsterraBanner) {
-        window.injectAdsterraBanner({
-            containerId: 'playerAdTop',
-            key: 'b4098414038eec40a67a510f705d522d',
-            format: 'iframe',
-            height: 50,
-            width: 320
-        });
-        window.injectAdsterraBanner({
-            containerId: 'playerAdBottom',
-            key: 'b4098414038eec40a67a510f705d522d',
-            format: 'iframe',
-            height: 50,
-            width: 320
-        });
-        window.injectAdsterraBanner({
-            containerId: 'playerAdSide',
-            key: '7b1a83c331bba9ffca5578fa5f7e56c7',
-            format: 'iframe',
-            height: 250,
-            width: 300
-        });
+    // Use ad-manager API if available
+    if (window.LusthubAds) {
+        window.LusthubAds.observe('playerAdTop');
+        window.LusthubAds.observe('playerAdBottom');
+        window.LusthubAds.observe('playerAdSide');
     }
 }
 

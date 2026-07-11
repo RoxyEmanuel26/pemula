@@ -15,7 +15,7 @@ export async function onRequest(context) {
     }
     
     // Fetch the original static video.html asset
-    const videoPageUrl = new URL('/video.html', request.url);
+    const videoPageUrl = new URL('/video', request.url);
     const originalResponse = await env.ASSETS.fetch(videoPageUrl);
     
     if (!videoId) {
@@ -30,7 +30,7 @@ export async function onRequest(context) {
         }
         
         const video = await apiResponse.json();
-        if (!video || video.error || (Array.isArray(video) && video.length === 0)) {
+        if (!video || video.error || (Array.isArray(video) && video.length === 0) || Object.keys(video).length === 0) {
             return originalResponse;
         }
         

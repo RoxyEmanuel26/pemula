@@ -17,7 +17,7 @@ export async function onRequest(context) {
     const displayCat = category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
     // Fetch the original static index.html asset
-    const indexUrl = new URL('/index.html', request.url);
+    const indexUrl = new URL('/', request.url);
     const originalResponse = await env.ASSETS.fetch(indexUrl);
     
     const titleText = `Watch ${displayCat} Viral Videos for Free — lusthub.my.id`;

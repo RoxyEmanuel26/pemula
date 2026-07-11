@@ -28,7 +28,7 @@ $searchQueries = @(
 )
 
 function Generate-StaticSitemaps {
-    Write-Host "[SITEMAP] Generating static sitemaps (pages, categories, tags)..."
+    Write-Host "[SITEMAP] Generating static sitemaps (pages, categories)..."
     
     # Ensure sitemaps directory exists
     if (-not (Test-Path 'sitemaps')) {
@@ -55,6 +55,15 @@ function Generate-StaticSitemaps {
 "@
     [System.IO.File]::WriteAllText('sitemaps/sitemap_pages.xml', $pagesXml, [System.Text.Encoding]::UTF8)
 
+    # sitemap_categories.xml
+    $catXml = "<?xml version='1.0' encoding='UTF-8'?>`n<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
+    foreach ($q in $searchQueries) {
+        $catLoc = "$baseUrl/c/$([uri]::EscapeDataString($q))"
+        $catXml += "  <url>`n    <loc>$catLoc</loc>`n    <lastmod>$dateStr</lastmod>`n    <changefreq>daily</changefreq>`n    <priority>0.80</priority>`n  </url>`n"
+    }
+    $catXml += "</urlset>"
+    [System.IO.File]::WriteAllText('sitemaps/sitemap_categories.xml', $catXml, [System.Text.Encoding]::UTF8)
+
     # Clean up old sitemaps that are no longer canonical/needed
     $unwantedSitemaps = @('sitemaps/sitemap_kategori.xml', 'sitemaps/sitemap_tags.xml')
     foreach ($file in $unwantedSitemaps) {
@@ -69,6 +78,7 @@ function Update-MasterIndex($sitemapVideoFiles) {
     Write-Host "      -> Updating sitemap_index.xml (Master Index)..."
     $indexXml = "<?xml version='1.0' encoding='UTF-8'?>`n<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
     $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_pages.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
+    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_categories.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
     foreach ($sf in $sitemapVideoFiles) {
         $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/$sf</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
     }

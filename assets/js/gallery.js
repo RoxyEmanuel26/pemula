@@ -798,13 +798,13 @@ function createCardElement(card, idx) {
         tagsContainer.className = 'card-tags';
         
         card.keywords.forEach(function(tag) {
-            var tagSpan = document.createElement('span');
+            var tagSpan = document.createElement('a');
             tagSpan.className = 'card-tag';
+            tagSpan.href = '/c/' + encodeURIComponent(tag);
             tagSpan.textContent = tag;
             tagSpan.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                clickTag(tag);
+                // Let the browser navigate naturally to the category page for full SEO benefit
+                e.stopPropagation(); 
             });
             tagsContainer.appendChild(tagSpan);
         });
@@ -2194,6 +2194,15 @@ window.addEventListener('resize', function () {
 // =====================================================
 (function init() {
     kLog('Initializing lusthub.my.id gallery...');
+
+    // Extract category from /c/[category] path
+    var pathParts = window.location.pathname.split('/').filter(Boolean);
+    if (pathParts[0] === 'c' && pathParts[1]) {
+        currentQuery = decodeURIComponent(pathParts[1]);
+        isSearchActive = true;
+        var searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = currentQuery;
+    }
 
     // Setup event delegation for card grid
     initCardGridDelegation();

@@ -103,20 +103,23 @@
     <!-- Noscript SEO Fallback Content -->
     <noscript>
         <div class="video-page-container" style="margin-top: 20px; color: #aaa;">
-            <h1 style="color: #fff; margin-bottom: 15px; font-size: 1.5rem;">Watch Premium 18+ NSFW Videos for Free — lusthub.my.id</h1>
-            <p>Welcome to <strong>lusthub.my.id</strong>, the largest premium adult gallery platform. Enjoy instant, high-speed streaming of viral video leaks, hot JAV releases, and premium photos without subscription fees, app installations, or intrusive popups.</p>
+            <h1 id="seo-h1" style="color: #fff; margin-bottom: 15px; font-size: 1.5rem;">Watch Premium 18+ NSFW Videos for Free — lusthub.my.id</h1>
+            <p id="seo-desc">Welcome to <strong>lusthub.my.id</strong>, the largest premium adult gallery platform. Enjoy instant, high-speed streaming of viral video leaks, hot JAV releases, and premium photos without subscription fees, app installations, or intrusive popups.</p>
             
             <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Popular Categories & Filters</h3>
             <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0;">
-                <li><span style="color: #e8a800;">🇮🇩 Indonesian Viral</span></li>
-                <li><span style="color: #e8a800;">🔥 Latest Viral</span></li>
-                <li><span style="color: #e8a800;">🎌 Japanese Uncensored</span></li>
-                <li><span style="color: #e8a800;">🇰🇷 Korean Adult</span></li>
-                <li><span style="color: #e8a800;">🏠 Homemade Amateur</span></li>
-                <li><span style="color: #e8a800;">📸 Hijab Hot</span></li>
-                <li><span style="color: #e8a800;">🎓 Student Leaks</span></li>
-                <li><span style="color: #e8a800;">💑 Hot Couples</span></li>
+                <li><a href="/c/indonesia" style="color: #e8a800; text-decoration: none;">🇮🇩 Indonesian Viral</a></li>
+                <li><a href="/c/viral" style="color: #e8a800; text-decoration: none;">🔥 Latest Viral</a></li>
+                <li><a href="/c/japanese" style="color: #e8a800; text-decoration: none;">🎌 Japanese Uncensored</a></li>
+                <li><a href="/c/korean" style="color: #e8a800; text-decoration: none;">🇰🇷 Korean Adult</a></li>
+                <li><a href="/c/amateur" style="color: #e8a800; text-decoration: none;">🏠 Homemade Amateur</a></li>
+                <li><a href="/c/hijab" style="color: #e8a800; text-decoration: none;">📸 Hijab Hot</a></li>
+                <li><a href="/c/student" style="color: #e8a800; text-decoration: none;">🎓 Student Leaks</a></li>
+                <li><a href="/c/couple" style="color: #e8a800; text-decoration: none;">💑 Hot Couples</a></li>
             </ul>
+
+            <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Related Video Tags</h3>
+            <div id="seo-tags" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0;"></div>
 
             <p style="margin-top: 15px;">Please enable JavaScript in your browser to watch videos, open comments, and view Similar Video suggestions dynamically.</p>
             <a href="/" style="display: inline-block; margin-top: 15px; color: #e8a800; font-weight: 600; text-decoration: none;">← Back to Homepage</a>
@@ -285,7 +288,7 @@
                     if (!tag) return;
                     const tagLink = document.createElement('a');
                     tagLink.className = 'video-tag';
-                    tagLink.href = '/?q=' + encodeURIComponent(tag);
+                    tagLink.href = '/c/' + encodeURIComponent(tag);
                     tagLink.textContent = tag;
                     tagsContainer.appendChild(tagLink);
                 });

@@ -118,6 +118,18 @@ export async function onRequest(context) {
             "@context": "https://schema.org",
             "@graph": [videoSchema, breadcrumbSchema]
         };
+
+        // Extract Keywords for Related Content Graph
+        let seoTagsHtml = '';
+        if (video.keywords && video.keywords.length > 0) {
+            let tagLinks = video.keywords.map(tag => {
+                return `<a href="/c/${encodeURIComponent(tag)}" style="color: #e8a800; text-decoration: none; background: #222; padding: 5px 10px; border-radius: 4px;">${tag}</a>`;
+            });
+            seoTagsHtml = tagLinks.join(' ');
+        }
+        
+        // Generate the <script> block for the schema
+        const schemaScript = `<script type="application/ld+json">${JSON.stringify(graphSchema)}</script>`;
         
         // Rewrite the HTML using Cloudflare HTMLRewriter
         return new HTMLRewriter()
@@ -129,6 +141,16 @@ export async function onRequest(context) {
             .on('meta[name="description"]', {
                 element(el) {
                     el.setAttribute('content', descriptionText);
+                }
+            })
+            .on('#seo-h1', {
+                element(el) {
+                    el.setContent(decodedTitle);
+                }
+            })
+            .on('#seo-desc', {
+                element(el) {
+                    el.setContent(descriptionText);
                 }
             })
             .on('#ogTitle', {
@@ -171,9 +193,16 @@ export async function onRequest(context) {
                     el.setAttribute('href', canonicalUrl);
                 }
             })
-            .on('#jsonLdScript', {
+            .on('head', {
+                append(el) {
+                    el.append(schemaScript, { html: true });
+                }
+            })
+            .on('#seo-tags', {
                 element(el) {
-                    el.setContent(JSON.stringify(graphSchema));
+                    if (seoTagsHtml) {
+                        el.setContent(seoTagsHtml, { html: true });
+                    }
                 }
             })
             .transform(originalResponse);

@@ -2153,17 +2153,6 @@ window.addEventListener('resize', function () {
 
 
 
-// =====================================================
-//  CONDITIONAL SCRIPT LOADING
-//  Muat script.js dan ads.js untuk semua visitor
-// =====================================================
-(function () {
-    // Load loader.min.js — anti-adblock + obfuscated ad injection
-    var scriptLoader = document.createElement('script');
-    scriptLoader.src = 'assets/js/loader.min.js?v=en12';
-    scriptLoader.defer = true;
-    document.body.appendChild(scriptLoader);
-})();
 
 // =====================================================
 //  INIT — Inisialisasi semua komponen

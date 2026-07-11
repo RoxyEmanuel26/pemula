@@ -87,6 +87,21 @@ export async function onRequest(context) {
     // Generate the <script> block for the schema
     const schemaScript = `<script type="application/ld+json">${JSON.stringify(schemaData)}</script>`;
     
+        const templates = [
+            `Browse the best free ${displayCat} adult videos on lusthub.my.id. Enjoy instant streaming, high-quality viral leaks, and premium content with no subscription.`,
+            `Explore our massive collection of ${displayCat} videos on lusthub.my.id. Watch exclusive leaks and premium NSFW clips in stunning HD quality without any interruptions.`,
+            `Discover top-rated ${displayCat} scenes available for free streaming. At lusthub.my.id, we bring you the most popular viral moments and daily updates.`,
+            `Lusthub.my.id is your top source for ${displayCat} content. Enjoy our fast, mobile-friendly platform for ad-free high-speed adult streaming.`,
+            `Get access to thousands of ${displayCat} videos completely free. We constantly update our gallery to give you the hottest viral leaks daily.`
+        ];
+        
+        let hash = 0;
+        for (let i = 0; i < displayCat.length; i++) {
+            hash = displayCat.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const templateIndex = Math.abs(hash) % templates.length;
+        const uniqueParagraph = templates[templateIndex];
+
     // Rewrite the HTML using Cloudflare HTMLRewriter
     return new HTMLRewriter()
         .on('title', {
@@ -137,6 +152,11 @@ export async function onRequest(context) {
         .on('#seo-h1', {
             element(el) {
                 el.setContent(`Watch ${displayCat} Viral Videos for Free`);
+            }
+        })
+        .on('#seo-desc', {
+            element(el) {
+                el.setContent(uniqueParagraph);
             }
         })
         .transform(originalResponse);

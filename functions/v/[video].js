@@ -54,7 +54,30 @@ export async function onRequest(context) {
             : decodedTitle;
             
         const titleText = `${displayTitle} — lusthub.my.id`;
-        const descriptionText = `Watch ${decodedTitle} for free in full HD quality on lusthub.my.id.`;
+        const templates = [
+            `Watch ${decodedTitle} for free in full HD quality on lusthub.my.id. Enjoy this exclusive premium video with zero interruptions.`,
+            `Experience the best of ${decodedTitle} only on lusthub.my.id. Stream it now in high definition for free.`,
+            `Check out ${decodedTitle} for free on lusthub.my.id, your ultimate destination for high-speed adult streaming.`,
+            `Don't miss out on ${decodedTitle}. Watch it for free in full HD quality right here on lusthub.my.id.`,
+            `Stream ${decodedTitle} instantly in full HD. lusthub.my.id provides the best viral content completely free.`
+        ];
+        
+        // Use video ID to pick a deterministic template
+        let hash = 0;
+        if (video.id) {
+            for (let i = 0; i < video.id.length; i++) {
+                hash = video.id.charCodeAt(i) + ((hash << 5) - hash);
+            }
+        }
+        const templateIndex = Math.abs(hash) % templates.length;
+        const descriptionText = templates[templateIndex];
+        
+        let uniqueParagraph = descriptionText;
+        if (video.keywords && video.keywords.length > 0) {
+            const topTags = video.keywords.slice(0, 3).join(', ');
+            uniqueParagraph += ` This highly-rated video features ${topTags} and is trending across our network.`;
+        }
+        
         const thumbUrl = (video.default_thumb && video.default_thumb.src) ? video.default_thumb.src : '';
         
         // Generate clean URL slug
@@ -150,7 +173,7 @@ export async function onRequest(context) {
             })
             .on('#seo-desc', {
                 element(el) {
-                    el.setContent(descriptionText);
+                    el.setContent(uniqueParagraph);
                 }
             })
             .on('#ogTitle', {

@@ -225,71 +225,6 @@
         // sudah memiliki tombol khusus "🔗 DOWNLOAD" di halaman detail video.
     }
 
-    // ==========================================
-    //  ADSTERRA BANNER INJECTION (untuk non-adblock)
-    // ==========================================
-
-    function injectAdsterraBanner(config, onBlocked) {
-        var container = document.getElementById(config.containerId);
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        var wrapper = document.createElement('div');
-        wrapper.style.cssText = 'width:100%;display:flex;justify-content:center;align-items:center;min-height:' + config.height + 'px;';
-        container.appendChild(wrapper);
-
-        // --- STEP 1: TRY DIRECT LOAD (High CPM via same-origin local iframe) ---
-        var localIframe = document.createElement('iframe');
-        localIframe.width = config.width;
-        localIframe.height = config.height;
-        localIframe.frameBorder = '0';
-        localIframe.scrolling = 'no';
-        localIframe.style.cssText = 'border:none;overflow:hidden;background:transparent;width:' + config.width + 'px;height:' + config.height + 'px;max-width:100%;';
-        
-        var fallbackTriggered = false;
-        function triggerFallback() {
-            if (fallbackTriggered) return;
-            fallbackTriggered = true;
-            
-            console.log('[loader] Direct banner blocked/failed for', config.containerId, '→ showing self-hosted fallback banner');
-            
-            wrapper.innerHTML = '';
-            
-            if (typeof onBlocked === 'function') {
-                onBlocked(config.containerId);
-            }
-        }
-
-        wrapper.appendChild(localIframe);
-
-        try {
-            var doc = localIframe.contentWindow.document;
-            doc.open();
-            doc.write('<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body>');
-            doc.write('<script>window.atOptions = { "key": "' + config.key + '", "format": "' + config.format + '", "height": ' + config.height + ', "width": ' + config.width + ', "params": {} };<\/script>');
-            doc.write('<script src="//glamournakedemployee.com/' + config.key + '/invoke.js"><\/script>');
-            doc.write('</body></html>');
-            doc.close();
-
-            var directTimeout = setTimeout(function () {
-                try {
-                    var innerDoc = localIframe.contentWindow.document;
-                    var bodyContent = innerDoc.body.innerHTML;
-                    // If invoke.js was blocked, body only contains our scripts, no new iframe or ad container
-                    if (bodyContent.indexOf('iframe') === -1 && bodyContent.indexOf('img') === -1) {
-                        triggerFallback();
-                    }
-                } catch (e) {
-                    // Cross-origin error means Adsterra successfully redirected the iframe to its own domain
-                }
-            }, 3000);
-
-        } catch (err) {
-            triggerFallback();
-        }
-    }
-
     function injectCustomBanner(config) {
         var container = document.getElementById(config.containerId);
         if (!container) return;
@@ -365,52 +300,40 @@
     }
 
     // ==========================================
-    //  BANNER ADS SEQUENTIAL INJECTION
-    //  Inject satu per satu dengan delay
-    //  Jika Adsterra diblokir → otomatis fallback
-    // ==========================================
-
-    function injectBannersSequentially(banners, index) {
-        if (index >= banners.length) return;
-
-        injectAdsterraBanner(banners[index], function (containerId) {
-            // Callback: Adsterra diblokir → inject self-hosted fallback
-            console.log('[loader] Adsterra blocked for', containerId, '→ injecting fallback banner');
-            injectFallbackBanner(containerId);
-        });
-
-        setTimeout(function () {
-            injectBannersSequentially(banners, index + 1);
-        }, 1500);
-    }
-
-    // ==========================================
     //  PERIODIC AD RECOVERY
     //  Cek berkala apakah iklan masih tampil
     //  Jika dihapus → re-inject (fallback jika Adsterra gagal)
     // ==========================================
 
+    
     function startAdRecovery() {
-        setInterval(function () {
+        // Cepat cek pertama kali setelah 3 detik
+        setTimeout(checkBanners, 3000);
+        
+        // Cek berkala setiap 10 detik
+        setInterval(checkBanners, 10000);
+        
+        function checkBanners() {
             _bannerConfigs.forEach(function (config) {
                 var container = document.getElementById(config.containerId);
                 if (!container) return;
 
-                var hasContent = container.children.length > 0;
-                var isVisible = container.offsetHeight > 0;
-
-                if (!hasContent || !isVisible) {
-                    console.log('[loader] Recovering:', config.containerId);
-
-                    // Jika sebelumnya sudah fallback, langsung inject fallback lagi
-                    if (container.getAttribute('data-fallback') === '1') {
-                        injectFallbackBanner(config.containerId);
-                    } else {
-                        // Coba Adsterra dulu, jika gagal → fallback
-                        injectAdsterraBanner(config, function (cid) {
-                            injectFallbackBanner(cid);
-                        });
+                // Cek apakah Adsterra berhasil merender iframe atau elemen lainnya (selain script)
+                var adLoaded = false;
+                for (var i = 0; i < container.children.length; i++) {
+                    var tag = container.children[i].tagName.toLowerCase();
+                    if (tag === 'iframe' || tag === 'img' || tag === 'div' || tag === 'a') {
+                        // Jika ada elemen tambahan selain script bawaan, berarti iklan lolos
+                        if (tag !== 'script') {
+                            adLoaded = true;
+                            break;
+                        }
                     }
+                }
+
+                if (!adLoaded) {
+                    console.log('[loader] Ad blocked/failed for:', config.containerId, '→ injecting fallback');
+                    injectFallbackBanner(config.containerId);
                 }
             });
 
@@ -422,10 +345,9 @@
                     injectCustomBanner(config);
                 }
             });
-        }, 10000);
+        }
     }
-
-    // ==========================================
+// ==========================================
     //  IN-GRID FALLBACK BANNERS
     //  Re-inject in-grid banners jika original diblokir
     // ==========================================
@@ -546,7 +468,7 @@
 
         // 1. Coba inject Adsterra banners
         //    Jika diblokir → callback otomatis inject fallback banner
-        injectBannersSequentially(_bannerConfigs, 0);
+        // Native injection is now used, loader acts as fallback monitor.
 
         // 2. Inject custom banners (dari imgbb → tidak diblokir)
         _customBanners.forEach(function (config) {

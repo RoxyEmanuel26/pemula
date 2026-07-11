@@ -26,3 +26,6 @@ desktop.ini
 
 # RTK Antigravity rules
 .agents/
+
+# Temporary Workspace
+scratch/

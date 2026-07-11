@@ -2193,68 +2193,6 @@ window.addEventListener('resize', function () {
 //  INIT — Inisialisasi semua komponen
 // =====================================================
 
-/**
- * Lazy load Adsterra ads using a dynamically generated same-origin iframe.
- * This prevents document.write() from destroying the page during async load,
- * while ensuring Adsterra sees the correct lusthub.my.id referrer.
- */
-function loadAdsterraDeferred(containerId, key, width, height) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const iframe = document.createElement('iframe');
-    iframe.style.width = width + 'px';
-    iframe.style.height = height + 'px';
-    iframe.style.border = 'none';
-    iframe.style.overflow = 'hidden';
-    iframe.style.background = 'transparent';
-    iframe.title = "Advertisement";
-    
-    container.appendChild(iframe);
-    
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>body{margin:0;padding:0;overflow:hidden;background:transparent; display:flex; justify-content:center; align-items:center;}</style>
-        </head>
-        <body>
-            <script type="text/javascript">
-                atOptions = {
-                    'key' : '${key}',
-                    'format' : 'iframe',
-                    'height' : ${height},
-                    'width' : ${width},
-                    'params' : {}
-                };
-            <\/script>
-            <script type="text/javascript" src="//glamournakedemployee.com/${key}/invoke.js"><\/script>
-        </body>
-        </html>
-    `);
-    doc.close();
-}
-
-let adsLoaded = false;
-function initLazyAds() {
-    if (adsLoaded) return;
-    adsLoaded = true;
-    
-    // Load Top Banner
-    loadAdsterraDeferred('adBannerTop', 'a22a095a961b0e9bf7dca3a14c69934c', 728, 90);
-    
-    // Load Bottom Banner
-    loadAdsterraDeferred('adBannerContent', '7b1a83c331bba9ffca5578fa5f7e56c7', 300, 250);
-}
-
-// Trigger ads after first interaction or 3.5s delay (Core Web Vitals friendly)
-['scroll', 'mousemove', 'touchstart'].forEach(evt => {
-    window.addEventListener(evt, initLazyAds, { once: true, passive: true });
-});
-setTimeout(initLazyAds, 3500);
-
 
 (function init() {
     kLog('Initializing lusthub.my.id gallery...');

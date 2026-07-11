@@ -320,14 +320,127 @@
             <div class="player-ad-slot player-ad-bottom" id="playerAdBottom"></div>
         </div>
     </div>
+            <p id="seo-desc" style="display: none;"></p>
+
+            <!-- JAV Redirect Button -->
+            <div class="jav-btn-container">
+                <a href="https://www.missav-j.web.id/en/" target="_blank" rel="noopener noreferrer" class="jav-btn">
+                    <span class="jav-btn-fire">🔥</span>
+                    <span>Watch Full JAV on MissAV (English)</span>
+                </a>
+            </div>
+
+            <div class="section-label" id="sectionLabel">Best Videos</div>
+            <div class="card-grid" id="cardGrid">
+                <!-- Cards injected by gallery.js -->
+            </div>
+
+            <!-- PAGINATION -->
+            <div class="pagination" id="pagination">
+                <!-- Pagination injected by gallery.js -->
+            </div>
+
+            <!-- AD BANNER CONTENT (Banner Bawah) -->
+            <div class="ad-space" id="adBannerContent"
+                style="margin: 16px auto 0; background: transparent; border: none; text-align: center;">
+                <!-- Ads injected dynamically for Core Web Vitals optimization -->
+            </div>
+        </div>
+
+        <!-- Noscript SEO Content — visible to crawlers without JS -->
+        <noscript>
+            <div class="noscript-seo">
+                <h2>lusthub.my.id — Fast, Clean & Free 18+ NSFW Streaming</h2>
+                <p>Watch the latest trending JAV releases, viral video leaks, and uncensored hot photos. lusthub.my.id offers instant high-speed streaming in full HD quality without forcing you to register, install suspicious apps, or struggle with intrusive pop-up ads.</p>
+
+                <h3>Popular Categories</h3>
+                <ul>
+                    <li><a href="/c/indo">🇮🇩 Latest Indo Videos</a></li>
+                    <li><a href="/c/viral">🔥 Viral Videos 2026</a></li>
+                    <li><a href="/c/japanese">🎌 Japan</a></li>
+                    <li><a href="/c/korean">🇰🇷 Korea</a></li>
+                    <li><a href="/c/amateur">🏠 Amateur</a></li>
+                    <li><a href="/c/hijab">📸 Hijab</a></li>
+                    <li><a href="/c/student">🎓 Student</a></li>
+                    <li><a href="/c/couple">💑 Couple</a></li>
+                </ul>
+
+                <h3>Why lusthub.my.id?</h3>
+                <p>We build our gallery mobile-first so you can browse easily from any smartphone or tablet. By minifying resources and caching assets globally on Cloudflare CDN, we ensure videos play instantly. No paywalls, no malware redirects, just free premium content.</p>
+
+                <h3>Other Pages</h3>
+                <ul>
+                    <li><a href="/about">About lusthub.my.id</a></li>
+                    <li><a href="/howto">How to Download Videos & Photos</a></li>
+                    <li><a href="/contact">Contact Us</a></li>
+                    <li><a href="/dmca">DMCA Policy</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                </ul>
+
+                <p>Enable JavaScript to enjoy the interactive gallery with full features.</p>
+            </div>
+        </noscript>
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/about">About</a>
+            <a href="/howto">How to Download</a>
+            <a href="/contact">Contact</a>
+            <a href="/dmca">DMCA</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+        </div>
+        <p>All resources are shared by their respective owners. &copy; 2026 lusthub.my.id</p>
+
+    </footer>
+
+    <!-- ===== VIDEO PLAYER MODAL ===== -->
+    <div class="player-overlay" id="playerModal">
+        <div class="player-modal-wrapper">
+            <!-- Ad Banner: TOP 728x90 -->
+            <div class="player-ad-slot player-ad-top" id="playerAdTop"></div>
+
+            <div class="player-content">
+                <button class="player-close" id="playerCloseBtn">&times;</button>
+                <div class="player-iframe-wrapper">
+                    <iframe id="playerIframe" src="" width="100%" height="400" frameborder="0" allowfullscreen
+                        allow="autoplay; encrypted-media"></iframe>
+                </div>
+                <div class="player-info-row">
+                    <div class="player-info">
+                        <h3 class="player-title" id="playerTitle"></h3>
+                        <div class="player-meta">
+                            <span id="playerDuration">⏱ --:--</span>
+                            <span id="playerViews">👁 0</span>
+                            <span id="playerDate">📅 ----</span>
+                        </div>
+                        <a class="player-open-tab player-open-tab-primary" id="playerOpenTab" href="#" target="_blank" rel="noopener noreferrer">
+                            ⚡ Download HD Video
+                        </a>
+                        <a class="player-open-tab player-open-tab-secondary" id="playerFullPageBtn" href="#">
+                            🎬 Watch Full Screen
+                        </a>
+                        <div id="playerShareRow" style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;"></div>
+                    </div>
+                    <!-- Ad Banner: 300x250 sidebar -->
+                    <div class="player-ad-slot player-ad-side" id="playerAdSide"></div>
+                </div>
+            </div>
+
+            <!-- Ad Banner: BOTTOM 728x90 -->
+            <div class="player-ad-slot player-ad-bottom" id="playerAdBottom"></div>
+        </div>
+    </div>
 
     <!-- ===== BACK TO TOP BUTTON ===== -->
     <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Back to top">⬆</button>
 
     <!-- Gallery Logic -->
     <script src="assets/js/gallery.min.js?v=en14"></script>
-
-    <!-- Analytics Tracking -->
+    <script src="/assets/js/ad-manager.min.js?v=en14" defer></script>
     <script src="/assets/js/analytics.min.js?v=en14" defer></script>
 </body>
 

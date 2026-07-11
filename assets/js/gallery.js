@@ -732,19 +732,23 @@ function loadFromKategori(query, order) {
  * @returns {HTMLElement} Element card yang siap di-append
  */
 function createCardElement(card, idx) {
-    // Gunakan div untuk card dengan embedUrl (video player)
-    // Gunakan anchor tag hanya untuk card tanpa embedUrl (link eksternal)
-    const cardEl = document.createElement(card.embedUrl ? 'div' : 'a');
+    // [SEO FIX]: Always use anchor tags for crawler discoverability (Internal Link Graph)
+    const cardEl = document.createElement('a');
     cardEl.className = 'card';
     cardEl.dataset.index = idx;
 
-    // Jika tidak punya embedUrl → buka link biasa di tab baru
-    if (!card.embedUrl) {
+    if (card.embedUrl) {
+        // Generate SEO-friendly slug (matching enhancedOpenPlayerModal logic)
+        var cleanSlug = (card.name || "video").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+        var idPrefix = card.videoId ? card.videoId + "-" : "";
+        cardEl.href = "/v/" + idPrefix + cleanSlug;
+        // The click is intercepted by initCardGridDelegation -> openPlayerModal
+    } else {
+        // External link
         cardEl.href = card.link || '#';
         cardEl.target = '_blank';
         cardEl.rel = 'noopener noreferrer';
     }
-    // Jika punya embedUrl → akan dibuka via player modal (handled by event delegation)
 
     // Badge durasi (kiri bawah gambar)
     var durationBadge = '';

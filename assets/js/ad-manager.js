@@ -124,7 +124,7 @@
 
         // Reset
         container.innerHTML = '';
-        container.style.cssText = `display:flex; justify-content:center; align-items:center; min-height:${height}px; width:100%; overflow:hidden; margin: 0 auto;`;
+        container.style.cssText = `display:flex; justify-content:center; align-items:center; min-height:${height}px; max-width:100%; overflow:hidden; margin: 0 auto;`;
 
         const iframe = document.createElement('iframe');
         iframe.style.width = width + 'px';

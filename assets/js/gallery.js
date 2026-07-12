@@ -1371,7 +1371,10 @@ function injectPlayerAds() {
 function clearPlayerAds() {
     ['playerAdTop', 'playerAdBottom', 'playerAdSide'].forEach(function (id) {
         var el = document.getElementById(id);
-        if (el) el.innerHTML = '';
+        if (el) {
+            el.innerHTML = '';
+            delete el.dataset.adLoaded;
+        }
     });
 }
 

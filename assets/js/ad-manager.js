@@ -26,8 +26,8 @@
             'adBannerHeader': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'adBannerContent': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 },
             'adBannerIngrid': isMobile ? { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
-            'playerAdTop': { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 },
-            'playerAdBottom': { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 },
+            'playerAdTop': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
+            'playerAdBottom': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdSide': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 }
         },
 

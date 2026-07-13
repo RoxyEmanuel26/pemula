@@ -224,6 +224,7 @@
             if (video.embed && isSafeUrl(video.embed)) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'video-wrapper';
+                wrapper.style.position = 'relative';
                 
                 const iframe = document.createElement('iframe');
                 iframe.src = video.embed;
@@ -232,6 +233,21 @@
                 iframe.setAttribute('scrolling', 'no');
                 
                 wrapper.appendChild(iframe);
+
+                // Smartlink Intercept Overlay (1st Click)
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;cursor:pointer;';
+                overlay.addEventListener('click', function(e) {
+                    // Open Adsterra Direct Link
+                    window.open('https://glamournakedemployee.com/p4psjp2idd?key=e1c2395d627677a3e5c9287579e151ea', '_blank');
+                    // Remove overlay so user can interact with the video normally
+                    overlay.remove();
+                    if (window.trackEvent) {
+                        window.trackEvent('direct_link_clicked', { video_id: video.id });
+                    }
+                });
+                wrapper.appendChild(overlay);
+
                 container.appendChild(wrapper);
             } else {
                 console.error("Embed URL issue. API Data:", video);
@@ -593,7 +609,8 @@
     </script>
     
     <!-- Load Ads Script -->
-    <script src="/assets/js/ad-manager.min.js?v=en18" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/postscribe/2.0.8/postscribe.min.js"></script>
+    <script src="/assets/js/ad-manager.min.js?v=en19" defer></script>
     <script src="/assets/js/analytics.min.js?v=en15" defer></script>
 </body>
 </html>

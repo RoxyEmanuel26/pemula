@@ -18,8 +18,8 @@
     const isMobile = window.innerWidth <= 768;
 
     const CONFIG = {
-        popLimit: 3, // Max popunders per session/cooldown
-        popCooldown: 6 * 60 * 60 * 1000, // 6 hours in milliseconds
+        popLimit: 1, // Max popunders per session/cooldown
+        popCooldown: 12 * 60 * 60 * 1000, // 12 hours in milliseconds
         
         // Adsterra Banners (Responsive: Desktop vs Mobile)
         banners: {
@@ -89,8 +89,7 @@
         
         kLog('Injecting Popunder & Social Bar...');
 
-        // Popunder (Paused temporarily per user request)
-        /*
+        // Popunder (Re-enabled with stricter 12h cap for max CPM)
         CONFIG.scripts.popunder.forEach(url => {
             const s = document.createElement('script');
             s.src = url;
@@ -98,7 +97,6 @@
             s.setAttribute('data-cfasync', 'false');
             document.body.appendChild(s);
         });
-        */
 
         // Social Bar
         CONFIG.scripts.socialbar.forEach(url => {
@@ -128,59 +126,40 @@
         container.innerHTML = '';
         container.style.cssText = `display:flex; justify-content:center; align-items:center; min-height:${height}px; max-width:100%; overflow:hidden;`;
 
-        const iframe = document.createElement('iframe');
-        iframe.style.width = width + 'px';
-        iframe.style.height = height + 'px';
-        iframe.style.border = 'none';
-        iframe.style.overflow = 'hidden';
-        iframe.style.background = 'transparent';
-        iframe.title = 'Advertisement';
-        iframe.setAttribute('scrolling', 'no');
-        
-        container.appendChild(iframe);
-
-        try {
-            const idoc = iframe.contentWindow.document;
-            idoc.open();
-            idoc.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;}</style>
-                </head>
-                <body>
-                    <script type="text/javascript">
-                        atOptions = {
-                            'key' : '${key}',
-                            'format' : 'iframe',
-                            'height' : ${height},
-                            'width' : ${width},
-                            'params' : {}
-                        };
-                    </script>
-                    <script type="text/javascript" src="//glamournakedemployee.com/${key}/invoke.js"></script>
-                </body>
-                </html>
-            `);
-            idoc.close();
-        } catch (e) {
-            kLog('Iframe injection blocked (Cross-Origin or Adblock). Triggering fallback.', e);
+        if (typeof postscribe === 'undefined') {
+            kLog('Postscribe missing, falling back.');
             injectFallbackBanner(container);
+            return;
         }
-        
-        // Monitor if iframe failed to render content (Adblock blocked network request inside iframe)
-        setTimeout(() => {
-            try {
-                const idoc = iframe.contentWindow.document;
-                if (!idoc.body || idoc.body.innerHTML.indexOf('iframe') === -1) {
-                    // Script invoke.js didn't inject anything inside the same-origin iframe
-                    // Likely blocked by network adblocker
-                    injectFallbackBanner(container);
-                }
-            } catch(e) {
-                // Cross origin means it loaded something external, which is good (Adsterra took over)
+
+        const adHtml = `
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '${key}',
+                    'format' : 'iframe',
+                    'height' : ${height},
+                    'width' : ${width},
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//glamournakedemployee.com/${key}/invoke.js"></script>
+        `;
+
+        postscribe(container, adHtml, {
+            error: function(e) {
+                kLog('Postscribe injection failed', e);
+                injectFallbackBanner(container);
+            },
+            done: function() {
+                // Monitor if adblock blocked the actual banner rendering
+                setTimeout(() => {
+                    if (container.innerHTML.indexOf('iframe') === -1 && container.innerHTML.indexOf('img') === -1 && container.innerHTML.indexOf('script') === -1) {
+                        kLog('Ad blocked by network adblocker. Injecting fallback.');
+                        injectFallbackBanner(container);
+                    }
+                }, 3500);
             }
-        }, 3500);
+        });
     }
 
     // ==========================================

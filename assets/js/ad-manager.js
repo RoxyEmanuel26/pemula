@@ -89,7 +89,8 @@
         
         kLog('Injecting Popunder & Social Bar...');
 
-        // Popunder
+        // Popunder (Paused temporarily per user request)
+        /*
         CONFIG.scripts.popunder.forEach(url => {
             const s = document.createElement('script');
             s.src = url;
@@ -97,6 +98,7 @@
             s.setAttribute('data-cfasync', 'false');
             document.body.appendChild(s);
         });
+        */
 
         // Social Bar
         CONFIG.scripts.socialbar.forEach(url => {

@@ -853,17 +853,22 @@ function renderCardsToGrid(cardsToRender) {
         return bannerWrapper;
     }
 
-    // Helper: create in-grid Adsterra ad banner (for middle position) via iframe proxy Pages.dev
     function createIngridAdBanner() {
         var bannerWrapper = document.createElement('div');
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.id = 'adBannerIngrid';
-        bannerWrapper.style.cssText = 'display:flex;justify-content:center;align-items:center;min-height:90px;';
+        bannerWrapper.style.cssText = 'display:flex;justify-content:center;align-items:center;min-height:90px;width:100%;margin:20px 0;';
 
-        // Use ad-manager API if available
-        if (window.LusthubAds) {
-            window.LusthubAds.observe('adBannerIngrid');
-        }
+        var adContainer = document.createElement('div');
+        adContainer.id = 'container-cd0dbf842c5869c64f306518743c7bad';
+        bannerWrapper.appendChild(adContainer);
+
+        var script = document.createElement('script');
+        script.async = true;
+        script.setAttribute('data-cfasync', 'false');
+        script.src = 'https://glamournakedemployee.com/cd0dbf842c5869c64f306518743c7bad/invoke.js';
+        
+        bannerWrapper.appendChild(script);
 
         // Prevent popunder triggering on banner click
         bannerWrapper.addEventListener('click', function (e) {

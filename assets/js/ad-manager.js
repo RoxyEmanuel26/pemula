@@ -24,14 +24,12 @@
         // Adsterra Banners (Responsive: Desktop vs Mobile)
         // PAUSED PER USER REQUEST: Keeping only Smartlink, Social Bar, and Popunder.
         banners: {
-            /*
             'adBannerHeader': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'adBannerContent': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 },
             'adBannerIngrid': isMobile ? { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdTop': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdBottom': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdSide': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 }
-            */
         },
 
         // External Scripts
@@ -107,25 +105,10 @@
                     'width' : ${width},
                     'params' : {}
                 };
-            </script>
-            <script type="text/javascript" src="//glamournakedemployee.com/${key}/invoke.js"></script>
-        `;
-
-        postscribe(container, adHtml, {
-            error: function(e) {
-                kLog('Postscribe injection failed', e);
-                injectFallbackBanner(container);
-            },
-            done: function() {
-                // Monitor if adblock blocked the actual banner rendering
-                setTimeout(() => {
-                    if (container.innerHTML.indexOf('iframe') === -1 && container.innerHTML.indexOf('img') === -1 && container.innerHTML.indexOf('script') === -1) {
-                        kLog('Ad blocked by network adblocker. Injecting fallback.');
-                        injectFallbackBanner(container);
-                    }
-                }, 3500);
-            }
-        });
+        // Adsterra Banners are PAUSED per user request. 
+        // Directly inject the user's custom fallback banner (ezgif) into this slot.
+        kLog(`Adsterra banner paused for ${containerId}, injecting custom fallback banner instead.`);
+        injectFallbackBanner(container);
     }
 
     // ==========================================

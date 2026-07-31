@@ -52,47 +52,10 @@
         console.log('[AdManager] ' + msg, data || '');
     }
 
-    // ==========================================
-    //  2. FREQUENCY CAPPING
-    // ==========================================
-
-    function shouldShowPopunder() {
-        try {
-            let stats = JSON.parse(localStorage.getItem('lusthub_ad_stats') || '{"count": 0, "timestamp": 0}');
-            let now = Date.now();
-            
-            // Reset if cooldown passed
-            if (now - stats.timestamp > CONFIG.popCooldown) {
-                stats.count = 0;
-                stats.timestamp = now;
-            }
-            
-            if (stats.count < CONFIG.popLimit) {
-                stats.count++;
-                stats.timestamp = now; // update timestamp to extend cooldown relative to last pop
-                localStorage.setItem('lusthub_ad_stats', JSON.stringify(stats));
-                return true;
-            }
-            return false;
-        } catch (e) {
-            // Fallback if localStorage blocked
-            return true;
-        }
-    }
-
-    // ==========================================
-    //  3. EXTERNAL SCRIPT INJECTION (POP/SOCIAL)
-    // ==========================================
-
     function injectExternalScripts() {
-        if (!shouldShowPopunder()) {
-            kLog('Popunder frequency cap reached. Skipping pops.');
-            return;
-        }
-        
-        kLog('Injecting Popunder & Social Bar...');
+        kLog('Injecting Popunder & Social Bar (Pure 100% Adsterra Mode)...');
 
-        // Popunder (Re-enabled with stricter 12h cap for max CPM)
+        // Popunder (Pure, no limits)
         CONFIG.scripts.popunder.forEach(url => {
             const s = document.createElement('script');
             s.src = url;
@@ -101,7 +64,7 @@
             document.body.appendChild(s);
         });
 
-        // Social Bar
+        // Social Bar (Pure, no limits)
         CONFIG.scripts.socialbar.forEach(url => {
             const s = document.createElement('script');
             s.src = url;
@@ -342,8 +305,8 @@
         initLazyAds();
         injectTelegramButton();
 
-        // Delay popup scripts slightly to prioritize content
-        setTimeout(injectExternalScripts, 3000);
+        // Load popup scripts immediately (Pure 100% mode)
+        injectExternalScripts();
     }
 
     if (document.readyState === 'complete') {

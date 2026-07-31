@@ -1419,11 +1419,6 @@ function initCardGridDelegation() {
             e.stopPropagation();
             e.stopImmediatePropagation();
 
-            // Global Smartlink Intercept (CPM Maximization)
-            if (!sessionStorage.getItem('home_dl_triggered')) {
-                sessionStorage.setItem('home_dl_triggered', '1');
-                window.open('https://www.teraboxpage.com/myknow/lusthub.my.id1', '_blank');
-            }
 
             openPlayerModal(card);
             return;

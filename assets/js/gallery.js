@@ -840,7 +840,7 @@ function renderCardsToGrid(cardsToRender) {
         bannerWrapper.className = 'ingrid-banner-ad';
         bannerWrapper.innerHTML =
             '<a href="https://www.teraboxpage.com/myknow/lusthub.my.id1" target="_blank" class="ingrid-banner-link" style="text-decoration:none;display:block;">' +
-            '<img src="https://i.ibb.co/SXRRGnz6/Your-paragraph-text.png" alt="Download Terabox" class="ingrid-banner-img" style="border-radius:10px;width:100%;" ' +
+            '<img src="https://i.ibb.co/jvCjnCMF/Your-paragraph-text.webp" alt="Download Terabox" class="ingrid-banner-img" style="border-radius:10px;width:100%;" ' +
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';
 

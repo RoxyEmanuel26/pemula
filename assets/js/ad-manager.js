@@ -50,25 +50,9 @@
     }
 
     function injectExternalScripts() {
-        kLog('Injecting Popunder & Social Bar (Pure 100% Adsterra Mode)...');
+        kLog('Injecting External Scripts...');
 
-        // Popunder (Pure, no limits)
-        CONFIG.scripts.popunder.forEach(url => {
-            const s = document.createElement('script');
-            s.src = url;
-            s.async = true;
-            s.setAttribute('data-cfasync', 'false');
-            document.body.appendChild(s);
-        });
-
-        // Social Bar (Pure, no limits)
-        CONFIG.scripts.socialbar.forEach(url => {
-            const s = document.createElement('script');
-            s.src = url;
-            s.async = true;
-            s.setAttribute('data-cfasync', 'false');
-            document.body.appendChild(s);
-        });
+        // Popunder & Social Bar are now hardcoded in HTML as per Adsterra strict guidelines
 
         // Monetag
         const m = document.createElement('script');

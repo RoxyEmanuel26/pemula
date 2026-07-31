@@ -22,14 +22,16 @@
         popCooldown: 12 * 60 * 60 * 1000, // 12 hours in milliseconds
         
         // Adsterra Banners (Responsive: Desktop vs Mobile)
-        // PAUSED PER USER REQUEST: Keeping only Smartlink, Social Bar, and Popunder.
+        // PAUSED PER USER REQUEST: Keeping only Smartlink, Social Bar, and Popunder
         banners: {
+            /*
             'adBannerHeader': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'adBannerContent': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 },
             'adBannerIngrid': isMobile ? { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdTop': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdBottom': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdSide': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 }
+            */
         },
 
         // External Scripts
@@ -79,63 +81,31 @@
     }
 
     // ==========================================
-    //  4. SAME-ORIGIN IFRAME INJECTION (CWV SAFE)
+    //  4. POSTSCRIBE BANNER INJECTION (LAZY)
     // ==========================================
 
     function loadAdsterraDeferred(containerId, key, width, height) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-
-        // Reset
-        container.innerHTML = '';
-        container.style.cssText = `display:flex; justify-content:center; align-items:center; min-height:${height}px; max-width:100%; overflow:hidden;`;
-
-        if (typeof postscribe === 'undefined') {
-            kLog('Postscribe missing, falling back.');
-            injectFallbackBanner(container);
-            return;
-        }
-
-        const adHtml = `
-            <script type="text/javascript">
-                atOptions = {
-                    'key' : '${key}',
-                    'format' : 'iframe',
-                    'height' : ${height},
-                    'width' : ${width},
-                    'params' : {}
-                };
-        // Adsterra Banners are PAUSED per user request. 
-        // Directly inject the user's custom fallback banner (ezgif) into this slot.
-        kLog(`Adsterra banner paused for ${containerId}, injecting custom fallback banner instead.`);
-        injectFallbackBanner(container);
+        // Paused
     }
 
-    // ==========================================
-    //  5. FALLBACK BANNERS (ANTI-ADBLOCK)
-    // ==========================================
-
-    function injectFallbackBanner(container) {
+    function injectCustomBanner() {
+        const container = document.getElementById('adBannerCustom');
         if (!container) return;
         
-        // Cek apakah sudah fallback
-        if (container.dataset.fallback === '1') return;
-        container.dataset.fallback = '1';
-
         container.innerHTML = '';
         
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'width:100%; display:flex; justify-content:center; align-items:center;';
 
         const link = document.createElement('a');
-        link.href = CONFIG.fallbacks.link;
+        link.href = 'https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A';
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.style.cssText = 'display:block; max-width:100%; text-decoration:none; border-radius:10px; overflow:hidden; cursor:pointer; transition: transform 0.3s ease;';
         
         const img = document.createElement('img');
-        img.src = CONFIG.fallbacks.image;
-        img.alt = 'Premium Content';
+        img.src = 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif';
+        img.alt = 'Download Terabox';
         img.style.cssText = 'width:100%; height:auto; display:block; border-radius:10px;';
         img.loading = 'lazy';
 
@@ -146,7 +116,7 @@
         wrapper.appendChild(link);
         container.appendChild(wrapper);
         
-        kLog('Fallback banner injected for container:', container.id);
+        kLog('Custom Terabox banner injected into adBannerCustom');
     }
 
     // ==========================================
@@ -287,6 +257,7 @@
         kLog('Initializing Ad Manager...');
         initLazyAds();
         injectTelegramButton();
+        injectCustomBanner();
 
         // Load popup scripts immediately (Pure 100% mode)
         injectExternalScripts();

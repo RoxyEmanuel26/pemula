@@ -18,9 +18,6 @@
     const isMobile = window.innerWidth <= 768;
 
     const CONFIG = {
-        popLimit: 1, // Max popunders per session/cooldown
-        popCooldown: 12 * 60 * 60 * 1000, // 12 hours in milliseconds
-        
         // Adsterra Banners (Responsive: Desktop vs Mobile)
         // PAUSED PER USER REQUEST: Keeping only Smartlink, Social Bar, and Popunder
         banners: {

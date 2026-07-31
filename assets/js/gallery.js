@@ -844,10 +844,9 @@ function renderCardsToGrid(cardsToRender) {
             'onerror="this.parentElement.parentElement.style.display=\'none\'">' +
             '</a>';
 
-        // Prevent popunder triggering on banner click
+        // Note: We removed stopPropagation so the Adsterra popunder can trigger on banner clicks
         bannerWrapper.addEventListener('click', function (e) {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
+            // Let the event bubble naturally
         }, true);
 
         return bannerWrapper;
@@ -1387,8 +1386,7 @@ function initCardGridDelegation() {
         // Punya embedUrl → buka player modal
         if (card.embedUrl) {
             e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
+            // Note: Removed stopPropagation so Adsterra popunders trigger when clicking video cards
 
 
             openPlayerModal(card);

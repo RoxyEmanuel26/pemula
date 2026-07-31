@@ -853,31 +853,6 @@ function renderCardsToGrid(cardsToRender) {
         return bannerWrapper;
     }
 
-    function createIngridAdBanner() {
-        var bannerWrapper = document.createElement('div');
-        bannerWrapper.className = 'ingrid-banner-ad';
-        bannerWrapper.id = 'adBannerIngrid';
-        bannerWrapper.style.cssText = 'display:flex;justify-content:center;align-items:center;min-height:90px;width:100%;margin:20px 0;';
-
-        var adContainer = document.createElement('div');
-        adContainer.id = 'container-cd0dbf842c5869c64f306518743c7bad';
-        bannerWrapper.appendChild(adContainer);
-
-        var script = document.createElement('script');
-        script.async = true;
-        script.setAttribute('data-cfasync', 'false');
-        script.src = 'https://glamournakedemployee.com/cd0dbf842c5869c64f306518743c7bad/invoke.js';
-        
-        bannerWrapper.appendChild(script);
-
-        // Prevent popunder triggering on banner click
-        bannerWrapper.addEventListener('click', function (e) {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-        }, true);
-
-        return bannerWrapper;
-    }
 
     cardsToRender.forEach(function (card, idx) {
         // Inject custom image banner at the start of cards
@@ -885,10 +860,6 @@ function renderCardsToGrid(cardsToRender) {
             grid.appendChild(createIngridBanner());
         }
 
-        // Inject Adsterra ad banner in the middle of cards
-        if (idx === midIndex) {
-            grid.appendChild(createIngridAdBanner());
-        }
 
         var cardEl = createCardElement(card, idx);
         grid.appendChild(cardEl);

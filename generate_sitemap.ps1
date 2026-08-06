@@ -2,8 +2,8 @@ $ErrorActionPreference = 'Stop'
 $baseUrl = 'https://www.lusthub.my.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
-$perPage = 100
-$maxConcurrent = 50
+$perPage = 10000
+$maxConcurrent = 500
 $maxPagesPerQuery = 50
 
 Write-Host ""

@@ -249,6 +249,7 @@ $scriptBlock = {
                 $xml += "      <video:player_loc>$escapedEmbed</video:player_loc>`n"
                 $xml += "      <video:duration>$($v.duration)</video:duration>`n"
                 $xml += "      <video:publication_date>$($v.published)</video:publication_date>`n"
+                $xml += "      <video:family_friendly>no</video:family_friendly>`n"
                 $xml += "    </video:video>`n"
                 $xml += "  </url>`n"
             }

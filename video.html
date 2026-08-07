@@ -494,8 +494,10 @@
                 "description": desc,
                 "thumbnailUrl": [thumbUrl],
                 "uploadDate": uploadISO,
-                "duration": "PT" + (video.length_sec || 0) + "S",
+                "duration": video.length_sec ? "PT" + video.length_sec + "S" : "PT0S",
+                "contentUrl": window.location.href,
                 "embedUrl": video.embed || window.location.href,
+                "isFamilyFriendly": false,
                 "interactionStatistic": {
                     "@type": "InteractionCounter",
                     "interactionType": { "@type": "WatchAction" },

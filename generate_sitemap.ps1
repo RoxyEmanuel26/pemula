@@ -175,6 +175,7 @@ $scriptBlock = {
                     }
 
                     $slug = ($v.title -replace '[^a-zA-Z0-9]+', '-').Trim('-').ToLower()
+                    if ([string]::IsNullOrWhiteSpace($slug)) { $slug = "video" }
                     if ($slug.Length -gt 80) { $slug = $slug.Substring(0, 80).TrimEnd('-') }
 
                     $addedDate = $dateStr.Substring(0, 10)

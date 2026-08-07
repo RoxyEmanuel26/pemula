@@ -47,10 +47,6 @@
         {
           "key": "Cache-Control",
           "value": "public, s-maxage=3600"
-        },
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex"
         }
       ]
     },
@@ -60,10 +56,6 @@
         {
           "key": "Cache-Control",
           "value": "public, s-maxage=3600"
-        },
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex"
         }
       ]
     }

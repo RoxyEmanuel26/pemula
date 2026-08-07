@@ -114,6 +114,13 @@ $scriptBlock = {
 
     function Fix-Mojibake($text) {
         if ([string]::IsNullOrEmpty($text)) { return $text }
+        
+        # Protective check: if string already contains true Unicode characters (> 255),
+        # it is not double-encoded Latin-1. Do not touch it.
+        foreach ($char in $text.ToCharArray()) {
+            if ([int]$char -gt 255) { return $text }
+        }
+
         try {
             # Eporner API incorrectly encodes UTF-8 as Latin-1
             $bytes = [System.Text.Encoding]::GetEncoding("iso-8859-1").GetBytes($text)

@@ -3,13 +3,13 @@ $baseUrl = 'https://www.lusthub.my.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
 $perPage = 10000
-$maxConcurrent = 500
+$maxConcurrent = 5   # Dikurangi dari 500 ke 5 agar RAM dan CPU tidak jebol
 $maxPagesPerQuery = 50
 
 Write-Host ""
 Write-Host "============================================"
-Write-Host "  lusthub.my.id Sitemap Generator v6.0"
-Write-Host "  PARALLEL MULTI-THREADED (50 threads)"
+Write-Host "  lusthub.my.id Sitemap Generator v6.1"
+Write-Host "  OPTIMIZED MULTI-THREADED (5 threads) - RAM Saver"
 Write-Host "  Website: $baseUrl"
 Write-Host "  Time: $dateStr"
 Write-Host "============================================"
@@ -123,12 +123,16 @@ $scriptBlock = {
 
     Write-Host "  [$query] Starting..."
 
+    # Initialize WebClient once to reuse socket and avoid memory leaks
+    $webClient = New-Object System.Net.WebClient
+    $webClient.Encoding = [System.Text.Encoding]::UTF8
+
     while ($page -le $totalPages -and $page -le $maxPagesPerQuery) {
         $apiUrl = "https://www.eporner.com/api/v2/video/search/?query=$([uri]::EscapeDataString($query))&per_page=$perPage&page=$page&thumbsize=small&order=most-popular&format=json"
-        
         try {
-            # Disable pipeline buffering and invoke GET request
-            $response = Invoke-RestMethod -Uri $apiUrl -Method Get -TimeoutSec 30
+            # Download string properly decoded as UTF-8
+            $jsonString = $webClient.DownloadString($apiUrl)
+            $response = $jsonString | ConvertFrom-Json
             $requestCount++
 
             if ($page -eq 1 -and $response.total_pages) {
@@ -263,6 +267,13 @@ $scriptBlock = {
     } else {
         Write-Host "  [$query] Completed. 0 new videos."
     }
+
+    # Force garbage collection to free RAM
+    if ($null -ne $webClient) {
+        $webClient.Dispose()
+    }
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
 
     return [PSCustomObject]@{
         Query = $query

@@ -112,6 +112,19 @@ $scriptBlock = {
         $globalTitleSet
     )
 
+    function Fix-Mojibake($text) {
+        if ([string]::IsNullOrEmpty($text)) { return $text }
+        try {
+            # Eporner API incorrectly encodes UTF-8 as Latin-1
+            $bytes = [System.Text.Encoding]::GetEncoding("iso-8859-1").GetBytes($text)
+            # Use strict UTF-8 decoding to throw on invalid sequences
+            $utf8 = New-Object System.Text.UTF8Encoding $false, $true
+            return $utf8.GetString($bytes)
+        } catch {
+            return $text
+        }
+    }
+
     $safeQuery = $query -replace '[^a-zA-Z0-9]', '_'
     $fileName = "sitemap_video_${safeQuery}.xml"
     $categoryVideos = @{}
@@ -143,6 +156,9 @@ $scriptBlock = {
             if ($response.videos -and $response.videos.Count -gt 0) {
                 foreach ($v in $response.videos) {
                     if ($categoryVideos.ContainsKey($v.id)) { continue }
+
+                    # Fix double-encoded UTF-8 from API
+                    $v.title = Fix-Mojibake $v.title
 
                     $titleLower = $v.title.ToLower().Trim()
                     # TryAdd returns false if key already exists, ensuring thread-safe deduplication

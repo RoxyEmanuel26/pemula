@@ -74,14 +74,15 @@ function Generate-StaticSitemaps {
     }
 }
 
-function Update-MasterIndex($sitemapVideoFiles) {
-    Write-Host "      -> Updating sitemap_index.xml (Master Index)..."
+function Update-MasterIndex {
+    Write-Host "      -> Updating sitemap_index.xml (Master Index) from physical files..."
     $indexXml = "<?xml version='1.0' encoding='UTF-8'?>`n<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>`n"
-    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_pages.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
-    $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/sitemap_categories.xml</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
-    foreach ($sf in $sitemapVideoFiles) {
-        $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/$sf</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
+    
+    $sitemapFiles = Get-ChildItem -Path "sitemaps" -Filter "*.xml" | Sort-Object Name
+    foreach ($file in $sitemapFiles) {
+        $indexXml += "  <sitemap>`n    <loc>$baseUrl/sitemaps/$($file.Name)</loc>`n    <lastmod>$dateStr</lastmod>`n  </sitemap>`n"
     }
+    
     $indexXml += "</sitemapindex>"
     [System.IO.File]::WriteAllText('sitemap_index.xml', $indexXml, [System.Text.Encoding]::UTF8)
 }
@@ -334,7 +335,7 @@ $pool.Dispose()
 $state.sitemapVideoFiles = $state.sitemapVideoFiles | Sort-Object
 
 # Update the master index
-Update-MasterIndex $state.sitemapVideoFiles
+Update-MasterIndex
 
 # Update root sitemap.xml
 Write-Host "[SITEMAP] Updating root sitemap.xml..."

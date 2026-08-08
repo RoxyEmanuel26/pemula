@@ -2,6 +2,25 @@
 <html lang="en" data-theme="dark">
 
 <head>
+    <!-- SPA Router: intercept /c/ and /v/ paths before showing 404 -->
+    <script>
+    (function() {
+        var path = window.location.pathname;
+        // If path is /c/slug → load category page with slug preserved
+        if (/^\/c\//.test(path)) {
+            sessionStorage.setItem('spa_redirect', path);
+            window.location.replace('/category');
+            throw new Error('Redirecting to category');
+        }
+        // If path is /v/slug → load video page with slug preserved
+        if (/^\/v\//.test(path)) {
+            sessionStorage.setItem('spa_redirect', path);
+            window.location.replace('/video');
+            throw new Error('Redirecting to video');
+        }
+    })();
+    </script>
+
     <meta name="google-site-verification" content="KqJ4iydBmKwnynnKXW38T5qhAnGlFD5UEpwvauUYnxs" />
     <meta charset="UTF-8">
     <meta name="yandex-verification" content="a25cbe2b4f64ad3a" />

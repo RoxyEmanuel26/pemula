@@ -318,11 +318,20 @@
     (function() {
         'use strict';
 
-        // ─── Parse slug from URL: /c/asian → "asian", /c/big-ass → "big ass"
-        const pathParts = window.location.pathname.split('/');
-        const rawSlug   = pathParts[pathParts.length - 1] || '';
+        // ─── Parse slug: works in 2 modes:
+        // Mode 1: Vercel rewrite → /c/asian loads category.html, pathname = /c/asian
+        // Mode 2: SPA redirect via 404.html → sessionStorage has original path
+        var originalPath = sessionStorage.getItem('spa_redirect') || window.location.pathname;
+        sessionStorage.removeItem('spa_redirect'); // Clean up after use
+
+        const pathParts = originalPath.split('/');
+        // Find segment after /c/
+        const cIdx = pathParts.indexOf('c');
+        const rawSlug = cIdx !== -1 && pathParts[cIdx + 1]
+            ? pathParts[cIdx + 1]
+            : (pathParts[pathParts.length - 1] || '');
+
         // Decode URL encoding first (%20 → space), then replace remaining dashes with spaces
-        // But keep numbers with dashes intact (e.g. '60-fps' → '60 fps')
         const decodedSlug = decodeURIComponent(rawSlug);
         // Convert dashes to spaces for API query (slug is always dash-separated)
         const keyword = decodedSlug.replace(/-/g, ' ').trim();

@@ -2,8 +2,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/v/:slug*", "destination": "/video.html" },
-    { "source": "/c/:slug*", "destination": "/category.html" }
+    { "source": "/v/:slug*", "destination": "/video" },
+    { "source": "/c/:slug*", "destination": "/category" }
   ],
   "headers": [
     {

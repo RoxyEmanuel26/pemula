@@ -12,16 +12,15 @@ Allow: /contact
 Allow: /privacy
 Allow: /terms
 Allow: /howto
+Allow: /sitemaps/
 Disallow: /assets/js/ads.js
 Disallow: /assets/js/ads.min.js
 Disallow: /assets/js/loader.js
 Disallow: /assets/js/loader.min.js
-Disallow: /*?q=
 Disallow: /.env
 Crawl-delay: 1
 
-# Sitemap location
-Sitemap: https://www.lusthub.my.id/sitemap.xml
+# Sitemap location — hanya 1 master index (cukup)
 Sitemap: https://www.lusthub.my.id/sitemap_index.xml
 
 # ==============================================

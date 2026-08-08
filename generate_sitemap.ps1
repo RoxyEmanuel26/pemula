@@ -83,7 +83,9 @@ function Generate-StaticSitemaps {
     [void]$sb.AppendLine("<?xml version='1.0' encoding='UTF-8'?>")
     [void]$sb.AppendLine("<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>")
     foreach ($q in $searchQueries) {
-        $catLoc = "$baseUrl/search?q=$([uri]::EscapeDataString($q))"
+        # Gunakan /c/{slug} path bersih yang valid, bukan /search?q= yang diblokir robots.txt
+        $safeQ  = ($q -replace '[^a-zA-Z0-9]+', '-').Trim('-').ToLower()
+        $catLoc = "$baseUrl/c/$safeQ"
         [void]$sb.AppendLine("  <url>")
         [void]$sb.AppendLine("    <loc>$catLoc</loc>")
         [void]$sb.AppendLine("    <lastmod>$dateStr</lastmod>")
@@ -111,9 +113,11 @@ function Update-MasterIndex {
     [void]$sb.AppendLine("<sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>")
     $sitemapFiles = Get-ChildItem -Path "sitemaps" -Filter "*.xml" | Sort-Object Name
     foreach ($file in $sitemapFiles) {
+        # Gunakan lastmod AKTUAL dari waktu file ditulis (bukan timestamp generate)
+        $fileLastMod = $file.LastWriteTime.ToString("yyyy-MM-ddTHH:mm:sszzz")
         [void]$sb.AppendLine("  <sitemap>")
         [void]$sb.AppendLine("    <loc>$baseUrl/sitemaps/$($file.Name)</loc>")
-        [void]$sb.AppendLine("    <lastmod>$dateStr</lastmod>")
+        [void]$sb.AppendLine("    <lastmod>$fileLastMod</lastmod>")
         [void]$sb.AppendLine("  </sitemap>")
     }
     [void]$sb.AppendLine("</sitemapindex>")
@@ -349,13 +353,14 @@ $scriptBlock = {
     }
 
     # Bebaskan RAM
+    $finalCount = $categoryVideos.Count  # Simpan sebelum di-null-kan!
     $categoryVideos = $null
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
 
     return [PSCustomObject]@{
         Query        = $query
-        VideoCount   = if ($categoryVideos) { $categoryVideos.Count } else { 0 }
+        VideoCount   = $finalCount  # ✅ Sekarang angkanya benar
         RequestCount = $requestCount
         DupeCount    = $dupeCount
         SitemapFiles = $localSitemapFiles

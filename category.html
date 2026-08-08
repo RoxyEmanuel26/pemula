@@ -318,11 +318,16 @@
     (function() {
         'use strict';
 
-        // ─── Parse slug from URL: /c/asian → "asian"
+        // ─── Parse slug from URL: /c/asian → "asian", /c/big-ass → "big ass"
         const pathParts = window.location.pathname.split('/');
         const rawSlug   = pathParts[pathParts.length - 1] || '';
-        // Decode slug back to query keyword (e.g. "big-ass" → "big ass")
-        const keyword   = decodeURIComponent(rawSlug).replace(/-/g, ' ').trim();
+        // Decode URL encoding first (%20 → space), then replace remaining dashes with spaces
+        // But keep numbers with dashes intact (e.g. '60-fps' → '60 fps')
+        const decodedSlug = decodeURIComponent(rawSlug);
+        // Convert dashes to spaces for API query (slug is always dash-separated)
+        const keyword = decodedSlug.replace(/-/g, ' ').trim();
+        // Canonical slug always uses dashes (for URL consistency)
+        const canonSlug = decodedSlug.replace(/\s+/g, '-').replace(/%20/g, '-').trim();
 
         if (!keyword) {
             window.location.href = '/';

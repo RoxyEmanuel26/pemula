@@ -83,9 +83,11 @@ function Generate-StaticSitemaps {
     [void]$sb.AppendLine("<?xml version='1.0' encoding='UTF-8'?>")
     [void]$sb.AppendLine("<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>")
     foreach ($q in $searchQueries) {
-        # Gunakan /c/{slug} path bersih yang valid, bukan /search?q= yang diblokir robots.txt
+        # Slug: spasi dan karakter non-alphanumeric -> dash, lowercase
+        # Contoh: '60 fps' -> '60-fps', 'big ass' -> 'big-ass'
+        # PENTING: Konsisten dengan category.html yang membaca slug dengan replace('-',' ')
         $safeQ  = ($q -replace '[^a-zA-Z0-9]+', '-').Trim('-').ToLower()
-        $catLoc = "$baseUrl/c/$safeQ"
+        $catLoc = "$baseUrl/c/$safeQ"  # Gunakan dash, BUKAN %20 (encoded space)
         [void]$sb.AppendLine("  <url>")
         [void]$sb.AppendLine("    <loc>$catLoc</loc>")
         [void]$sb.AppendLine("    <lastmod>$dateStr</lastmod>")
@@ -440,17 +442,26 @@ $allSitemapFiles = $allSitemapFiles | Sort-Object
 # Update Master Index
 Update-MasterIndex
 
-# sitemap.xml di root hanya berisi pointer ke sitemap_index.xml
-# Ini mencegah duplikasi crawl budget dengan sitemaps/sitemap_pages.xml
-Write-Host "[SITEMAP] Updating root sitemap.xml (pointer to index)..." -ForegroundColor Green
+# sitemap.xml di root = urlset standar berisi halaman utama
+# CATATAN: Google melarang nested sitemapindex (sitemapindex pointing ke sitemapindex lain)
+# Jadi sitemap.xml harus tetap urlset biasa, bukan sitemapindex
+Write-Host "[SITEMAP] Updating root sitemap.xml..." -ForegroundColor Green
 $rootSitemapXml = @"
 <?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>https://www.lusthub.my.id/sitemap_index.xml</loc>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.lusthub.my.id/</loc>
     <lastmod>$dateStr</lastmod>
-  </sitemap>
-</sitemapindex>
+    <changefreq>daily</changefreq>
+    <priority>1.00</priority>
+  </url>
+  <url><loc>https://www.lusthub.my.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://www.lusthub.my.id/about</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
+  <url><loc>https://www.lusthub.my.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+  <url><loc>https://www.lusthub.my.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+</urlset>
 "@
 [System.IO.File]::WriteAllText('sitemap.xml', $rootSitemapXml, [System.Text.Encoding]::UTF8)
 

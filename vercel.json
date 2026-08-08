@@ -1,68 +1,48 @@
 {
   "cleanUrls": true,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/v/(.*)",
-      "destination": "/video.html"
+      "src": "/v/(?<slug>.*)",
+      "dest": "/video.html"
     },
     {
-      "source": "/c/(.*)",
-      "destination": "/category.html"
+      "src": "/c/(?<slug>.*)",
+      "dest": "/category.html"
     },
     {
-      "source": "/video",
-      "destination": "/video.html"
-    }
-  ],
-
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=86400, stale-while-revalidate=604800"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()"
-        }
-      ]
+      "src": "/video",
+      "dest": "/video.html"
     },
     {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "src": "/(.*)",
+      "headers": {
+        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()"
+      },
+      "continue": true
     },
     {
-      "source": "/(sitemap.*\\.xml)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=3600"
-        }
-      ]
+      "src": "/assets/(.*)",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "continue": true
     },
     {
-      "source": "/sitemaps/(.*\\.xml)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=3600"
-        }
-      ]
+      "src": "/(sitemap.*\\.xml)",
+      "headers": {
+        "Cache-Control": "public, s-maxage=3600"
+      },
+      "continue": true
+    },
+    {
+      "src": "/sitemaps/(.*\\.xml)",
+      "headers": {
+        "Cache-Control": "public, s-maxage=3600"
+      },
+      "continue": true
     }
   ]
 }

@@ -7,6 +7,12 @@
   ],
   "headers": [
     {
+      "source": "/404",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },

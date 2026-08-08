@@ -1,9 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $baseUrl = 'https://www.lusthub.my.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
-$delaySeconds = 1.5
+$delaySeconds = 1
 $perPage = 1000
-$maxConcurrent = 5   # Safe threads to prevent API rate limit (429/403)
+$maxConcurrent = 50   # Safe threads to prevent API rate limit (429/403)
 $maxPagesPerQuery = 50
 
 Write-Host ""
@@ -15,16 +15,26 @@ Write-Host "  Time: $dateStr"
 Write-Host "============================================"
 
 $searchQueries = @(
-    'indonesia', 'viral', 'asian', 'japanese', 'korean',
-    'amateur', 'student', 'hijab', 'couple', 'celebrity',
-    'homemade', 'massage', 'outdoor', 'webcam', 'teen',
-    'milf', 'latina', 'blonde', 'brunette', 'pov',
-    'anal', 'blowjob', 'creampie', 'threesome', 'lesbian',
-    'interracial', 'big ass', 'big tits', 'small tits', 'redhead',
-    'ebony', 'indian', 'thai', 'filipina', 'malay',
-    'chinese', 'vietnam', 'arab', 'turkish', 'russian',
-    'hentai', 'cosplay', 'yoga', 'dance', 'shower',
-    'hotel', 'car', 'office', 'public', 'beach'
+    '60 fps', 'ai', 'amateur', 'anal', 'arab',
+    'asian', 'asmr', 'bbw', 'bdsm', 'beach',
+    'big ass', 'big dick', 'big tits', 'blonde', 'blowjob',
+    'bondage', 'brunette', 'bukkake', 'car', 'casting',
+    'celebrity', 'chinese', 'compilation', 'cosplay', 'couple',
+    'creampie', 'cuckold', 'cumshot', 'dance', 'doctor',
+    'double penetration', 'ebony', 'fetish', 'filipina', 'fisting',
+    'footjob', 'for women', 'gloryhole', 'group sex', 'handjob',
+    'hardcore', 'hd porn 1080p', 'hd sex', 'hentai', 'hijab',
+    'homemade', 'hotel', 'hotwife', 'housewives', 'hq porn',
+    'indian', 'indonesia', 'interracial', 'japanese', 'korean',
+    'latina', 'lesbian', 'lingerie', 'malay', 'massage',
+    'masturbation', 'mature', 'milf', 'nurses', 'office',
+    'older men', 'orgy', 'outdoor', 'pawg', 'petite',
+    'pinay', 'pornstar', 'pov', 'pregnant', 'public',
+    'redhead', 'russian', 'shemale', 'shower', 'sleep',
+    'small tits', 'squirt', 'stepmom', 'stepsister', 'striptease',
+    'student', 'students', 'swinger', 'teen', 'thai',
+    'threesome', 'toys', 'turkish', 'uniform', 'vietnam',
+    'vintage', 'viral', 'vr porn', 'webcam', 'yoga'
 )
 
 function Generate-StaticSitemaps {
@@ -153,6 +163,7 @@ $scriptBlock = {
             try {
                 # Use HttpWebRequest with strict 10-second timeout
                 $request = [System.Net.WebRequest]::Create($apiUrl)
+                $request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 $request.Timeout = 10000 # 10 seconds max
                 $request.ReadWriteTimeout = 10000
                 
@@ -170,7 +181,8 @@ $scriptBlock = {
                 $success = $true
             } catch {
                 $retryCount++
-                Write-Host "  [$query] [!] Error on page ${page} (Attempt $retryCount/3), retrying in 3s..."
+                $errMsg = $_.Exception.Message
+                Write-Host "  [$query] [!] Error on page ${page} (Attempt $retryCount/3): $errMsg" -ForegroundColor Yellow
                 Start-Sleep -Seconds 3
             }
         }

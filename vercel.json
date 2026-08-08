@@ -6,10 +6,15 @@
       "destination": "/video.html"
     },
     {
+      "source": "/c/(.*)",
+      "destination": "/category.html"
+    },
+    {
       "source": "/video",
       "destination": "/video.html"
     }
   ],
+
   "headers": [
     {
       "source": "/(.*)",

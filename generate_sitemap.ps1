@@ -242,15 +242,26 @@ $scriptBlock = {
                 }
                 if ($slug.Length -gt 100) { $slug = $slug.Substring(0, 100).TrimEnd('-') }
 
-                # Tanggal publikasi
+                # Tanggal publikasi — pastikan selalu format ISO-8601 valid dengan timezone
                 $addedDate       = $dateOnly
-                $publicationDate = "${addedDate}T00:00:00Z"
+                $publicationDate = "${addedDate}T00:00:00+07:00"
                 if ($v.added -and $v.added.Length -ge 19) {
-                    $addedDate       = $v.added.Substring(0, 10)
-                    $publicationDate = "$($v.added.Substring(0,10))T$($v.added.Substring(11,8))Z"
+                    try {
+                        $parsedDate      = [datetime]::Parse($v.added.Substring(0, 19))
+                        $addedDate       = $parsedDate.ToString("yyyy-MM-dd")
+                        $publicationDate = $parsedDate.ToString("yyyy-MM-ddTHH:mm:ss") + "+07:00"
+                    } catch {
+                        $addedDate       = $dateOnly
+                        $publicationDate = "${dateOnly}T00:00:00+07:00"
+                    }
                 } elseif ($v.added -and $v.added.Length -ge 10) {
-                    $addedDate       = $v.added.Substring(0, 10)
-                    $publicationDate = "${addedDate}T00:00:00Z"
+                    try {
+                        $addedDate       = [datetime]::Parse($v.added.Substring(0, 10)).ToString("yyyy-MM-dd")
+                        $publicationDate = "${addedDate}T00:00:00+07:00"
+                    } catch {
+                        $addedDate       = $dateOnly
+                        $publicationDate = "${dateOnly}T00:00:00+07:00"
+                    }
                 }
 
                 # Thumbnail — Skip video tanpa thumbnail (Google akan menolaknya)
@@ -306,7 +317,9 @@ $scriptBlock = {
             [void]$sb.AppendLine("<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9' xmlns:video='http://www.google.com/schemas/sitemap-video/1.1'>")
 
             foreach ($v in $chunkVideos) {
-                $videoUrl    = "$baseUrl/v/$($v.id)-$($v.slug)"
+                # Slug harus URL-safe (tidak boleh ada karakter aneh di URL sebelum di-escape XML)
+                $safeSlug    = $v.slug -replace '[^a-zA-Z0-9\-]', ''
+                $videoUrl    = "$baseUrl/v/$($v.id)-$safeSlug"
                 $escapedLoc  = [System.Security.SecurityElement]::Escape($videoUrl)
                 $escapedThumb= [System.Security.SecurityElement]::Escape($v.thumbnail)
                 $escapedTitle= [System.Security.SecurityElement]::Escape($v.title)
@@ -427,24 +440,17 @@ $allSitemapFiles = $allSitemapFiles | Sort-Object
 # Update Master Index
 Update-MasterIndex
 
-# Update root sitemap.xml
-Write-Host "[SITEMAP] Updating root sitemap.xml..." -ForegroundColor Green
+# sitemap.xml di root hanya berisi pointer ke sitemap_index.xml
+# Ini mencegah duplikasi crawl budget dengan sitemaps/sitemap_pages.xml
+Write-Host "[SITEMAP] Updating root sitemap.xml (pointer to index)..." -ForegroundColor Green
 $rootSitemapXml = @"
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.lusthub.my.id/</loc>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://www.lusthub.my.id/sitemap_index.xml</loc>
     <lastmod>$dateStr</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.00</priority>
-  </url>
-  <url><loc>https://www.lusthub.my.id/howto</loc><lastmod>$dateStr</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
-  <url><loc>https://www.lusthub.my.id/about</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
-  <url><loc>https://www.lusthub.my.id/contact</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.lusthub.my.id/dmca</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.lusthub.my.id/privacy</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-  <url><loc>https://www.lusthub.my.id/terms</loc><lastmod>$dateStr</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
-</urlset>
+  </sitemap>
+</sitemapindex>
 "@
 [System.IO.File]::WriteAllText('sitemap.xml', $rootSitemapXml, [System.Text.Encoding]::UTF8)
 

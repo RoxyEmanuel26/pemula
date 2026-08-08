@@ -3,7 +3,7 @@ $baseUrl = 'https://www.lusthub.my.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
 $perPage = 1000
-$maxConcurrent = 15   # Optimal threads
+$maxConcurrent = 5   # Safe threads to prevent API rate limit (429/403)
 $maxPagesPerQuery = 50
 
 Write-Host ""
@@ -145,23 +145,41 @@ $scriptBlock = {
 
     while ($page -le $totalPages -and $page -le $maxPagesPerQuery) {
         $apiUrl = "https://www.eporner.com/api/v2/video/search/?query=$([uri]::EscapeDataString($query))&per_page=$perPage&page=$page&thumbsize=small&order=most-popular&format=json"
-        try {
-            # Use HttpWebRequest with strict 7-second timeout to prevent hanging
-            $request = [System.Net.WebRequest]::Create($apiUrl)
-            $request.Timeout = 7000 # 7 seconds max
-            $request.ReadWriteTimeout = 7000
-            
-            $responseObj = $request.GetResponse()
-            $stream = $responseObj.GetResponseStream()
-            $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
-            $jsonString = $reader.ReadToEnd()
-            
-            $reader.Close()
-            $stream.Close()
-            $responseObj.Close()
+        
+        $success = $false
+        $retryCount = 0
+        
+        while (-not $success -and $retryCount -lt 3) {
+            try {
+                # Use HttpWebRequest with strict 10-second timeout
+                $request = [System.Net.WebRequest]::Create($apiUrl)
+                $request.Timeout = 10000 # 10 seconds max
+                $request.ReadWriteTimeout = 10000
+                
+                $responseObj = $request.GetResponse()
+                $stream = $responseObj.GetResponseStream()
+                $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
+                $jsonString = $reader.ReadToEnd()
+                
+                $reader.Close()
+                $stream.Close()
+                $responseObj.Close()
 
-            $response = $jsonString | ConvertFrom-Json
-            $requestCount++
+                $response = $jsonString | ConvertFrom-Json
+                $requestCount++
+                $success = $true
+            } catch {
+                $retryCount++
+                Write-Host "  [$query] [!] Error on page ${page} (Attempt $retryCount/3), retrying in 3s..."
+                Start-Sleep -Seconds 3
+            }
+        }
+        
+        if (-not $success) {
+            Write-Host "  [$query] [!] Failed page ${page} after 3 retries, skipping..."
+            $page++
+            continue
+        }
 
             if ($page -eq 1 -and $response.total_pages) {
                 $totalPages = [int]$response.total_pages
@@ -235,15 +253,9 @@ $scriptBlock = {
             } else {
                 break
             }
-        } catch {
-            Write-Host "  [$query] [!] Error on page ${page}, skipping..."
-            Start-Sleep -Seconds 3
-            $page++
-            continue
-        }
 
-        $page++
-        Start-Sleep -Seconds $delaySeconds
+            $page++
+            Start-Sleep -Seconds $delaySeconds
     }
 
     if ($categoryVideos.Count -gt 0) {

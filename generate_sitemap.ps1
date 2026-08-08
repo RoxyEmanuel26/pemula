@@ -2,8 +2,8 @@ $ErrorActionPreference = 'Stop'
 $baseUrl = 'https://www.lusthub.my.id'
 $dateStr = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $delaySeconds = 1.5
-$perPage = 10000
-$maxConcurrent = 5   # Dikurangi dari 500 ke 5 agar RAM dan CPU tidak jebol
+$perPage = 1000
+$maxConcurrent = 15   # Optimal threads
 $maxPagesPerQuery = 50
 
 Write-Host ""
@@ -143,15 +143,23 @@ $scriptBlock = {
 
     Write-Host "  [$query] Starting..."
 
-    # Initialize WebClient once to reuse socket and avoid memory leaks
-    $webClient = New-Object System.Net.WebClient
-    $webClient.Encoding = [System.Text.Encoding]::UTF8
-
     while ($page -le $totalPages -and $page -le $maxPagesPerQuery) {
         $apiUrl = "https://www.eporner.com/api/v2/video/search/?query=$([uri]::EscapeDataString($query))&per_page=$perPage&page=$page&thumbsize=small&order=most-popular&format=json"
         try {
-            # Download string properly decoded as UTF-8
-            $jsonString = $webClient.DownloadString($apiUrl)
+            # Use HttpWebRequest with strict 7-second timeout to prevent hanging
+            $request = [System.Net.WebRequest]::Create($apiUrl)
+            $request.Timeout = 7000 # 7 seconds max
+            $request.ReadWriteTimeout = 7000
+            
+            $responseObj = $request.GetResponse()
+            $stream = $responseObj.GetResponseStream()
+            $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
+            $jsonString = $reader.ReadToEnd()
+            
+            $reader.Close()
+            $stream.Close()
+            $responseObj.Close()
+
             $response = $jsonString | ConvertFrom-Json
             $requestCount++
 
@@ -293,9 +301,6 @@ $scriptBlock = {
     }
 
     # Force garbage collection to free RAM
-    if ($null -ne $webClient) {
-        $webClient.Dispose()
-    }
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
 

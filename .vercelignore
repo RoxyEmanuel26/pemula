@@ -1,0 +1,11 @@
+graphify-out/
+data/sitemap-state.json
+scripts/
+.github/
+.agents/
+scratch/
+generate_sitemap.ps1
+generate-sitemap.bat
+fix_state.js
+output.log
+*.md

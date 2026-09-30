@@ -1,0 +1,50 @@
+name: Daily SEO sitemap refresh
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+      timezone: "Asia/Jakarta"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-seo-sitemap
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate rolling video sitemaps
+        run: node scripts/generate-sitemaps.mjs
+
+      - name: Validate sitemap limits and required video fields
+        run: node scripts/validate-sitemaps.mjs
+
+      - name: Commit only meaningful sitemap changes
+        shell: bash
+        run: |
+          if git diff --quiet -- sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json; then
+            echo "No new or removed videos; skipping commit and Vercel deployment."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json
+          git commit -m "chore(seo): refresh daily video sitemap"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

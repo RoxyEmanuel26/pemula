@@ -85,7 +85,8 @@ export async function onRequest(context) {
     }
     
     // Generate the <script> block for the schema
-    const schemaScript = `<script type="application/ld+json">${JSON.stringify(schemaData)}</script>`;
+    // Escape '<' so API text cannot terminate this script element.
+    const schemaScript = `<script type="application/ld+json">${JSON.stringify(schemaData).replace(/</g, '\\u003c')}</script>`;
     
         const templates = [
             `Browse the best free ${displayCat} adult videos on lusthub.my.id. Enjoy instant streaming, high-quality viral leaks, and premium content with no subscription.`,

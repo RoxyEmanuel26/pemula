@@ -349,6 +349,15 @@
         const BASE_URL  = 'https://www.lusthub.my.id';
         const TITLE_CAP = s => s.charAt(0).toUpperCase() + s.slice(1);
 
+        function getSafeImageUrl(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
+            } catch (e) {
+                return '';
+            }
+        }
+
         let currentPage  = 1;
         let totalPages   = 1;
         let totalCount   = 0;
@@ -373,9 +382,11 @@
             document.getElementById('twitterDesc').setAttribute('content', desc);
 
             // Hero
-            document.getElementById('heroKeyword').textContent = cap;
-            document.getElementById('heroTitle').innerHTML =
-                'Free <span id="heroKeyword">' + cap + '</span> Videos';
+            const heroTitle = document.getElementById('heroTitle');
+            const heroKeyword = document.createElement('span');
+            heroKeyword.id = 'heroKeyword';
+            heroKeyword.textContent = cap;
+            heroTitle.replaceChildren(document.createTextNode('Free '), heroKeyword, document.createTextNode(' Videos'));
             document.getElementById('heroDesc').textContent =
                 `Browse ${totalCount.toLocaleString()}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
             document.getElementById('breadcrumbKeyword').textContent = cap;
@@ -430,9 +441,14 @@
             document.getElementById('emptyState').style.display = 'none';
 
             videos.forEach(v => {
+                const videoId = String(v.id || '').trim();
+                if (!videoId) return;
+
                 // Build slug from title
-                const slug = (v.title || '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
-                const url  = `/v/${v.id}-${slug || v.id}`;
+                const rawTitle = String(v.title || '');
+                const displayTitle = rawTitle || 'Untitled';
+                const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
+                const url  = `/v/${encodeURIComponent(videoId)}-${slug || encodeURIComponent(videoId)}`;
                 const thumb = (v.default_thumb && v.default_thumb.src) ? v.default_thumb.src :
                               (v.thumbs && v.thumbs[0] ? v.thumbs[0].src : '');
                 const dur  = formatDuration(v.length_sec);
@@ -441,17 +457,39 @@
                 const card = document.createElement('a');
                 card.href  = url;
                 card.className = 'video-card';
-                card.setAttribute('aria-label', v.title || 'Video');
-                card.innerHTML = `
-                    <div class="video-thumb-wrap">
-                        <img src="${thumb}" alt="${(v.title||'').replace(/"/g,'')}" loading="lazy" onerror="this.src='/assets/icons/favicon-32x32.png'">
-                        ${dur ? `<span class="video-duration">${dur}</span>` : ''}
-                    </div>
-                    <div class="video-card-body">
-                        <div class="video-card-title">${v.title || 'Untitled'}</div>
-                        ${date ? `<div class="video-card-meta">${date}</div>` : ''}
-                    </div>
-                `;
+                card.setAttribute('aria-label', displayTitle);
+
+                const thumbWrap = document.createElement('div');
+                thumbWrap.className = 'video-thumb-wrap';
+                const image = document.createElement('img');
+                image.src = getSafeImageUrl(thumb) || '/assets/icons/favicon-32x32.png';
+                image.alt = displayTitle;
+                image.loading = 'lazy';
+                image.addEventListener('error', () => {
+                    image.src = '/assets/icons/favicon-32x32.png';
+                }, { once: true });
+                thumbWrap.appendChild(image);
+                if (dur) {
+                    const duration = document.createElement('span');
+                    duration.className = 'video-duration';
+                    duration.textContent = dur;
+                    thumbWrap.appendChild(duration);
+                }
+
+                const body = document.createElement('div');
+                body.className = 'video-card-body';
+                const title = document.createElement('div');
+                title.className = 'video-card-title';
+                title.textContent = displayTitle;
+                body.appendChild(title);
+                if (date) {
+                    const dateLabel = document.createElement('div');
+                    dateLabel.className = 'video-card-meta';
+                    dateLabel.textContent = date;
+                    body.appendChild(dateLabel);
+                }
+
+                card.append(thumbWrap, body);
                 grid.appendChild(card);
             });
         }

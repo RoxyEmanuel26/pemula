@@ -127,7 +127,7 @@ function escapeHTML(str) {
     if (!str) return '';
     const div = document.createElement('div');
     div.appendChild(document.createTextNode(String(str)));
-    return div.innerHTML;
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /**

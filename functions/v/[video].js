@@ -144,15 +144,26 @@ export async function onRequest(context) {
 
         // Extract Keywords for Related Content Graph
         let seoTagsHtml = '';
-        if (video.keywords && video.keywords.length > 0) {
-            let tagLinks = video.keywords.map(tag => {
-                return `<a href="/c/${encodeURIComponent(tag)}" style="color: #e8a800; text-decoration: none; background: #222; padding: 5px 10px; border-radius: 4px;">${tag}</a>`;
-            });
-            seoTagsHtml = tagLinks.join(' ');
+        const videoKeywords = Array.isArray(video.keywords)
+            ? video.keywords
+            : (typeof video.keywords === 'string' ? video.keywords.split(',') : []);
+        if (videoKeywords.length > 0) {
+            const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+            seoTagsHtml = videoKeywords.map(tag => {
+                const value = String(tag).trim();
+                return `<a href="/c/${encodeURIComponent(value)}" style="color: #e8a800; text-decoration: none; background: #222; padding: 5px 10px; border-radius: 4px;">${escapeHtml(value)}</a>`;
+            }).join(' ');
         }
         
         // Generate the <script> block for the schema
-        const schemaScript = `<script type="application/ld+json">${JSON.stringify(graphSchema)}</script>`;
+        // Escape '<' so API text cannot terminate this script element.
+        const schemaScript = `<script type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;
         
         // Rewrite the HTML using Cloudflare HTMLRewriter
         return new HTMLRewriter()

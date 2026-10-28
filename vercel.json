@@ -4,7 +4,7 @@
   "trailingSlash": false,
   "functions": {
     "api/*.js": {
-      "includeFiles": "{video.html,category.html,404.html}"
+      "includeFiles": "{video.html,category.html,404.html,data/**}"
     }
   },
   "rewrites": [

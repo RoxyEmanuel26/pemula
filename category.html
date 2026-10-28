@@ -248,6 +248,32 @@
             color: #777;
         }
 
+        /* Editorial Hub Content */
+        .category-editorial {
+            max-width: 1200px;
+            margin: 20px auto 10px;
+            padding: 24px;
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 12px;
+            color: #ccc;
+            line-height: 1.7;
+        }
+        .category-editorial h2 {
+            font-size: 1.25rem;
+            color: #fff;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .category-editorial p {
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: #aaa;
+        }
+        .category-editorial p:last-child {
+            margin-bottom: 0;
+        }
+
         /* Schema.org JSON-LD injected by JS */
     </style>
 </head>
@@ -268,6 +294,14 @@
             <div>Free HD Streaming</div>
         </div>
     </div>
+
+    <!-- Category Editorial Hub -->
+    <section class="category-editorial" id="categoryEditorial" style="display:none">
+        <h2 id="editorialTitle">Curated Category Highlights</h2>
+        <div id="editorialContent">
+            <p>Explore the finest streaming videos updated daily on lusthub.my.id.</p>
+        </div>
+    </section>
 
     <!-- Main Content -->
     <div class="category-container">
@@ -304,14 +338,17 @@
         <div class="pagination" id="pagination"></div>
     </div>
 
-    <footer style="text-align:center;padding:30px 20px;color:#555;font-size:0.85rem;border-top:1px solid #1a1a1a;margin-top:40px;">
-        <p>&copy; 2025 lusthub.my.id — All rights reserved. For adults 18+ only.</p>
-        <p style="margin-top:8px;">
-            <a href="/privacy" style="color:#777;margin:0 10px">Privacy</a>
-            <a href="/terms" style="color:#777;margin:0 10px">Terms</a>
-            <a href="/dmca" style="color:#777;margin:0 10px">DMCA</a>
-            <a href="/contact" style="color:#777;margin:0 10px">Contact</a>
-        </p>
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer" style="text-align:center;padding:30px 20px;color:#777;font-size:0.85rem;border-top:1px solid #1a1a1a;margin-top:40px;">
+        <div class="footer-links" style="display:flex;justify-content:center;gap:18px;margin-bottom:12px;flex-wrap:wrap;">
+            <a href="/about" style="color:#e8a800;text-decoration:none;font-weight:500;">About</a>
+            <a href="/howto" style="color:#e8a800;text-decoration:none;font-weight:500;">How to Download</a>
+            <a href="/contact" style="color:#e8a800;text-decoration:none;font-weight:500;">Contact</a>
+            <a href="/dmca" style="color:#e8a800;text-decoration:none;font-weight:500;">DMCA</a>
+            <a href="/privacy" style="color:#e8a800;text-decoration:none;font-weight:500;">Privacy Policy</a>
+            <a href="/terms" style="color:#e8a800;text-decoration:none;font-weight:500;">Terms of Service</a>
+        </div>
+        <p>All resources are shared by their respective owners. &copy; 2026 lusthub.my.id &bull; Adults 18+ Only</p>
     </footer>
 
     <script>

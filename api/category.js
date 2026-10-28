@@ -3,8 +3,21 @@ import path from 'node:path';
 import { createBreadcrumbSchema, createItemListSchema } from './schema-helper.js';
 
 let cachedTemplate = null;
+let cachedDescriptions = null;
 const CATEGORY_CACHE = new Map();
 const CAT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes server-side in-memory cache
+
+async function getCategoryDescriptions() {
+  if (!cachedDescriptions) {
+    try {
+      const raw = await readFile(path.join(process.cwd(), 'data', 'category-descriptions.json'), 'utf8');
+      cachedDescriptions = JSON.parse(raw);
+    } catch {
+      cachedDescriptions = {};
+    }
+  }
+  return cachedDescriptions;
+}
 
 function escapeHtml(str) {
   return String(str || '')
@@ -166,6 +179,27 @@ export default async function handler(req, res) {
   html = html.replace(
     /<span\s+id=["']breadcrumbKeyword["'][^>]*>[\s\S]*?<\/span>/i,
     `<span id="breadcrumbKeyword">${escapeHtml(categoryName)}</span>`
+  );
+
+  // Inject Unique Editorial Hub Content (2-3 paragraphs)
+  const descriptions = await getCategoryDescriptions();
+  const editorial = descriptions[cleanSlug] || {
+    title: `Explore Free ${categoryName} Videos & Leaks`,
+    paragraphs: [
+      `Welcome to our curated collection of ${categoryName} adult videos and trending leaks on lusthub.my.id. Browse through top-rated streaming clips, fresh community uploads, and verified releases updated daily in full HD resolution.`,
+      `Enjoy uninterrupted mobile and desktop streaming with zero registration requirements and fast cloud delivery. Use the sorting menu to explore trending videos by popularity, rating, or release date.`
+    ]
+  };
+
+  const editorialHtml = `
+    <section class="category-editorial" id="categoryEditorial">
+        <h2>${escapeHtml(editorial.title)}</h2>
+        ${editorial.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('\n        ')}
+    </section>`;
+
+  html = html.replace(
+    /<section\s+class=["']category-editorial["']\s+id=["']categoryEditorial["'][^>]*>[\s\S]*?<\/section>/i,
+    editorialHtml
   );
 
   // Pre-render initial video cards with LCP optimization (fetchpriority="high" on top 2 cards)

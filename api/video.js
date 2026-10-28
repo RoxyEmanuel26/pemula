@@ -4,8 +4,21 @@ import { createVideoObjectSchema, createBreadcrumbSchema } from './schema-helper
 
 let cachedTemplate = null;
 let cached404 = null;
+let cachedEnriched = null;
 const VIDEO_CACHE = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server-side in-memory cache
+
+async function getEnrichedDatabase() {
+  if (!cachedEnriched) {
+    try {
+      const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-videos.json'), 'utf8');
+      cachedEnriched = JSON.parse(raw);
+    } catch {
+      cachedEnriched = { videos: {} };
+    }
+  }
+  return cachedEnriched;
+}
 
 function escapeHtml(str) {
   return String(str || '')
@@ -164,15 +177,24 @@ export default async function handler(req, res) {
     if (kList.length > 0) primaryTag = kList[0];
   }
 
-  // Derive title strictly 50-60 chars
+  // Load Enriched Content from background Gemini pipeline
+  const enrichedDb = await getEnrichedDatabase();
+  const enrichedData = (enrichedDb.videos && enrichedDb.videos[videoId]?.status === 'enriched')
+    ? enrichedDb.videos[videoId]
+    : null;
+
+  // Derive title strictly 50-60 chars (enriched title takes precedence if valid)
   const rawTitle = videoData?.title || rawSlug.split('-').slice(1).join(' ') || `Video ${videoId}`;
   const decodedTitle = decodeMojibake(rawTitle) || 'Premium Adult Video';
-  const pageTitle = buildVideoTitle(decodedTitle, primaryTag);
+  let pageTitle = buildVideoTitle(decodedTitle, primaryTag);
+  if (enrichedData?.seo_title && enrichedData.seo_title.length >= 20 && enrichedData.seo_title.length <= 60) {
+    pageTitle = enrichedData.seo_title;
+  }
 
   const videoSlug = videoData?.title ? slugify(videoData.title) : rawSlug.split('-').slice(1).join('-') || videoId;
   const canonicalUrl = `${domain}/v/${videoId}-${videoSlug}`;
 
-  // Description strictly 120-155 characters
+  // Description strictly 120-155 characters (enriched description takes precedence if valid)
   const catSlug = primaryTag ? slugify(primaryTag) : 'viral';
   const catName = primaryTag ? (primaryTag.charAt(0).toUpperCase() + primaryTag.slice(1)) : 'Viral';
   let metaDesc = `Watch ${decodedTitle} in full HD on lusthub.my.id. Stream trending adult videos and viral leaks with fast loading and zero signups required.`;
@@ -184,6 +206,14 @@ export default async function handler(req, res) {
   } else if (metaDesc.length < 120) {
     metaDesc = `Watch ${decodedTitle} in high definition full HD on lusthub.my.id. Stream free trending adult videos and leaks with fast loading and zero signups required.`;
   }
+  if (enrichedData?.meta_description && enrichedData.meta_description.length >= 120 && enrichedData.meta_description.length <= 155) {
+    metaDesc = enrichedData.meta_description;
+  }
+
+  // Phase 5D Quality Gate: Only enriched content is indexable; un-enriched thin pages get noindex
+  const robotsMeta = enrichedData
+    ? '<meta name="robots" content="index, follow">'
+    : '<meta name="robots" content="noindex, follow">';
 
   // Thumbnail
   const thumbUrl = videoData?.default_thumb?.src || 
@@ -207,14 +237,62 @@ export default async function handler(req, res) {
     { name: decodedTitle, url: canonicalUrl }
   ]);
 
+  const graphItems = [videoObject, breadcrumbList];
+  if (enrichedData && Array.isArray(enrichedData.faq) && enrichedData.faq.length > 0) {
+    graphItems.push({
+      '@type': 'FAQPage',
+      'mainEntity': enrichedData.faq.map(f => ({
+        '@type': 'Question',
+        'name': f.question,
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': f.answer
+        }
+      }))
+    });
+  }
+
   const graphSchema = {
     '@context': 'https://schema.org',
-    '@graph': [videoObject, breadcrumbList]
+    '@graph': graphItems
   };
 
   const schemaScript = `<script id="jsonLdScript" type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;
 
-  // Visible initial Breadcrumbs, Video Facade, H1 heading, and summary for crawlers and instant LCP
+  // Build Enriched Overview, Highlights & FAQ markup
+  let enrichedHtml = '';
+  if (enrichedData) {
+    const highlightsLi = (enrichedData.highlights || [])
+      .map(h => `<li style="position: relative; padding-left: 20px; color: #bbb; font-size: 0.9rem;"><span style="position: absolute; left: 0; color: #e8a800; font-weight: 700;">✓</span> ${escapeHtml(h)}</li>`)
+      .join('\n          ');
+
+    const faqItems = (enrichedData.faq || [])
+      .map(f => `
+        <div class="faq-item" style="background: #1c1c1c; padding: 14px 18px; border-radius: 8px; border: 1px solid #292929; margin-bottom: 10px;">
+          <strong style="display: block; color: #e8a800; font-size: 0.95rem; margin-bottom: 6px;">${escapeHtml(f.question)}</strong>
+          <p style="margin: 0; color: #aaa; font-size: 0.9rem; line-height: 1.5;">${escapeHtml(f.answer)}</p>
+        </div>
+      `).join('');
+
+    enrichedHtml = `
+      <div class="video-enriched-block" style="margin-top: 25px; background: #141414; padding: 22px; border-radius: 12px; border: 1px solid #222;">
+        <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Video Overview</h3>
+        <p style="color: #ccc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 18px;">${escapeHtml(enrichedData.summary || '')}</p>
+        
+        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Key Highlights</h3>
+        <ul class="enriched-highlights" style="list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px;">
+          ${highlightsLi}
+        </ul>
+
+        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Frequently Asked Questions</h3>
+        <div class="enriched-faq">
+          ${faqItems}
+        </div>
+      </div>
+    `;
+  }
+
+  // Visible initial Breadcrumbs, Video Facade, H1 heading, summary, and enriched editorial for crawlers and instant LCP
   const visibleSeoMarkup = `
     <div class="video-initial-seo" style="margin-bottom: 20px;">
         <nav class="video-breadcrumbs" aria-label="Breadcrumb" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin-bottom: 16px; color: #888;">
@@ -233,6 +311,7 @@ export default async function handler(req, res) {
         </div>
         <h1 class="video-title" style="font-size: 1.6rem; color: #fff; margin-bottom: 10px; font-weight: 700;">${escapeHtml(decodedTitle)}</h1>
         <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">${escapeHtml(metaDesc)}</p>
+        ${enrichedHtml}
     </div>
   `;
 
@@ -241,6 +320,9 @@ export default async function handler(req, res) {
   // Replace Title & Meta Description
   html = html.replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(pageTitle)}</title>`);
   html = html.replace(/<meta\s+name=["']description["']\s+content=["'].*?["']>/i, `<meta name="description" content="${escapeHtml(metaDesc)}">`);
+  
+  // Replace Robots tag for Phase 5D Quality Gate
+  html = html.replace(/<meta\s+name=["']robots["']\s+content=["'].*?["']>/i, robotsMeta);
   
   // Replace Canonical Link
   html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'].*?["']>/i, `<link rel="canonical" href="${canonicalUrl}">`);

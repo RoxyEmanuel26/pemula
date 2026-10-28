@@ -7,6 +7,8 @@
     "build": "node scripts/validate-sitemaps.mjs",
     "test": "node scripts/validate-sitemaps.mjs",
     "sitemap": "node scripts/generate-sitemaps.mjs",
-    "validate:sitemaps": "node scripts/validate-sitemaps.mjs"
+    "validate:sitemaps": "node scripts/validate-sitemaps.mjs",
+    "seo:enrich": "node scripts/seo-enrich.mjs",
+    "seo:status": "node scripts/seo-status.mjs"
   }
 }

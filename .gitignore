@@ -4,29 +4,38 @@
 
 # Dependensi Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# File output/temporary
+# Vercel CLI cache & local builds
+.vercel/
+
+# File output / temporary
 result.txt
 output.log
 *.log
 
-# Environment variables
+# Environment variables & secrets (jangan sampai ter-commit ke git)
 .env
-.env.local
-.env.production
+.env*.local
+.env.development*
+.env.production*
+.env.test*
 
 # OS generated files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# IDE
+# IDE & Editor files
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 
-# RTK Antigravity rules
+# Antigravity agent & temporary workspace
 .agents/
-
-# Temporary Workspace
 scratch/
 graphify-out/

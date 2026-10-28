@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta name="google-site-verification" content="KqJ4iydBmKwnynnKXW38T5qhAnGlFD5UEpwvauUYnxs" />
     <meta charset="UTF-8">
@@ -35,7 +36,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 
     <!-- Main CSS (same as index) -->
-    <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en18">
+    <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en31">
 
     <!-- Favicon & PWA -->
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
@@ -52,7 +53,8 @@
     </script>
 
     <!-- Adsterra Popunder -->
-    <script data-cfasync="false" type='text/javascript' src='//glamournakedemployee.com/c4/71/78/c47178ac0d23a0bd87322accefde9fc7.js'></script>
+    <script data-cfasync="false" type='text/javascript'
+        src='//glamournakedemployee.com/c4/71/78/c47178ac0d23a0bd87322accefde9fc7.js'></script>
 
     <style>
         /* ─── Category Page Styles ─── */
@@ -62,6 +64,7 @@
             text-align: center;
             border-bottom: 1px solid #333;
         }
+
         .category-hero h1 {
             font-size: clamp(1.8rem, 5vw, 3rem);
             font-weight: 900;
@@ -70,17 +73,22 @@
             margin-bottom: 10px;
             letter-spacing: -0.5px;
         }
-        .category-hero h1 span { color: #e8a800; }
+
+        .category-hero h1 span {
+            color: #e8a800;
+        }
+
         .category-hero p {
             color: #aaa;
             font-size: 1rem;
             max-width: 600px;
             margin: 0 auto 20px;
         }
+
         .category-stats {
             display: inline-flex;
             gap: 30px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid #333;
             border-radius: 12px;
             padding: 12px 30px;
@@ -88,7 +96,11 @@
             font-weight: 600;
             font-size: 0.9rem;
         }
-        .category-stats span { color: #fff; font-weight: 400; }
+
+        .category-stats span {
+            color: #fff;
+            font-weight: 400;
+        }
 
         .category-container {
             max-width: 1400px;
@@ -104,15 +116,20 @@
             flex-wrap: wrap;
             gap: 15px;
         }
+
         .category-breadcrumb {
             color: #aaa;
             font-size: 0.9rem;
         }
+
         .category-breadcrumb a {
             color: #e8a800;
             text-decoration: none;
         }
-        .category-breadcrumb a:hover { text-decoration: underline; }
+
+        .category-breadcrumb a:hover {
+            text-decoration: underline;
+        }
 
         .sort-select {
             background: #1a1a1a;
@@ -123,7 +140,11 @@
             font-size: 0.9rem;
             cursor: pointer;
         }
-        .sort-select:focus { outline: none; border-color: #e8a800; }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: #e8a800;
+        }
 
         /* Video Grid — reuse gallery style */
         .video-grid {
@@ -142,11 +163,13 @@
             text-decoration: none;
             display: block;
         }
+
         .video-card:hover {
             transform: translateY(-4px);
             border-color: #e8a800;
             box-shadow: 0 8px 25px rgba(232, 168, 0, 0.15);
         }
+
         .video-thumb-wrap {
             position: relative;
             width: 100%;
@@ -154,6 +177,7 @@
             background: #111;
             overflow: hidden;
         }
+
         .video-thumb-wrap img {
             position: absolute;
             inset: 0;
@@ -162,19 +186,27 @@
             object-fit: cover;
             transition: transform 0.3s ease;
         }
-        .video-card:hover .video-thumb-wrap img { transform: scale(1.05); }
+
+        .video-card:hover .video-thumb-wrap img {
+            transform: scale(1.05);
+        }
+
         .video-duration {
             position: absolute;
             bottom: 8px;
             right: 8px;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0, 0, 0, 0.85);
             color: #fff;
             font-size: 0.75rem;
             font-weight: 600;
             padding: 3px 7px;
             border-radius: 5px;
         }
-        .video-card-body { padding: 12px; }
+
+        .video-card-body {
+            padding: 12px;
+        }
+
         .video-card-title {
             font-size: 0.88rem;
             font-weight: 600;
@@ -186,6 +218,7 @@
             overflow: hidden;
             margin-bottom: 6px;
         }
+
         .video-card-meta {
             font-size: 0.78rem;
             color: #777;
@@ -200,6 +233,7 @@
             margin: 40px 0;
             flex-wrap: wrap;
         }
+
         .page-btn {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -210,12 +244,15 @@
             font-size: 0.9rem;
             transition: all 0.2s;
         }
-        .page-btn:hover, .page-btn.active {
+
+        .page-btn:hover,
+        .page-btn.active {
             background: #e8a800;
             border-color: #e8a800;
             color: #000;
             font-weight: 700;
         }
+
         .page-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
@@ -227,6 +264,7 @@
             padding: 80px 20px;
             color: #aaa;
         }
+
         .loader {
             width: 44px;
             height: 44px;
@@ -236,12 +274,19 @@
             animation: spin 0.9s linear infinite;
             margin: 0 auto 20px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .error-state {
             text-align: center;
             padding: 80px 20px;
             color: #ff6b6b;
         }
+
         .empty-state {
             text-align: center;
             padding: 80px 20px;
@@ -259,17 +304,20 @@
             color: #ccc;
             line-height: 1.7;
         }
+
         .category-editorial h2 {
             font-size: 1.25rem;
             color: #fff;
             margin-bottom: 12px;
             font-weight: 700;
         }
+
         .category-editorial p {
             margin-bottom: 12px;
             font-size: 0.95rem;
             color: #aaa;
         }
+
         .category-editorial p:last-child {
             margin-bottom: 0;
         }
@@ -277,6 +325,7 @@
         /* Schema.org JSON-LD injected by JS */
     </style>
 </head>
+
 <body>
     <header class="header">
         <div class="header-content">
@@ -339,8 +388,10 @@
     </div>
 
     <!-- ===== FOOTER ===== -->
-    <footer class="footer" style="text-align:center;padding:30px 20px;color:#777;font-size:0.85rem;border-top:1px solid #1a1a1a;margin-top:40px;">
-        <div class="footer-links" style="display:flex;justify-content:center;gap:18px;margin-bottom:12px;flex-wrap:wrap;">
+    <footer class="footer"
+        style="text-align:center;padding:30px 20px;color:#777;font-size:0.85rem;border-top:1px solid #1a1a1a;margin-top:40px;">
+        <div class="footer-links"
+            style="display:flex;justify-content:center;gap:18px;margin-bottom:12px;flex-wrap:wrap;">
             <a href="/about" style="color:#e8a800;text-decoration:none;font-weight:500;">About</a>
             <a href="/howto" style="color:#e8a800;text-decoration:none;font-weight:500;">How to Download</a>
             <a href="/contact" style="color:#e8a800;text-decoration:none;font-weight:500;">Contact</a>
@@ -352,338 +403,339 @@
     </footer>
 
     <script>
-    (function() {
-        'use strict';
+        (function () {
+            'use strict';
 
-        // ─── Parse slug: works in 2 modes:
-        // Mode 1: Vercel rewrite → /c/asian loads category.html, pathname = /c/asian
-        // Mode 2: SPA redirect via 404.html → sessionStorage has original path
-        var originalPath = sessionStorage.getItem('spa_redirect') || window.location.pathname;
-        sessionStorage.removeItem('spa_redirect'); // Clean up after use
+            // ─── Parse slug: works in 2 modes:
+            // Mode 1: Vercel rewrite → /c/asian loads category.html, pathname = /c/asian
+            // Mode 2: SPA redirect via 404.html → sessionStorage has original path
+            var originalPath = sessionStorage.getItem('spa_redirect') || window.location.pathname;
+            sessionStorage.removeItem('spa_redirect'); // Clean up after use
 
-        const pathParts = originalPath.split('/');
-        // Find segment after /c/
-        const cIdx = pathParts.indexOf('c');
-        const rawSlug = cIdx !== -1 && pathParts[cIdx + 1]
-            ? pathParts[cIdx + 1]
-            : (pathParts[pathParts.length - 1] || '');
+            const pathParts = originalPath.split('/');
+            // Find segment after /c/
+            const cIdx = pathParts.indexOf('c');
+            const rawSlug = cIdx !== -1 && pathParts[cIdx + 1]
+                ? pathParts[cIdx + 1]
+                : (pathParts[pathParts.length - 1] || '');
 
-        // Decode URL encoding first (%20 → space), then replace remaining dashes with spaces
-        const decodedSlug = decodeURIComponent(rawSlug);
-        // Convert dashes to spaces for API query (slug is always dash-separated)
-        const keyword = decodedSlug.replace(/-/g, ' ').trim();
-        // Canonical slug always uses dashes (for URL consistency)
-        const canonSlug = decodedSlug.replace(/\s+/g, '-').replace(/%20/g, '-').trim();
+            // Decode URL encoding first (%20 → space), then replace remaining dashes with spaces
+            const decodedSlug = decodeURIComponent(rawSlug);
+            // Convert dashes to spaces for API query (slug is always dash-separated)
+            const keyword = decodedSlug.replace(/-/g, ' ').trim();
+            // Canonical slug always uses dashes (for URL consistency)
+            const canonSlug = decodedSlug.replace(/\s+/g, '-').replace(/%20/g, '-').trim();
 
-        if (!keyword) {
-            window.location.href = '/';
-            return;
-        }
-
-        // ─── Config
-        const API_BASE  = 'https://www.eporner.com/api/v2/video/search/';
-        const PER_PAGE  = 40;
-        const BASE_URL  = 'https://www.lusthub.my.id';
-        const TITLE_CAP = s => s.charAt(0).toUpperCase() + s.slice(1);
-
-        function getSafeImageUrl(value) {
-            try {
-                const url = new URL(value);
-                return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
-            } catch (e) {
-                return '';
-            }
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageFromUrl = parseInt(urlParams.get('page'), 10);
-        let currentPage  = (!isNaN(pageFromUrl) && pageFromUrl > 1) ? pageFromUrl : 1;
-        let totalPages   = 1;
-        let totalCount   = 0;
-        let currentSort  = 'most-popular';
-
-        // ─── Update SEO meta tags
-        function updateSEO(page) {
-            const cap = TITLE_CAP(keyword);
-            const pageStr = page > 1 ? ` — Page ${page}` : '';
-            const title = `${cap} Videos${pageStr} — Free HD Streaming on lusthub.my.id`;
-            const desc  = `Watch the best free ${cap} porn videos in full HD on lusthub.my.id. ${totalCount.toLocaleString()} videos available. Updated daily.`;
-            const canon = `${BASE_URL}/c/${rawSlug}${page > 1 ? '?page=' + page : ''}`;
-
-            document.title = title;
-            document.getElementById('pageTitle').textContent = title;
-            document.getElementById('pageDesc').setAttribute('content', desc);
-            document.getElementById('canonicalTag').setAttribute('href', canon);
-            document.getElementById('ogTitle').setAttribute('content', title);
-            document.getElementById('ogDesc').setAttribute('content', desc);
-            document.getElementById('ogUrl').setAttribute('content', canon);
-            document.getElementById('twitterTitle').setAttribute('content', title);
-            document.getElementById('twitterDesc').setAttribute('content', desc);
-
-            // Hero
-            const heroTitle = document.getElementById('heroTitle');
-            const heroKeyword = document.createElement('span');
-            heroKeyword.id = 'heroKeyword';
-            heroKeyword.textContent = cap;
-            heroTitle.replaceChildren(document.createTextNode('Free '), heroKeyword, document.createTextNode(' Videos'));
-            document.getElementById('heroDesc').textContent =
-                `Browse ${totalCount.toLocaleString()}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
-            document.getElementById('breadcrumbKeyword').textContent = cap;
-
-            // Stats
-            document.getElementById('statTotal').textContent = totalCount.toLocaleString();
-            document.getElementById('statPage').textContent = `${page} / ${totalPages}`;
-            document.getElementById('categoryStats').style.display = '';
-
-            // JSON-LD BreadcrumbList
-            const existing = document.getElementById('jsonLdBreadcrumb');
-            if (existing) existing.remove();
-            const ld = document.createElement('script');
-            ld.id = 'jsonLdBreadcrumb';
-            ld.type = 'application/ld+json';
-            ld.textContent = JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "Home", "item": BASE_URL + "/" },
-                    { "@type": "ListItem", "position": 2, "name": cap + " Videos", "item": BASE_URL + "/c/" + rawSlug }
-                ]
-            });
-            document.head.appendChild(ld);
-
-            // JSON-LD ItemList
-            const existingItem = document.getElementById('jsonLdItemList');
-            if (existingItem) existingItem.remove();
-            if (window._currentVideos && window._currentVideos.length > 0) {
-                const ldItem = document.createElement('script');
-                ldItem.id = 'jsonLdItemList';
-                ldItem.type = 'application/ld+json';
-                ldItem.textContent = JSON.stringify({
-                    "@context": "https://schema.org",
-                    "@type": "ItemList",
-                    "name": cap + " Videos",
-                    "description": desc,
-                    "numberOfItems": window._currentVideos.length,
-                    "itemListElement": window._currentVideos.map(function(v, idx) {
-                        const rawTitle = String(v.title || 'Untitled');
-                        const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
-                        return {
-                            "@type": "ListItem",
-                            "position": idx + 1,
-                            "name": rawTitle,
-                            "url": BASE_URL + "/v/" + encodeURIComponent(v.id) + "-" + slug
-                        };
-                    })
-                });
-                document.head.appendChild(ldItem);
-            }
-        }
-
-        // ─── Format duration: seconds → MM:SS
-        function formatDuration(sec) {
-            if (!sec || sec <= 0) return '';
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return `${m}:${s.toString().padStart(2, '0')}`;
-        }
-
-        // ─── Format date
-        function formatDate(dateStr) {
-            if (!dateStr) return '';
-            try {
-                return new Date(dateStr).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
-            } catch(e) { return ''; }
-        }
-
-        // ─── Render video cards
-        function renderVideos(videos) {
-            window._currentVideos = videos || [];
-            const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '';
-
-            if (!videos || videos.length === 0) {
-                document.getElementById('emptyState').style.display = '';
+            if (!keyword) {
+                window.location.href = '/';
                 return;
             }
-            document.getElementById('emptyState').style.display = 'none';
 
-            videos.forEach(v => {
-                const videoId = String(v.id || '').trim();
-                if (!videoId) return;
+            // ─── Config
+            const API_BASE = 'https://www.eporner.com/api/v2/video/search/';
+            const PER_PAGE = 40;
+            const BASE_URL = 'https://www.lusthub.my.id';
+            const TITLE_CAP = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-                // Build slug from title
-                const rawTitle = String(v.title || '');
-                const displayTitle = rawTitle || 'Untitled';
-                const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
-                const url  = `/v/${encodeURIComponent(videoId)}-${slug || encodeURIComponent(videoId)}`;
-                const thumb = (v.default_thumb && v.default_thumb.src) ? v.default_thumb.src :
-                              (v.thumbs && v.thumbs[0] ? v.thumbs[0].src : '');
-                const dur  = formatDuration(v.length_sec);
-                const date = formatDate(v.added);
-
-                const card = document.createElement('a');
-                card.href  = url;
-                card.className = 'video-card';
-                card.setAttribute('aria-label', displayTitle);
-
-                const thumbWrap = document.createElement('div');
-                thumbWrap.className = 'video-thumb-wrap';
-                const image = document.createElement('img');
-                image.src = getSafeImageUrl(thumb) || '/assets/icons/favicon-32x32.png';
-                image.alt = displayTitle;
-                image.width = 320;
-                image.height = 180;
-                image.decoding = 'async';
-                image.style.aspectRatio = '16/9';
-                image.style.width = '100%';
-                image.style.height = 'auto';
-                image.style.objectFit = 'cover';
-                if (grid.children.length < 2) {
-                    image.setAttribute('fetchpriority', 'high');
-                } else {
-                    image.loading = 'lazy';
+            function getSafeImageUrl(value) {
+                try {
+                    const url = new URL(value);
+                    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
+                } catch (e) {
+                    return '';
                 }
-                image.addEventListener('error', () => {
-                    image.src = '/assets/icons/favicon-32x32.png';
-                }, { once: true });
-                thumbWrap.appendChild(image);
-                if (dur) {
-                    const duration = document.createElement('span');
-                    duration.className = 'video-duration';
-                    duration.textContent = dur;
-                    thumbWrap.appendChild(duration);
-                }
-
-                const body = document.createElement('div');
-                body.className = 'video-card-body';
-                const title = document.createElement('div');
-                title.className = 'video-card-title';
-                title.textContent = displayTitle;
-                body.appendChild(title);
-                if (date) {
-                    const dateLabel = document.createElement('div');
-                    dateLabel.className = 'video-card-meta';
-                    dateLabel.textContent = date;
-                    body.appendChild(dateLabel);
-                }
-
-                card.append(thumbWrap, body);
-                grid.appendChild(card);
-            });
-        }
-
-        // ─── Render pagination
-        function renderPagination(current, total) {
-            const pag = document.getElementById('pagination');
-            pag.innerHTML = '';
-            if (total <= 1) return;
-
-            const maxVisible = 7;
-            let pages = [];
-
-            if (total <= maxVisible) {
-                for (let i = 1; i <= total; i++) pages.push(i);
-            } else {
-                pages = [1];
-                if (current > 3) pages.push('...');
-                for (let i = Math.max(2, current-1); i <= Math.min(total-1, current+1); i++) pages.push(i);
-                if (current < total - 2) pages.push('...');
-                pages.push(total);
             }
 
-            // Prev
-            const prev = document.createElement('a');
-            prev.className = 'page-btn';
-            prev.textContent = '← Prev';
-            if (current > 1) {
-                prev.href = `/c/${rawSlug}?page=${current - 1}`;
-                prev.addEventListener('click', (e) => { e.preventDefault(); loadPage(current - 1); });
-            } else {
-                prev.style.opacity = '0.3';
-                prev.style.pointerEvents = 'none';
-            }
-            pag.appendChild(prev);
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageFromUrl = parseInt(urlParams.get('page'), 10);
+            let currentPage = (!isNaN(pageFromUrl) && pageFromUrl > 1) ? pageFromUrl : 1;
+            let totalPages = 1;
+            let totalCount = 0;
+            let currentSort = 'most-popular';
 
-            pages.forEach(p => {
-                if (p === '...') {
-                    const el = document.createElement('span');
-                    el.style.cssText = 'color:#555;padding:0 5px;line-height:40px';
-                    el.textContent = '…';
-                    pag.appendChild(el);
-                } else {
-                    const btn = document.createElement('a');
-                    btn.className = 'page-btn' + (p === current ? ' active' : '');
-                    btn.textContent = p;
-                    btn.href = `/c/${rawSlug}?page=${p}`;
-                    btn.addEventListener('click', (e) => { e.preventDefault(); loadPage(p); });
-                    pag.appendChild(btn);
-                }
-            });
+            // ─── Update SEO meta tags
+            function updateSEO(page) {
+                const cap = TITLE_CAP(keyword);
+                const pageStr = page > 1 ? ` — Page ${page}` : '';
+                const title = `${cap} Videos${pageStr} — Free HD Streaming on lusthub.my.id`;
+                const desc = `Watch the best free ${cap} porn videos in full HD on lusthub.my.id. ${totalCount.toLocaleString()} videos available. Updated daily.`;
+                const canon = `${BASE_URL}/c/${rawSlug}${page > 1 ? '?page=' + page : ''}`;
 
-            // Next
-            const next = document.createElement('a');
-            next.className = 'page-btn';
-            next.textContent = 'Next →';
-            if (current < total) {
-                next.href = `/c/${rawSlug}?page=${current + 1}`;
-                next.addEventListener('click', (e) => { e.preventDefault(); loadPage(current + 1); });
-            } else {
-                next.style.opacity = '0.3';
-                next.style.pointerEvents = 'none';
-            }
-            pag.appendChild(next);
-        }
+                document.title = title;
+                document.getElementById('pageTitle').textContent = title;
+                document.getElementById('pageDesc').setAttribute('content', desc);
+                document.getElementById('canonicalTag').setAttribute('href', canon);
+                document.getElementById('ogTitle').setAttribute('content', title);
+                document.getElementById('ogDesc').setAttribute('content', desc);
+                document.getElementById('ogUrl').setAttribute('content', canon);
+                document.getElementById('twitterTitle').setAttribute('content', title);
+                document.getElementById('twitterDesc').setAttribute('content', desc);
 
-        // ─── Load a page of videos
-        function loadPage(page) {
-            currentPage = page;
-            try {
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set('page', page);
-                window.history.pushState({ page }, '', newUrl.toString());
-            } catch(e) {}
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+                // Hero
+                const heroTitle = document.getElementById('heroTitle');
+                const heroKeyword = document.createElement('span');
+                heroKeyword.id = 'heroKeyword';
+                heroKeyword.textContent = cap;
+                heroTitle.replaceChildren(document.createTextNode('Free '), heroKeyword, document.createTextNode(' Videos'));
+                document.getElementById('heroDesc').textContent =
+                    `Browse ${totalCount.toLocaleString()}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
+                document.getElementById('breadcrumbKeyword').textContent = cap;
 
-            document.getElementById('videoGrid').innerHTML   = '';
-            document.getElementById('loadingState').style.display = '';
-            document.getElementById('errorState').style.display   = 'none';
-            document.getElementById('emptyState').style.display   = 'none';
-            document.getElementById('pagination').innerHTML  = '';
+                // Stats
+                document.getElementById('statTotal').textContent = totalCount.toLocaleString();
+                document.getElementById('statPage').textContent = `${page} / ${totalPages}`;
+                document.getElementById('categoryStats').style.display = '';
 
-            const url = `${API_BASE}?query=${encodeURIComponent(keyword)}&per_page=${PER_PAGE}&page=${page}&order=${currentSort}&thumbsize=small&format=json`;
-
-            fetch(url)
-                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-                .then(data => {
-                    document.getElementById('loadingState').style.display = 'none';
-
-                    totalPages = Math.min(data.total_pages || 1, 100);
-                    totalCount = data.total_count || 0;
-
-                    updateSEO(page);
-                    renderVideos(data.videos || []);
-                    renderPagination(page, totalPages);
-
-                    // Update URL without reload
-                    const newUrl = `/c/${rawSlug}${page > 1 ? '?page=' + page : ''}`;
-                    window.history.replaceState(null, '', newUrl);
-                })
-                .catch(err => {
-                    document.getElementById('loadingState').style.display = 'none';
-                    document.getElementById('errorState').style.display   = '';
-                    console.error('API Error:', err);
+                // JSON-LD BreadcrumbList
+                const existing = document.getElementById('jsonLdBreadcrumb');
+                if (existing) existing.remove();
+                const ld = document.createElement('script');
+                ld.id = 'jsonLdBreadcrumb';
+                ld.type = 'application/ld+json';
+                ld.textContent = JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": BASE_URL + "/" },
+                        { "@type": "ListItem", "position": 2, "name": cap + " Videos", "item": BASE_URL + "/c/" + rawSlug }
+                    ]
                 });
-        }
+                document.head.appendChild(ld);
 
-        // ─── Sort change handler
-        window.changeSort = function(val) {
-            currentSort = val;
+                // JSON-LD ItemList
+                const existingItem = document.getElementById('jsonLdItemList');
+                if (existingItem) existingItem.remove();
+                if (window._currentVideos && window._currentVideos.length > 0) {
+                    const ldItem = document.createElement('script');
+                    ldItem.id = 'jsonLdItemList';
+                    ldItem.type = 'application/ld+json';
+                    ldItem.textContent = JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "ItemList",
+                        "name": cap + " Videos",
+                        "description": desc,
+                        "numberOfItems": window._currentVideos.length,
+                        "itemListElement": window._currentVideos.map(function (v, idx) {
+                            const rawTitle = String(v.title || 'Untitled');
+                            const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
+                            return {
+                                "@type": "ListItem",
+                                "position": idx + 1,
+                                "name": rawTitle,
+                                "url": BASE_URL + "/v/" + encodeURIComponent(v.id) + "-" + slug
+                            };
+                        })
+                    });
+                    document.head.appendChild(ldItem);
+                }
+            }
+
+            // ─── Format duration: seconds → MM:SS
+            function formatDuration(sec) {
+                if (!sec || sec <= 0) return '';
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            }
+
+            // ─── Format date
+            function formatDate(dateStr) {
+                if (!dateStr) return '';
+                try {
+                    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                } catch (e) { return ''; }
+            }
+
+            // ─── Render video cards
+            function renderVideos(videos) {
+                window._currentVideos = videos || [];
+                const grid = document.getElementById('videoGrid');
+                grid.innerHTML = '';
+
+                if (!videos || videos.length === 0) {
+                    document.getElementById('emptyState').style.display = '';
+                    return;
+                }
+                document.getElementById('emptyState').style.display = 'none';
+
+                videos.forEach(v => {
+                    const videoId = String(v.id || '').trim();
+                    if (!videoId) return;
+
+                    // Build slug from title
+                    const rawTitle = String(v.title || '');
+                    const displayTitle = rawTitle || 'Untitled';
+                    const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
+                    const url = `/v/${encodeURIComponent(videoId)}-${slug || encodeURIComponent(videoId)}`;
+                    const thumb = (v.default_thumb && v.default_thumb.src) ? v.default_thumb.src :
+                        (v.thumbs && v.thumbs[0] ? v.thumbs[0].src : '');
+                    const dur = formatDuration(v.length_sec);
+                    const date = formatDate(v.added);
+
+                    const card = document.createElement('a');
+                    card.href = url;
+                    card.className = 'video-card';
+                    card.setAttribute('aria-label', displayTitle);
+
+                    const thumbWrap = document.createElement('div');
+                    thumbWrap.className = 'video-thumb-wrap';
+                    const image = document.createElement('img');
+                    image.src = getSafeImageUrl(thumb) || '/assets/icons/favicon-32x32.png';
+                    image.alt = displayTitle;
+                    image.width = 320;
+                    image.height = 180;
+                    image.decoding = 'async';
+                    image.style.aspectRatio = '16/9';
+                    image.style.width = '100%';
+                    image.style.height = 'auto';
+                    image.style.objectFit = 'cover';
+                    if (grid.children.length < 2) {
+                        image.setAttribute('fetchpriority', 'high');
+                    } else {
+                        image.loading = 'lazy';
+                    }
+                    image.addEventListener('error', () => {
+                        image.src = '/assets/icons/favicon-32x32.png';
+                    }, { once: true });
+                    thumbWrap.appendChild(image);
+                    if (dur) {
+                        const duration = document.createElement('span');
+                        duration.className = 'video-duration';
+                        duration.textContent = dur;
+                        thumbWrap.appendChild(duration);
+                    }
+
+                    const body = document.createElement('div');
+                    body.className = 'video-card-body';
+                    const title = document.createElement('div');
+                    title.className = 'video-card-title';
+                    title.textContent = displayTitle;
+                    body.appendChild(title);
+                    if (date) {
+                        const dateLabel = document.createElement('div');
+                        dateLabel.className = 'video-card-meta';
+                        dateLabel.textContent = date;
+                        body.appendChild(dateLabel);
+                    }
+
+                    card.append(thumbWrap, body);
+                    grid.appendChild(card);
+                });
+            }
+
+            // ─── Render pagination
+            function renderPagination(current, total) {
+                const pag = document.getElementById('pagination');
+                pag.innerHTML = '';
+                if (total <= 1) return;
+
+                const maxVisible = 7;
+                let pages = [];
+
+                if (total <= maxVisible) {
+                    for (let i = 1; i <= total; i++) pages.push(i);
+                } else {
+                    pages = [1];
+                    if (current > 3) pages.push('...');
+                    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+                    if (current < total - 2) pages.push('...');
+                    pages.push(total);
+                }
+
+                // Prev
+                const prev = document.createElement('a');
+                prev.className = 'page-btn';
+                prev.textContent = '← Prev';
+                if (current > 1) {
+                    prev.href = `/c/${rawSlug}?page=${current - 1}`;
+                    prev.addEventListener('click', (e) => { e.preventDefault(); loadPage(current - 1); });
+                } else {
+                    prev.style.opacity = '0.3';
+                    prev.style.pointerEvents = 'none';
+                }
+                pag.appendChild(prev);
+
+                pages.forEach(p => {
+                    if (p === '...') {
+                        const el = document.createElement('span');
+                        el.style.cssText = 'color:#555;padding:0 5px;line-height:40px';
+                        el.textContent = '…';
+                        pag.appendChild(el);
+                    } else {
+                        const btn = document.createElement('a');
+                        btn.className = 'page-btn' + (p === current ? ' active' : '');
+                        btn.textContent = p;
+                        btn.href = `/c/${rawSlug}?page=${p}`;
+                        btn.addEventListener('click', (e) => { e.preventDefault(); loadPage(p); });
+                        pag.appendChild(btn);
+                    }
+                });
+
+                // Next
+                const next = document.createElement('a');
+                next.className = 'page-btn';
+                next.textContent = 'Next →';
+                if (current < total) {
+                    next.href = `/c/${rawSlug}?page=${current + 1}`;
+                    next.addEventListener('click', (e) => { e.preventDefault(); loadPage(current + 1); });
+                } else {
+                    next.style.opacity = '0.3';
+                    next.style.pointerEvents = 'none';
+                }
+                pag.appendChild(next);
+            }
+
+            // ─── Load a page of videos
+            function loadPage(page) {
+                currentPage = page;
+                try {
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.set('page', page);
+                    window.history.pushState({ page }, '', newUrl.toString());
+                } catch (e) { }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                document.getElementById('videoGrid').innerHTML = '';
+                document.getElementById('loadingState').style.display = '';
+                document.getElementById('errorState').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'none';
+                document.getElementById('pagination').innerHTML = '';
+
+                const url = `${API_BASE}?query=${encodeURIComponent(keyword)}&per_page=${PER_PAGE}&page=${page}&order=${currentSort}&thumbsize=small&format=json`;
+
+                fetch(url)
+                    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                    .then(data => {
+                        document.getElementById('loadingState').style.display = 'none';
+
+                        totalPages = Math.min(data.total_pages || 1, 100);
+                        totalCount = data.total_count || 0;
+
+                        updateSEO(page);
+                        renderVideos(data.videos || []);
+                        renderPagination(page, totalPages);
+
+                        // Update URL without reload
+                        const newUrl = `/c/${rawSlug}${page > 1 ? '?page=' + page : ''}`;
+                        window.history.replaceState(null, '', newUrl);
+                    })
+                    .catch(err => {
+                        document.getElementById('loadingState').style.display = 'none';
+                        document.getElementById('errorState').style.display = '';
+                        console.error('API Error:', err);
+                    });
+            }
+
+            // ─── Sort change handler
+            window.changeSort = function (val) {
+                currentSort = val;
+                loadPage(1);
+            };
+
+            // ─── Init
             loadPage(1);
-        };
-
-        // ─── Init
-        loadPage(1);
-    })();
+        })();
     </script>
 </body>
+
 </html>

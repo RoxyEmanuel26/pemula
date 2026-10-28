@@ -3,6 +3,8 @@ import path from 'node:path';
 import { createBreadcrumbSchema, createItemListSchema } from './schema-helper.js';
 
 let cachedTemplate = null;
+const CATEGORY_CACHE = new Map();
+const CAT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes server-side in-memory cache
 
 function escapeHtml(str) {
   return String(str || '')
@@ -68,25 +70,32 @@ export default async function handler(req, res) {
     cachedTemplate = await readFile(path.join(process.cwd(), 'category.html'), 'utf8');
   }
 
-  // Fetch initial videos for ItemList schema and crawlable initial cards
+  // Fetch initial videos for ItemList schema and crawlable initial cards with in-memory caching
   let categoryVideos = [];
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-    const apiUrl = `https://www.eporner.com/api/v2/video/search/?query=${encodeURIComponent(cleanSlug || 'viral')}&per_page=12&format=json`;
-    const apiRes = await fetch(apiUrl, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'lusthub-bot/1.0 (+https://www.lusthub.my.id/robots.txt)' }
-    });
-    clearTimeout(timeout);
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      if (json && Array.isArray(json.videos)) {
-        categoryVideos = json.videos;
+  const cacheKey = cleanSlug || 'viral';
+  const cachedEntry = CATEGORY_CACHE.get(cacheKey);
+  if (cachedEntry && (Date.now() - cachedEntry.ts < CAT_CACHE_TTL_MS)) {
+    categoryVideos = cachedEntry.videos;
+  } else {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
+      const apiUrl = `https://www.eporner.com/api/v2/video/search/?query=${encodeURIComponent(cacheKey)}&per_page=12&format=json`;
+      const apiRes = await fetch(apiUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'lusthub-bot/1.0 (+https://www.lusthub.my.id/robots.txt)' }
+      });
+      clearTimeout(timeout);
+      if (apiRes.ok) {
+        const json = await apiRes.json();
+        if (json && Array.isArray(json.videos)) {
+          categoryVideos = json.videos;
+          CATEGORY_CACHE.set(cacheKey, { videos: json.videos, ts: Date.now() });
+        }
       }
+    } catch (err) {
+      // API timeout or network error - continue with empty items
     }
-  } catch (err) {
-    // API timeout or network error - continue with empty items
   }
 
   const breadcrumbSchema = createBreadcrumbSchema([
@@ -159,18 +168,19 @@ export default async function handler(req, res) {
     `<span id="breadcrumbKeyword">${escapeHtml(categoryName)}</span>`
   );
 
-  // Pre-render initial video cards in HTML for crawlers
+  // Pre-render initial video cards with LCP optimization (fetchpriority="high" on top 2 cards)
   if (categoryVideos.length > 0) {
-    const cardsHtml = categoryVideos.map(v => {
+    const cardsHtml = categoryVideos.map((v, idx) => {
       const title = escapeHtml(decodeMojibake(v.title || 'Untitled'));
       const vSlug = slugify(v.title);
       const href = `/v/${v.id}-${vSlug}`;
       const thumb = v.default_thumb?.src || (v.thumbs && v.thumbs[0]?.src) || '/assets/icons/favicon-32x32.png';
       const dur = v.length_min || '';
+      const priorityAttr = idx < 2 ? 'fetchpriority="high"' : 'loading="lazy"';
       return `
         <a href="${href}" class="video-card" aria-label="${title}">
           <div class="video-thumb-wrap">
-            <img src="${escapeHtml(thumb)}" alt="${title}" loading="lazy" width="320" height="180" decoding="async" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
+            <img src="${escapeHtml(thumb)}" alt="${title}" ${priorityAttr} width="320" height="180" decoding="async" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
             ${dur ? `<span class="video-duration">${escapeHtml(dur)}</span>` : ''}
           </div>
           <div class="video-card-body">

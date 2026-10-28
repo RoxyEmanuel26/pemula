@@ -4,6 +4,8 @@ import { createVideoObjectSchema, createBreadcrumbSchema } from './schema-helper
 
 let cachedTemplate = null;
 let cached404 = null;
+const VIDEO_CACHE = new Map();
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server-side in-memory cache
 
 function escapeHtml(str) {
   return String(str || '')
@@ -108,30 +110,38 @@ export default async function handler(req, res) {
 
   let videoData = null;
   let videoNotFound = false;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-    const apiUrl = `https://www.eporner.com/api/v2/video/id/?id=${encodeURIComponent(videoId)}&thumbsize=big&format=json`;
-    const apiRes = await fetch(apiUrl, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'lusthub-bot/1.0 (+https://www.lusthub.my.id/robots.txt)' }
-    });
-    clearTimeout(timeout);
 
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      if (json && !json.error && !Array.isArray(json) && json.id) {
-        videoData = json;
-      } else if (Array.isArray(json) && json.length === 0) {
-        videoNotFound = true;
-      } else if (json && json.error) {
+  // Check in-memory cache
+  const cachedEntry = VIDEO_CACHE.get(videoId);
+  if (cachedEntry && (Date.now() - cachedEntry.ts < CACHE_TTL_MS)) {
+    videoData = cachedEntry.data;
+  } else {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
+      const apiUrl = `https://www.eporner.com/api/v2/video/id/?id=${encodeURIComponent(videoId)}&thumbsize=big&format=json`;
+      const apiRes = await fetch(apiUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'lusthub-bot/1.0 (+https://www.lusthub.my.id/robots.txt)' }
+      });
+      clearTimeout(timeout);
+
+      if (apiRes.ok) {
+        const json = await apiRes.json();
+        if (json && !json.error && !Array.isArray(json) && json.id) {
+          videoData = json;
+          VIDEO_CACHE.set(videoId, { data: json, ts: Date.now() });
+        } else if (Array.isArray(json) && json.length === 0) {
+          videoNotFound = true;
+        } else if (json && json.error) {
+          videoNotFound = true;
+        }
+      } else if (apiRes.status === 404) {
         videoNotFound = true;
       }
-    } else if (apiRes.status === 404) {
-      videoNotFound = true;
+    } catch (err) {
+      // API timeout or network error - will fall back to slug-derived metadata if video was not confirmed non-existent
     }
-  } catch (err) {
-    // API timeout or network error - will fall back to slug-derived metadata if video was not confirmed non-existent
   }
 
   // If video explicitly does not exist or was removed
@@ -204,7 +214,7 @@ export default async function handler(req, res) {
 
   const schemaScript = `<script id="jsonLdScript" type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;
 
-  // Visible initial Breadcrumbs, H1 heading, and summary for crawlers
+  // Visible initial Breadcrumbs, Video Facade, H1 heading, and summary for crawlers and instant LCP
   const visibleSeoMarkup = `
     <div class="video-initial-seo" style="margin-bottom: 20px;">
         <nav class="video-breadcrumbs" aria-label="Breadcrumb" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin-bottom: 16px; color: #888;">
@@ -214,6 +224,13 @@ export default async function handler(req, res) {
             <span style="color: #555;">›</span>
             <span style="color: #bbb;">${escapeHtml(decodedTitle)}</span>
         </nav>
+        <div class="video-wrapper" style="position: relative; margin-bottom: 25px;">
+            <div class="video-facade" role="button" aria-label="Play ${escapeHtml(decodedTitle)}">
+                <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(decodedTitle)}" class="video-facade-img" fetchpriority="high" width="1280" height="720">
+                <button class="video-facade-play" aria-label="Play Video">▶</button>
+                ${videoData?.length_min ? `<span class="video-facade-duration">⏱ ${escapeHtml(videoData.length_min)}</span>` : ''}
+            </div>
+        </div>
         <h1 class="video-title" style="font-size: 1.6rem; color: #fff; margin-bottom: 10px; font-weight: 700;">${escapeHtml(decodedTitle)}</h1>
         <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">${escapeHtml(metaDesc)}</p>
     </div>
@@ -244,7 +261,7 @@ export default async function handler(req, res) {
   // Inject Structured Data Schema Script
   html = html.replace(/<script\s+id=["']jsonLdScript["'][^>]*>[\s\S]*?<\/script>/i, schemaScript);
 
-  // Inject visible H1 right before loader inside main container
+  // Inject visible H1 and Facade right before loader inside main container
   html = html.replace(
     /(<main[^>]*id=["']videoContainer["'][^>]*>)/i,
     `$1\n${visibleSeoMarkup}`

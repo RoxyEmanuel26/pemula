@@ -494,7 +494,6 @@
                 const image = document.createElement('img');
                 image.src = getSafeImageUrl(thumb) || '/assets/icons/favicon-32x32.png';
                 image.alt = displayTitle;
-                image.loading = 'lazy';
                 image.width = 320;
                 image.height = 180;
                 image.decoding = 'async';
@@ -502,6 +501,11 @@
                 image.style.width = '100%';
                 image.style.height = 'auto';
                 image.style.objectFit = 'cover';
+                if (grid.children.length < 2) {
+                    image.setAttribute('fetchpriority', 'high');
+                } else {
+                    image.loading = 'lazy';
+                }
                 image.addEventListener('error', () => {
                     image.src = '/assets/icons/favicon-32x32.png';
                 }, { once: true });

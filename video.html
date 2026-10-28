@@ -17,6 +17,8 @@
     <!-- Manifest -->
 
     <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 
     <!-- MAIN CSS -->
@@ -39,6 +41,12 @@
     
     <style>
         .video-page-container { max-width: 1200px; margin: 80px auto 40px; padding: 0 20px; }
+        .video-facade { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .video-facade-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.85); transition: filter 0.3s ease, transform 0.3s ease; }
+        .video-facade:hover .video-facade-img { filter: brightness(0.95); transform: scale(1.02); }
+        .video-facade-play { position: relative; z-index: 2; width: 76px; height: 76px; border-radius: 50%; background: rgba(232, 168, 0, 0.95); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; font-size: 28px; box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 20px rgba(232, 168, 0, 0.5); transition: transform 0.25s ease, background 0.25s ease; padding-left: 5px; }
+        .video-facade:hover .video-facade-play { transform: scale(1.12); background: #ffc107; }
+        .video-facade-duration { position: absolute; bottom: 14px; right: 14px; z-index: 2; background: rgba(0, 0, 0, 0.75); color: #fff; font-size: 0.85rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.15); }
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .video-details { margin-top: 25px; background: #1a1a1a; padding: 25px; border-radius: 12px; border: 1px solid #333; }
@@ -264,29 +272,68 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'video-wrapper';
                 wrapper.style.position = 'relative';
-                
-                const iframe = document.createElement('iframe');
-                iframe.src = video.embed;
-                iframe.setAttribute('frameborder', '0');
-                iframe.setAttribute('allowfullscreen', 'true');
-                iframe.setAttribute('scrolling', 'no');
-                
-                wrapper.appendChild(iframe);
 
-                // Smartlink Intercept Overlay (1st Click)
-                const overlay = document.createElement('div');
-                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;cursor:pointer;';
-                overlay.addEventListener('click', function(e) {
-                    // Open Adsterra Direct Link
+                // High-performance Facade Pattern (LCP optimization)
+                const facade = document.createElement('div');
+                facade.className = 'video-facade';
+                facade.setAttribute('role', 'button');
+                facade.setAttribute('tabindex', '0');
+                facade.setAttribute('aria-label', 'Play ' + (video.title || 'video'));
+
+                const posterUrl = (video.default_thumb && video.default_thumb.src && isSafeUrl(video.default_thumb.src)) 
+                    ? video.default_thumb.src 
+                    : ((video.thumbs && video.thumbs[0]?.src) || '/assets/icons/og-image.png');
+
+                const poster = document.createElement('img');
+                poster.className = 'video-facade-img';
+                poster.src = posterUrl;
+                poster.alt = video.title || 'Video Thumbnail';
+                poster.width = 1280;
+                poster.height = 720;
+                poster.setAttribute('fetchpriority', 'high');
+                facade.appendChild(poster);
+
+                const playBtn = document.createElement('button');
+                playBtn.className = 'video-facade-play';
+                playBtn.setAttribute('aria-label', 'Play Video');
+                playBtn.innerHTML = '▶';
+                facade.appendChild(playBtn);
+
+                if (video.length_min) {
+                    const durPill = document.createElement('span');
+                    durPill.className = 'video-facade-duration';
+                    durPill.textContent = '⏱ ' + video.length_min;
+                    facade.appendChild(durPill);
+                }
+
+                function activatePlayer() {
+                    // Open Adsterra Direct Link on first user interaction (preserving 100% ad monetization)
                     window.open('https://glamournakedemployee.com/p4psjp2idd?key=e1c2395d627677a3e5c9287579e151ea', '_blank');
-                    // Remove overlay so user can interact with the video normally
-                    overlay.remove();
                     if (window.trackEvent) {
                         window.trackEvent('direct_link_clicked', { video_id: video.id });
                     }
-                });
-                wrapper.appendChild(overlay);
 
+                    // Swap facade with actual live iframe with autoplay
+                    wrapper.innerHTML = '';
+                    const iframe = document.createElement('iframe');
+                    const autoplayUrl = video.embed.includes('?') ? (video.embed + '&autoplay=1') : (video.embed + '?autoplay=1');
+                    iframe.src = autoplayUrl;
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    iframe.setAttribute('allow', 'autoplay; fullscreen');
+                    iframe.setAttribute('scrolling', 'no');
+                    wrapper.appendChild(iframe);
+                }
+
+                facade.addEventListener('click', activatePlayer);
+                facade.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        activatePlayer();
+                    }
+                });
+
+                wrapper.appendChild(facade);
                 container.appendChild(wrapper);
             } else {
                 console.error("Embed URL issue. API Data:", video);

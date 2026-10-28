@@ -272,9 +272,9 @@
     <!-- Main Content -->
     <div class="category-container">
         <div class="category-toolbar">
-            <div class="category-breadcrumb">
+            <nav class="category-breadcrumb" aria-label="Breadcrumb">
                 <a href="/">Home</a> &rsaquo; <span id="breadcrumbKeyword">Category</span>
-            </div>
+            </nav>
             <select class="sort-select" id="sortSelect" onchange="changeSort(this.value)">
                 <option value="most-popular">Most Popular</option>
                 <option value="top-rated">Top Rated</option>
@@ -467,6 +467,13 @@
                 image.src = getSafeImageUrl(thumb) || '/assets/icons/favicon-32x32.png';
                 image.alt = displayTitle;
                 image.loading = 'lazy';
+                image.width = 320;
+                image.height = 180;
+                image.decoding = 'async';
+                image.style.aspectRatio = '16/9';
+                image.style.width = '100%';
+                image.style.height = 'auto';
+                image.style.objectFit = 'cover';
                 image.addEventListener('error', () => {
                     image.src = '/assets/icons/favicon-32x32.png';
                 }, { once: true });

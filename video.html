@@ -74,7 +74,7 @@
 <body>
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo">kumpul<span>enak</span></a>
+            <a href="/" class="logo">lusthub<span>.my.id</span></a>
         </div>
     </header>
 
@@ -223,11 +223,42 @@
             const container = document.getElementById('videoContainer');
             container.innerHTML = ''; // Clear loader
 
-            const backBtn = document.createElement('a');
-            backBtn.href = '/';
-            backBtn.className = 'back-btn';
-            backBtn.textContent = '← Back to Home';
-            container.appendChild(backBtn);
+            // Visible Breadcrumb Trail (Home > Category > Video)
+            const breadcrumbNav = document.createElement('nav');
+            breadcrumbNav.className = 'video-breadcrumbs';
+            breadcrumbNav.setAttribute('aria-label', 'Breadcrumb');
+            breadcrumbNav.style.cssText = 'display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin-bottom: 18px; color: #888;';
+
+            const homeA = document.createElement('a');
+            homeA.href = '/';
+            homeA.style.cssText = 'color: #e8a800; text-decoration: none; font-weight: 500;';
+            homeA.textContent = '🏠 Home';
+
+            const sep1 = document.createElement('span');
+            sep1.textContent = '›';
+            sep1.style.color = '#555';
+
+            let primaryCat = 'viral';
+            if (video.keywords) {
+                const kList = typeof video.keywords === 'string' ? video.keywords.split(',').map(k => k.trim()).filter(Boolean) : video.keywords;
+                if (kList.length > 0) primaryCat = kList[0];
+            }
+            const catA = document.createElement('a');
+            catA.href = '/c/' + encodeURIComponent(primaryCat.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+            catA.style.cssText = 'color: #e8a800; text-decoration: none; font-weight: 500; text-transform: capitalize;';
+            catA.textContent = primaryCat;
+
+            const sep2 = document.createElement('span');
+            sep2.textContent = '›';
+            sep2.style.color = '#555';
+
+            const curSpan = document.createElement('span');
+            curSpan.style.color = '#bbb';
+            const shortTitle = (video.title || 'Video').length > 40 ? (video.title || 'Video').slice(0, 37) + '...' : (video.title || 'Video');
+            curSpan.textContent = shortTitle;
+
+            breadcrumbNav.append(homeA, sep1, catA, sep2, curSpan);
+            container.appendChild(breadcrumbNav);
 
             if (video.embed && isSafeUrl(video.embed)) {
                 const wrapper = document.createElement('div');
@@ -434,15 +465,21 @@
         }
 
         function updateSEO(video) {
-            // Trim title if too long (max 60 chars) to prevent search result titles from exceeding 70-80 chars
-            let rawTitle = video.title || 'Untitled';
+            // Dynamic SEO Title strictly 50-60 characters
+            let rawTitle = (video.title || 'Untitled').trim();
+            const brand = ' | lusthub.my.id';
             let displayTitle = rawTitle;
-            if (displayTitle.length > 60) {
-                displayTitle = displayTitle.substring(0, 57) + '...';
+            if (displayTitle.length + brand.length > 60) {
+                displayTitle = displayTitle.slice(0, 60 - brand.length - 3).trim() + '...';
+            } else if (displayTitle.length + brand.length < 50 && primaryCat) {
+                const ext = ' - ' + primaryCat + ' HD';
+                if (displayTitle.length + ext.length + brand.length <= 60) {
+                    displayTitle += ext;
+                }
             }
-            document.title = displayTitle + ' — lusthub.my.id';
-            
-            const desc = 'Watch ' + video.title + ' for free in full HD quality on lusthub.my.id.';
+            document.title = displayTitle + brand;
+
+            const desc = 'Watch ' + rawTitle + ' in full HD on lusthub.my.id. Stream trending adult videos and viral leaks with fast loading and zero signups required.';
             document.querySelector('meta[name="description"]').setAttribute('content', desc);
             
             // Open Graph
@@ -513,6 +550,11 @@
                 }
             };
 
+            let catSlug = 'viral';
+            if (video.keywords) {
+                const kList = typeof video.keywords === 'string' ? video.keywords.split(',').map(k => k.trim()).filter(Boolean) : video.keywords;
+                if (kList.length > 0) catSlug = kList[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            }
             const breadcrumbSchema = {
                 "@type": "BreadcrumbList",
                 "itemListElement": [
@@ -525,6 +567,12 @@
                     {
                         "@type": "ListItem",
                         "position": 2,
+                        "name": (catSlug.charAt(0).toUpperCase() + catSlug.slice(1)) + " Videos",
+                        "item": window.location.origin + "/c/" + catSlug
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
                         "name": video.title || "Video",
                         "item": window.location.origin + '/v/' + video.id + '-' + cleanSlug
                     }
@@ -587,7 +635,10 @@
                         image.src = isSafeUrl(thumb) ? thumb : '/assets/icons/favicon-32x32.png';
                         image.alt = title;
                         image.loading = 'lazy';
-                        image.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 8px;';
+                        image.width = 320;
+                        image.height = 180;
+                        image.decoding = 'async';
+                        image.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 8px; aspect-ratio: 16/9;';
                         image.addEventListener('load', () => image.classList.add('loaded'), { once: true });
                         image.addEventListener('error', () => {
                             image.classList.add('loaded');

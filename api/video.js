@@ -36,6 +36,53 @@ function slugify(text) {
     .replace(/-+$/g, '');
 }
 
+function buildVideoTitle(title, tag) {
+  const brand = ' | lusthub.my.id'; // 16 chars
+  const maxTitlePart = 60 - brand.length; // 44 chars
+  let t = title.trim();
+
+  // If title alone is already too long (> 44 chars)
+  if (t.length > maxTitlePart) {
+    let truncated = t.slice(0, maxTitlePart - 3).trim();
+    const lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > 25) truncated = truncated.slice(0, lastSpace);
+    return `${truncated}...${brand}`;
+  }
+
+  const tagName = tag ? (tag.charAt(0).toUpperCase() + tag.slice(1)) : 'Viral';
+  
+  // Try pattern A: "Watch {title} - {tag} HD Video | lusthub.my.id" (target 50-60 chars)
+  let candidate = `Watch ${t} - ${tagName} HD Video${brand}`;
+  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
+
+  // Try pattern B: "{title} - {tag} Viral Video HD | lusthub.my.id"
+  candidate = `${t} - ${tagName} Viral Video HD${brand}`;
+  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
+
+  // Try pattern C: "{title} - {tag} HD Video Streaming | lusthub.my.id"
+  candidate = `${t} - ${tagName} HD Video Streaming${brand}`;
+  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
+
+  // Try pattern D: "{title} - {tag} HD Video${brand}"
+  candidate = `${t} - ${tagName} HD Video${brand}`;
+  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
+
+  // Try pattern E: "Watch {title} in Full HD Free Online | lusthub.my.id"
+  candidate = `Watch ${t} in Full HD Free Online${brand}`;
+  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
+
+  // Try pattern F: "{title} - {tag} HD${brand}"
+  candidate = `${t} - ${tagName} HD${brand}`;
+  if (candidate.length >= 45 && candidate.length <= 60) return candidate;
+
+  // Fallback:
+  candidate = `${t}${brand}`;
+  if (candidate.length > 60) {
+    return `${t.slice(0, maxTitlePart - 3)}...${brand}`;
+  }
+  return candidate;
+}
+
 export default async function handler(req, res) {
   const { slug } = req.query;
   const rawSlug = String(slug || '').trim();
@@ -97,18 +144,35 @@ export default async function handler(req, res) {
     return res.end(cached404);
   }
 
-  // Derive title and metadata (from API or graceful fallback from slug)
+  // Primary category / tag from API keywords
+  let primaryTag = '';
+  if (videoData?.keywords) {
+    const kList = typeof videoData.keywords === 'string'
+      ? videoData.keywords.split(',').map(s => s.trim()).filter(Boolean)
+      : (Array.isArray(videoData.keywords) ? videoData.keywords : []);
+    if (kList.length > 0) primaryTag = kList[0];
+  }
+
+  // Derive title strictly 50-60 chars
   const rawTitle = videoData?.title || rawSlug.split('-').slice(1).join(' ') || `Video ${videoId}`;
   const decodedTitle = decodeMojibake(rawTitle) || 'Premium Adult Video';
-  const cleanTitle = decodedTitle.length > 60 ? decodedTitle.slice(0, 57) + '...' : decodedTitle;
-  const pageTitle = `${cleanTitle} — lusthub.my.id`;
+  const pageTitle = buildVideoTitle(decodedTitle, primaryTag);
 
   const videoSlug = videoData?.title ? slugify(videoData.title) : rawSlug.split('-').slice(1).join('-') || videoId;
   const canonicalUrl = `${domain}/v/${videoId}-${videoSlug}`;
 
-  // Description
-  const baseDesc = `Watch ${decodedTitle} for free in full HD on lusthub.my.id. Fast mobile-first adult streaming with no signup.`;
-  const metaDesc = baseDesc.length > 155 ? baseDesc.slice(0, 152) + '...' : baseDesc;
+  // Description strictly 120-155 characters
+  const catSlug = primaryTag ? slugify(primaryTag) : 'viral';
+  const catName = primaryTag ? (primaryTag.charAt(0).toUpperCase() + primaryTag.slice(1)) : 'Viral';
+  let metaDesc = `Watch ${decodedTitle} in full HD on lusthub.my.id. Stream trending adult videos and viral leaks with fast loading and zero signups required.`;
+  if (metaDesc.length > 155) {
+    metaDesc = `Watch ${decodedTitle} on lusthub.my.id. Stream free viral adult videos in full HD with fast loading and no signup.`;
+    if (metaDesc.length > 155) {
+      metaDesc = metaDesc.slice(0, 152).trim() + '...';
+    }
+  } else if (metaDesc.length < 120) {
+    metaDesc = `Watch ${decodedTitle} in high definition full HD on lusthub.my.id. Stream free trending adult videos and leaks with fast loading and zero signups required.`;
+  }
 
   // Thumbnail
   const thumbUrl = videoData?.default_thumb?.src || 
@@ -164,7 +228,13 @@ export default async function handler(req, res) {
           {
             '@type': 'ListItem',
             'position': 2,
-            'name': cleanTitle,
+            'name': `${catName} Videos`,
+            'item': `${domain}/c/${catSlug}`
+          },
+          {
+            '@type': 'ListItem',
+            'position': 3,
+            'name': decodedTitle,
             'item': canonicalUrl
           }
         ]
@@ -174,9 +244,16 @@ export default async function handler(req, res) {
 
   const schemaScript = `<script id="jsonLdScript" type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;
 
-  // Visible initial H1 heading and summary for crawlers
+  // Visible initial Breadcrumbs, H1 heading, and summary for crawlers
   const visibleSeoMarkup = `
     <div class="video-initial-seo" style="margin-bottom: 20px;">
+        <nav class="video-breadcrumbs" aria-label="Breadcrumb" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin-bottom: 16px; color: #888;">
+            <a href="/" style="color: #e8a800; text-decoration: none;">🏠 Home</a>
+            <span style="color: #555;">›</span>
+            <a href="/c/${catSlug}" style="color: #e8a800; text-decoration: none;">${escapeHtml(catName)}</a>
+            <span style="color: #555;">›</span>
+            <span style="color: #bbb;">${escapeHtml(decodedTitle)}</span>
+        </nav>
         <h1 class="video-title" style="font-size: 1.6rem; color: #fff; margin-bottom: 10px; font-weight: 700;">${escapeHtml(decodedTitle)}</h1>
         <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">${escapeHtml(metaDesc)}</p>
     </div>
@@ -192,13 +269,15 @@ export default async function handler(req, res) {
   html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'].*?["']>/i, `<link rel="canonical" href="${canonicalUrl}">`);
 
   // Replace Open Graph Tags
-  html = html.replace(/<meta\s+id=["']ogTitle["'][^>]*>/i, `<meta id="ogTitle" property="og:title" content="${escapeHtml(cleanTitle)}">`);
+  html = html.replace(/<meta\s+id=["']ogTitle["'][^>]*>/i, `<meta id="ogTitle" property="og:title" content="${escapeHtml(pageTitle)}">`);
   html = html.replace(/<meta\s+id=["']ogDesc["'][^>]*>/i, `<meta id="ogDesc" property="og:description" content="${escapeHtml(metaDesc)}">`);
   html = html.replace(/<meta\s+id=["']ogImage["'][^>]*>/i, `<meta id="ogImage" property="og:image" content="${thumbUrl}">`);
-  html = html.replace(/<meta\s+id=["']ogUrl["'][^>]*>/i, `<meta id="ogUrl" property="og:url" content="${canonicalUrl}">`);
+  
+  const ogVideoExtra = embedUrl ? `\n    <meta property="og:video" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:url" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:secure_url" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:type" content="text/html">\n    <meta property="og:video:width" content="1280">\n    <meta property="og:video:height" content="720">` : '';
+  html = html.replace(/<meta\s+id=["']ogUrl["'][^>]*>/i, `<meta id="ogUrl" property="og:url" content="${canonicalUrl}">${ogVideoExtra}`);
 
   // Replace Twitter Card Tags
-  html = html.replace(/<meta\s+id=["']twitterTitle["'][^>]*>/i, `<meta id="twitterTitle" name="twitter:title" content="${escapeHtml(cleanTitle)}">`);
+  html = html.replace(/<meta\s+id=["']twitterTitle["'][^>]*>/i, `<meta id="twitterTitle" name="twitter:title" content="${escapeHtml(pageTitle)}">`);
   html = html.replace(/<meta\s+id=["']twitterDesc["'][^>]*>/i, `<meta id="twitterDesc" name="twitter:description" content="${escapeHtml(metaDesc)}">`);
   html = html.replace(/<meta\s+id=["']twitterImage["'][^>]*>/i, `<meta id="twitterImage" name="twitter:image" content="${thumbUrl}">`);
 

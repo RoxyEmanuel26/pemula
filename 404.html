@@ -2,24 +2,6 @@
 <html lang="en" data-theme="dark">
 
 <head>
-    <!-- SPA Router: intercept /c/ and /v/ paths before showing 404 -->
-    <script>
-    (function() {
-        var path = window.location.pathname;
-        // If path is /c/slug → load category page with slug preserved
-        if (/^\/c\//.test(path)) {
-            sessionStorage.setItem('spa_redirect', path);
-            window.location.replace('/category');
-            throw new Error('Redirecting to category');
-        }
-        // If path is /v/slug → load video page with slug preserved
-        if (/^\/v\//.test(path)) {
-            sessionStorage.setItem('spa_redirect', path);
-            window.location.replace('/video');
-            throw new Error('Redirecting to video');
-        }
-    })();
-    </script>
 
     <meta name="google-site-verification" content="KqJ4iydBmKwnynnKXW38T5qhAnGlFD5UEpwvauUYnxs" />
     <meta charset="UTF-8">
@@ -146,7 +128,7 @@
             max-width: 600px;
         }
 
-        .error-categories h3 {
+        .error-categories h2, .error-categories h3 {
             font-size: 14px;
             font-weight: 600;
             color: var(--text-muted);
@@ -229,16 +211,16 @@
             </div>
 
             <div class="error-categories">
-                <h3>Popular Categories</h3>
+                <h2 class="error-categories-heading">Popular Categories</h2>
                 <div class="error-tags">
-                    <a href="/?q=indo">🇮🇩 Indo</a>
-                    <a href="/?q=viral">🔥 Viral</a>
-                    <a href="/?q=japanese">🎌 Japan</a>
-                    <a href="/?q=korean">🇰🇷 Korea</a>
-                    <a href="/?q=amateur">🏠 Amateur</a>
-                    <a href="/?q=hijab">📸 Hijab</a>
-                    <a href="/?q=student">🎓 Student</a>
-                    <a href="/?q=couple">💑 Couple</a>
+                    <a href="/c/indonesia">🇮🇩 Indonesia</a>
+                    <a href="/c/viral">🔥 Viral</a>
+                    <a href="/c/japanese">🎌 Japanese</a>
+                    <a href="/c/korean">🇰🇷 Korean</a>
+                    <a href="/c/amateur">🏠 Amateur</a>
+                    <a href="/c/hijab">📸 Hijab</a>
+                    <a href="/c/student">🎓 Student</a>
+                    <a href="/c/couple">💑 Couple</a>
                 </div>
             </div>
         </div>

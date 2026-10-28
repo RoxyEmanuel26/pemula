@@ -36,8 +36,8 @@ export default async function handler(req, res) {
 
   const domain = 'https://www.lusthub.my.id';
   const categoryName = formatCategoryName(cleanSlug || 'viral');
-  const pageTitle = `Watch ${categoryName} Viral Videos in HD — lusthub.my.id`;
-  const metaDesc = `Browse the best free ${categoryName} adult videos and trending leaks in full HD on lusthub.my.id. Fast streaming with no signups.`;
+  const pageTitle = `Watch ${categoryName} Viral Videos in Full HD | lusthub.my.id`;
+  const metaDesc = `Browse the best free ${categoryName} adult videos and trending leaks in full HD on lusthub.my.id. Fast mobile streaming with zero signups.`;
   const canonicalUrl = `${domain}/c/${cleanSlug || 'viral'}`;
 
   if (!cachedTemplate) {
@@ -104,6 +104,12 @@ export default async function handler(req, res) {
   html = html.replace(
     /<p\s+id=["']heroDesc["'][^>]*>[\s\S]*?<\/p>/i,
     `<p id="heroDesc">${escapeHtml(metaDesc)}</p>`
+  );
+
+  // Replace Breadcrumb keyword
+  html = html.replace(
+    /<span\s+id=["']breadcrumbKeyword["'][^>]*>[\s\S]*?<\/span>/i,
+    `<span id="breadcrumbKeyword">${escapeHtml(categoryName)}</span>`
   );
 
   // Append Structured Data Schema before </head>

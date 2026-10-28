@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { createVideoObjectSchema, createBreadcrumbSchema } from './schema-helper.js';
 
 let cachedTemplate = null;
 let cached404 = null;
@@ -179,67 +180,26 @@ export default async function handler(req, res) {
     (videoData?.thumbs && videoData.thumbs[0]?.src) || 
     `${domain}/assets/icons/og-image.png`;
 
-  // ISO Dates & Duration
-  let uploadISO = '2026-01-01T00:00:00Z';
-  if (videoData?.added) {
-    const formatted = videoData.added.replace(' ', 'T');
-    uploadISO = formatted.includes('Z') || formatted.includes('+') ? formatted : `${formatted}Z`;
-  }
-  const durationSec = Number(videoData?.length_sec || 0);
-  const durationISO = `PT${durationSec}S`;
   const embedUrl = videoData?.embed || `https://www.eporner.com/embed/${videoId}/`;
-  const viewCount = Number(videoData?.views || 0);
 
-  // Structured Data Schema
+  // Structured Data Schema using reusable schema-helper
+  const videoObject = createVideoObjectSchema(videoData || {}, {
+    canonicalUrl,
+    title: decodedTitle,
+    description: metaDesc,
+    thumbnailUrl: thumbUrl,
+    embedUrl
+  });
+
+  const breadcrumbList = createBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: `${catName} Videos`, url: `/c/${catSlug}` },
+    { name: decodedTitle, url: canonicalUrl }
+  ]);
+
   const graphSchema = {
     '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'VideoObject',
-        'name': decodedTitle,
-        'description': metaDesc,
-        'thumbnailUrl': [thumbUrl],
-        'uploadDate': uploadISO,
-        'duration': durationISO,
-        'embedUrl': embedUrl,
-        'interactionStatistic': {
-          '@type': 'InteractionCounter',
-          'interactionType': { '@type': 'WatchAction' },
-          'userInteractionCount': viewCount
-        },
-        'publisher': {
-          '@type': 'Organization',
-          'name': 'lusthub.my.id',
-          'logo': {
-            '@type': 'ImageObject',
-            'url': `${domain}/assets/icons/android-chrome-512x512.png`
-          }
-        }
-      },
-      {
-        '@type': 'BreadcrumbList',
-        'itemListElement': [
-          {
-            '@type': 'ListItem',
-            'position': 1,
-            'name': 'Home',
-            'item': `${domain}/`
-          },
-          {
-            '@type': 'ListItem',
-            'position': 2,
-            'name': `${catName} Videos`,
-            'item': `${domain}/c/${catSlug}`
-          },
-          {
-            '@type': 'ListItem',
-            'position': 3,
-            'name': decodedTitle,
-            'item': canonicalUrl
-          }
-        ]
-      }
-    ]
+    '@graph': [videoObject, breadcrumbList]
   };
 
   const schemaScript = `<script id="jsonLdScript" type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;

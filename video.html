@@ -524,22 +524,16 @@
 
             const thumbUrl = (video.default_thumb && video.default_thumb.src && isSafeUrl(video.default_thumb.src)) ? video.default_thumb.src : window.location.origin + '/assets/icons/og-image.png';
 
-            // JSON-LD Schema
+            // JSON-LD Schema (Google Rich Results compliant)
+            const videoCanonicalUrl = window.location.origin + '/v/' + video.id + '-' + cleanSlug;
             const videoSchema = {
                 "@type": "VideoObject",
                 "name": video.title,
                 "description": desc,
                 "thumbnailUrl": [thumbUrl],
                 "uploadDate": uploadISO,
-                "duration": video.length_sec ? "PT" + video.length_sec + "S" : "PT0S",
-                "contentUrl": window.location.href,
-                "embedUrl": video.embed || window.location.href,
+                "contentUrl": videoCanonicalUrl,
                 "isFamilyFriendly": false,
-                "interactionStatistic": {
-                    "@type": "InteractionCounter",
-                    "interactionType": { "@type": "WatchAction" },
-                    "userInteractionCount": parseInt(String(video.views || "0").replace(/\D/g, '')) || 0
-                },
                 "publisher": {
                     "@type": "Organization",
                     "name": "lusthub.my.id",
@@ -549,6 +543,22 @@
                     }
                 }
             };
+
+            const durationSec = Number(video.length_sec || 0);
+            if (durationSec > 0) {
+                videoSchema.duration = "PT" + durationSec + "S";
+            }
+            if (video.embed && isSafeUrl(video.embed)) {
+                videoSchema.embedUrl = video.embed;
+            }
+            const viewCount = parseInt(String(video.views || "0").replace(/\D/g, '')) || 0;
+            if (viewCount > 0) {
+                videoSchema.interactionStatistic = {
+                    "@type": "InteractionCounter",
+                    "interactionType": { "@type": "WatchAction" },
+                    "userInteractionCount": viewCount
+                };
+            }
 
             let catSlug = 'viral';
             if (video.keywords) {

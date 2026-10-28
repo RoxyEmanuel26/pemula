@@ -413,6 +413,33 @@
                 ]
             });
             document.head.appendChild(ld);
+
+            // JSON-LD ItemList
+            const existingItem = document.getElementById('jsonLdItemList');
+            if (existingItem) existingItem.remove();
+            if (window._currentVideos && window._currentVideos.length > 0) {
+                const ldItem = document.createElement('script');
+                ldItem.id = 'jsonLdItemList';
+                ldItem.type = 'application/ld+json';
+                ldItem.textContent = JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "ItemList",
+                    "name": cap + " Videos",
+                    "description": desc,
+                    "numberOfItems": window._currentVideos.length,
+                    "itemListElement": window._currentVideos.map(function(v, idx) {
+                        const rawTitle = String(v.title || 'Untitled');
+                        const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
+                        return {
+                            "@type": "ListItem",
+                            "position": idx + 1,
+                            "name": rawTitle,
+                            "url": BASE_URL + "/v/" + encodeURIComponent(v.id) + "-" + slug
+                        };
+                    })
+                });
+                document.head.appendChild(ldItem);
+            }
         }
 
         // ─── Format duration: seconds → MM:SS
@@ -433,6 +460,7 @@
 
         // ─── Render video cards
         function renderVideos(videos) {
+            window._currentVideos = videos || [];
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = '';
 

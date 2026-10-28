@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { createBreadcrumbSchema, createItemListSchema } from './schema-helper.js';
 
 let cachedTemplate = null;
 
@@ -10,6 +11,29 @@ function escapeHtml(str) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+function decodeMojibake(text) {
+  const str = String(text || '').trim();
+  if (!/[ÃÂâ]/.test(str)) return str;
+  try {
+    const bytes = Buffer.from(str, 'latin1');
+    const decoded = bytes.toString('utf8');
+    return decoded.includes('\uFFFD') ? str : decoded;
+  } catch {
+    return str;
+  }
+}
+
+function slugify(text) {
+  return decodeMojibake(text)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+    .replace(/-+$/g, '');
 }
 
 function formatCategoryName(slug) {
@@ -44,24 +68,31 @@ export default async function handler(req, res) {
     cachedTemplate = await readFile(path.join(process.cwd(), 'category.html'), 'utf8');
   }
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    'itemListElement': [
-      {
-        '@type': 'ListItem',
-        'position': 1,
-        'name': 'Home',
-        'item': `${domain}/`
-      },
-      {
-        '@type': 'ListItem',
-        'position': 2,
-        'name': `${categoryName} Videos`,
-        'item': canonicalUrl
+  // Fetch initial videos for ItemList schema and crawlable initial cards
+  let categoryVideos = [];
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const apiUrl = `https://www.eporner.com/api/v2/video/search/?query=${encodeURIComponent(cleanSlug || 'viral')}&per_page=12&format=json`;
+    const apiRes = await fetch(apiUrl, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'lusthub-bot/1.0 (+https://www.lusthub.my.id/robots.txt)' }
+    });
+    clearTimeout(timeout);
+    if (apiRes.ok) {
+      const json = await apiRes.json();
+      if (json && Array.isArray(json.videos)) {
+        categoryVideos = json.videos;
       }
-    ]
-  };
+    }
+  } catch (err) {
+    // API timeout or network error - continue with empty items
+  }
+
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: `${categoryName} Videos`, url: `/c/${cleanSlug || 'viral'}` }
+  ]);
 
   const collectionSchema = {
     '@context': 'https://schema.org',
@@ -71,9 +102,25 @@ export default async function handler(req, res) {
     'url': canonicalUrl
   };
 
+  const schemaItems = categoryVideos.map(v => {
+    const title = decodeMojibake(v.title || 'Untitled');
+    const vSlug = slugify(title);
+    return {
+      title,
+      url: `/v/${v.id}-${vSlug}`
+    };
+  });
+
+  const itemListSchema = createItemListSchema(
+    `${categoryName} Videos`,
+    metaDesc,
+    schemaItems
+  );
+
   const schemaScript = `
     <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>
     <script type="application/ld+json">${JSON.stringify(collectionSchema)}</script>
+    <script type="application/ld+json">${JSON.stringify(itemListSchema)}</script>
   `;
 
   let html = cachedTemplate;
@@ -111,6 +158,33 @@ export default async function handler(req, res) {
     /<span\s+id=["']breadcrumbKeyword["'][^>]*>[\s\S]*?<\/span>/i,
     `<span id="breadcrumbKeyword">${escapeHtml(categoryName)}</span>`
   );
+
+  // Pre-render initial video cards in HTML for crawlers
+  if (categoryVideos.length > 0) {
+    const cardsHtml = categoryVideos.map(v => {
+      const title = escapeHtml(decodeMojibake(v.title || 'Untitled'));
+      const vSlug = slugify(v.title);
+      const href = `/v/${v.id}-${vSlug}`;
+      const thumb = v.default_thumb?.src || (v.thumbs && v.thumbs[0]?.src) || '/assets/icons/favicon-32x32.png';
+      const dur = v.length_min || '';
+      return `
+        <a href="${href}" class="video-card" aria-label="${title}">
+          <div class="video-thumb-wrap">
+            <img src="${escapeHtml(thumb)}" alt="${title}" loading="lazy" width="320" height="180" decoding="async" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
+            ${dur ? `<span class="video-duration">${escapeHtml(dur)}</span>` : ''}
+          </div>
+          <div class="video-card-body">
+            <div class="video-card-title">${title}</div>
+            <div class="video-card-meta">${v.added ? escapeHtml(v.added.slice(0, 10)) : ''}</div>
+          </div>
+        </a>`;
+    }).join('\n');
+
+    html = html.replace(
+      /(<div[^>]*id=["']videoGrid["'][^>]*>)/i,
+      `$1\n${cardsHtml}`
+    );
+  }
 
   // Append Structured Data Schema before </head>
   html = html.replace('</head>', `${schemaScript}\n</head>`);

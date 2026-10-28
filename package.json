@@ -1,0 +1,12 @@
+{
+  "name": "lusthub",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/validate-sitemaps.mjs",
+    "test": "node scripts/validate-sitemaps.mjs",
+    "sitemap": "node scripts/generate-sitemaps.mjs",
+    "validate:sitemaps": "node scripts/validate-sitemaps.mjs"
+  }
+}

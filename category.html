@@ -358,7 +358,9 @@
             }
         }
 
-        let currentPage  = 1;
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageFromUrl = parseInt(urlParams.get('page'), 10);
+        let currentPage  = (!isNaN(pageFromUrl) && pageFromUrl > 1) ? pageFromUrl : 1;
         let totalPages   = 1;
         let totalCount   = 0;
         let currentSort  = 'most-popular';
@@ -514,11 +516,16 @@
             }
 
             // Prev
-            const prev = document.createElement('button');
+            const prev = document.createElement('a');
             prev.className = 'page-btn';
             prev.textContent = '← Prev';
-            prev.disabled = current === 1;
-            prev.onclick = () => loadPage(current - 1);
+            if (current > 1) {
+                prev.href = `/c/${rawSlug}?page=${current - 1}`;
+                prev.addEventListener('click', (e) => { e.preventDefault(); loadPage(current - 1); });
+            } else {
+                prev.style.opacity = '0.3';
+                prev.style.pointerEvents = 'none';
+            }
             pag.appendChild(prev);
 
             pages.forEach(p => {
@@ -528,26 +535,37 @@
                     el.textContent = '…';
                     pag.appendChild(el);
                 } else {
-                    const btn = document.createElement('button');
+                    const btn = document.createElement('a');
                     btn.className = 'page-btn' + (p === current ? ' active' : '');
                     btn.textContent = p;
-                    btn.onclick = () => loadPage(p);
+                    btn.href = `/c/${rawSlug}?page=${p}`;
+                    btn.addEventListener('click', (e) => { e.preventDefault(); loadPage(p); });
                     pag.appendChild(btn);
                 }
             });
 
             // Next
-            const next = document.createElement('button');
+            const next = document.createElement('a');
             next.className = 'page-btn';
             next.textContent = 'Next →';
-            next.disabled = current === total;
-            next.onclick = () => loadPage(current + 1);
+            if (current < total) {
+                next.href = `/c/${rawSlug}?page=${current + 1}`;
+                next.addEventListener('click', (e) => { e.preventDefault(); loadPage(current + 1); });
+            } else {
+                next.style.opacity = '0.3';
+                next.style.pointerEvents = 'none';
+            }
             pag.appendChild(next);
         }
 
         // ─── Load a page of videos
         function loadPage(page) {
             currentPage = page;
+            try {
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('page', page);
+                window.history.pushState({ page }, '', newUrl.toString());
+            } catch(e) {}
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
             document.getElementById('videoGrid').innerHTML   = '';

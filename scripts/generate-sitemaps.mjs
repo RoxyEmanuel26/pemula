@@ -179,8 +179,9 @@ function buildPagesSitemap() {
 }
 
 function buildCategoriesSitemap() {
+  const catLastMod = gitLastModified('category.html') || new Date().toISOString().slice(0, 10);
   return urlset(CURATED_CATEGORIES.map((category) =>
-    `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${category}`)}</loc>\n  </url>`));
+    `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n  </url>`));
 }
 
 function buildVideoSitemap(videos) {
@@ -244,7 +245,7 @@ async function main() {
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_pages.xml'), buildPagesSitemap())) changed.push('sitemap_pages.xml');
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap())) changed.push('sitemap_categories.xml');
   indexEntries.push({ file: 'sitemap_pages.xml', lastmod: gitLastModified('index.html') });
-  indexEntries.push({ file: 'sitemap_categories.xml', lastmod: null });
+  indexEntries.push({ file: 'sitemap_categories.xml', lastmod: gitLastModified('category.html') || new Date().toISOString().slice(0, 10) });
 
   const keep = new Set();
   for (let offset = 0, index = 1; offset < videos.length; offset += CHUNK_SIZE, index += 1) {

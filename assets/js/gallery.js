@@ -677,11 +677,11 @@ function renderKategoriGrid() {
 
     var html = '<div class="kategori-grid">';
     KATEGORI_LIST.forEach(function (kat) {
-        html += '<button class="kategori-card-btn" onclick="loadFromKategori(\'' +
-            escapeHTML(kat.query) + '\',\'' + escapeHTML(kat.order) + '\')">' +
+        var slug = (kat.query === 'all' ? 'viral' : kat.query).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        html += '<a href="/c/' + encodeURIComponent(slug) + '" class="kategori-card-btn" style="text-decoration:none;">' +
             '<span class="kategori-icon">' + kat.icon + '</span>' +
             '<span class="kategori-label">' + escapeHTML(kat.label) + '</span>' +
-            '</button>';
+            '</a>';
     });
     html += '</div>';
     grid.innerHTML = html;
@@ -1026,10 +1026,15 @@ function renderPagination(totalPages) {
     var frag = document.createDocumentFragment();
 
     function createBtn(text, pageNum, className = 'page-btn') {
-        var btn = document.createElement('button');
+        var btn = document.createElement('a');
         btn.className = className;
         btn.textContent = text;
-        btn.addEventListener('click', function() { goToPage(pageNum); });
+        var q = currentQuery ? '&q=' + encodeURIComponent(currentQuery) : '';
+        btn.href = '?page=' + pageNum + q;
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToPage(pageNum);
+        });
         return btn;
     }
 
@@ -1078,6 +1083,12 @@ function goToPage(page) {
     if (page < 1 || page === currentPage || isLoading) return;
     currentPage = page;
     kLog('Navigating to page:', page);
+
+    try {
+        var newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('page', page);
+        window.history.pushState({ page: page }, '', newUrl.toString());
+    } catch (e) {}
 
     // Scroll ke atas content
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2148,6 +2159,22 @@ window.addEventListener('resize', function () {
         isSearchActive = true;
         var searchInput = document.getElementById('searchInput');
         if (searchInput) searchInput.value = currentQuery;
+    }
+
+    // Parse URL search params: ?page= and ?q=
+    var urlParams = new URLSearchParams(window.location.search);
+    var pageFromUrl = parseInt(urlParams.get('page'), 10);
+    if (!isNaN(pageFromUrl) && pageFromUrl > 1) {
+        currentPage = pageFromUrl;
+    }
+    var qFromUrl = urlParams.get('q');
+    if (qFromUrl) {
+        currentQuery = qFromUrl.trim();
+        isSearchActive = true;
+        var sInput = document.getElementById('searchInput');
+        if (sInput) sInput.value = currentQuery;
+        var robotsMeta = document.querySelector('meta[name="robots"]');
+        if (robotsMeta) robotsMeta.setAttribute('content', 'noindex, follow');
     }
 
     // Setup event delegation for card grid

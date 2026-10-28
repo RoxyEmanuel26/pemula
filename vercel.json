@@ -2,9 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/*.js": {
+      "includeFiles": "{video.html,category.html,404.html}"
+    }
+  },
   "rewrites": [
-    { "source": "/v/:slug*", "destination": "/video" },
-    { "source": "/c/:slug*", "destination": "/category" }
+    { "source": "/v/:slug*", "destination": "/api/video?slug=:slug*" },
+    { "source": "/c/:slug*", "destination": "/api/category?slug=:slug*" }
   ],
   "headers": [
     {

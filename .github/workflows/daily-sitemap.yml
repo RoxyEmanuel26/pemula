@@ -2,8 +2,8 @@ name: Daily SEO sitemap refresh
 
 on:
   schedule:
-    - cron: "17 3 * * *"
-      timezone: "Asia/Jakarta"
+    # 11:00 UTC = 18:00 WIB (Jam 6 sore Waktu Indonesia Barat)
+    - cron: "0 11 * * *"
   workflow_dispatch:
 
 permissions:

@@ -34,6 +34,7 @@ jobs:
       - name: Enrich priority videos with Gemini AI (Phase 5 Pipeline)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
           GEMINI_BATCH_SIZE: 5
         run: node scripts/seo-enrich.mjs --limit 50
 

@@ -23,7 +23,7 @@ const QUOTA_PATH = path.join(ROOT, 'data', 'enrich-quota-state.json');
 
 // Environment Configuration (Default: 80% of 1500 RPD = 1200)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '1200', 10);
 const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10), 1), 10);
 const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4000', 10);

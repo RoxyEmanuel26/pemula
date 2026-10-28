@@ -28,23 +28,32 @@ jobs:
         with:
           node-version: 20
 
-      - name: Generate rolling video sitemaps
+      - name: Fetch latest videos and refresh catalog state
         run: node scripts/generate-sitemaps.mjs
+
+      - name: Enrich priority videos with Gemini AI (Phase 5 Pipeline)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_BATCH_SIZE: 5
+        run: node scripts/seo-enrich.mjs --limit 50
+
+      - name: Regenerate video sitemaps with newly enriched videos (Phase 5D Gate)
+        run: node scripts/generate-sitemaps.mjs --offline
 
       - name: Validate sitemap limits and required video fields
         run: node scripts/validate-sitemaps.mjs
 
-      - name: Commit only meaningful sitemap changes
+      - name: Commit only meaningful sitemap & enrichment changes
         shell: bash
         run: |
-          if git diff --quiet -- sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json; then
-            echo "No new or removed videos; skipping commit and Vercel deployment."
+          if git diff --quiet -- sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json; then
+            echo "No new changes; skipping commit and Vercel deployment."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json
-          git commit -m "chore(seo): refresh daily video sitemap"
+          git add -A sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json
+          git commit -m "chore(seo): refresh daily video sitemap & enriched metadata"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"

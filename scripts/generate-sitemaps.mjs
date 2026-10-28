@@ -247,9 +247,27 @@ async function main() {
   indexEntries.push({ file: 'sitemap_pages.xml', lastmod: gitLastModified('index.html') });
   indexEntries.push({ file: 'sitemap_categories.xml', lastmod: gitLastModified('category.html') || new Date().toISOString().slice(0, 10) });
 
+  // Filter for video sitemaps based on Phase 5D Quality Gate:
+  // Only enriched videos (which have index, follow) enter the sitemap.
+  // Un-enriched thin pages have noindex and must not be in the sitemap to avoid GSC warnings.
+  let enrichedIds = new Set();
+  try {
+    const rawEnriched = await readFile(path.join(ROOT, 'data', 'enriched-videos.json'), 'utf8');
+    const enrichedJson = JSON.parse(rawEnriched);
+    if (enrichedJson.videos) {
+      for (const [id, v] of Object.entries(enrichedJson.videos)) {
+        if (v.status === 'enriched') enrichedIds.add(id);
+      }
+    }
+  } catch {}
+
+  const sitemapVideos = enrichedIds.size > 0
+    ? videos.filter((v) => enrichedIds.has(v.id))
+    : videos;
+
   const keep = new Set();
-  for (let offset = 0, index = 1; offset < videos.length; offset += CHUNK_SIZE, index += 1) {
-    const chunk = videos.slice(offset, offset + CHUNK_SIZE);
+  for (let offset = 0, index = 1; offset < sitemapVideos.length; offset += CHUNK_SIZE, index += 1) {
+    const chunk = sitemapVideos.slice(offset, offset + CHUNK_SIZE);
     const file = `sitemap_videos_${String(index).padStart(3, '0')}.xml`;
     keep.add(file);
     if (await writeIfChanged(path.join(SITEMAP_DIR, file), buildVideoSitemap(chunk))) changed.push(file);

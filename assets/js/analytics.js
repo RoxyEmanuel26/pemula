@@ -132,7 +132,7 @@
             }
 
             // 4. Track Ad Clicks (fallbacks or ad slots)
-            var adLink = target.closest('.ad-space, .player-ad-slot, .banner-img, a[href*="glamournakedemployee.com"], a[href*="ezgif-com-animated-gif-maker"]');
+            var adLink = target.closest('.ad-space, .player-ad-slot, .banner-img, a[href*="glamournakedemployee.com"], a[href*="apiguinee.org"], a[href*="biomanos.org"], a[href*="benchform.org"], a[href*="ezgif-com-animated-gif-maker"]');
             if (adLink) {
                 window.trackEvent('ad_clicked', {
                     ad_container_id: adLink.id || adLink.className || 'unknown-ad-slot',

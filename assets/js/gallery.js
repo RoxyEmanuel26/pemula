@@ -1306,7 +1306,7 @@ function openPlayerModal(card) {
     views.textContent = '👁 ' + (card.views || '0');
     date.textContent = '📅 ' + (card.date || '----');
     var randomLinks = [
-        "https://glamournakedemployee.com/p4psjp2idd?key=e1c2395d627677a3e5c9287579e151ea"
+        "https://apiguinee.org/4/e1c2395d627677a3e5c9287579e151ea"
     ];
     openTab.href = randomLinks[Math.floor(Math.random() * randomLinks.length)];
 
@@ -1876,7 +1876,7 @@ function enhancedOpenPlayerModal(card) {
     views.textContent = '👁 ' + (card.views || '0');
     date.textContent = '📅 ' + (card.date || '----');
     var randomLinks = [
-        "https://glamournakedemployee.com/p4psjp2idd?key=e1c2395d627677a3e5c9287579e151ea"
+        "https://apiguinee.org/4/e1c2395d627677a3e5c9287579e151ea"
     ];
     openTab.href = randomLinks[Math.floor(Math.random() * randomLinks.length)];
 

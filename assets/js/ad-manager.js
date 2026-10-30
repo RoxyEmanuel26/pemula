@@ -21,20 +21,18 @@
         // Adsterra Banners (Responsive: Desktop vs Mobile)
         // PAUSED PER USER REQUEST: Keeping only Smartlink, Social Bar, and Popunder
         banners: {
-            /*
             'adBannerHeader': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'adBannerContent': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 },
             'adBannerIngrid': isMobile ? { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdTop': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdBottom': isMobile ? { key: 'b4098414038eec40a67a510f705d522d', w: 320, h: 50 } : { key: 'a22a095a961b0e9bf7dca3a14c69934c', w: 728, h: 90 },
             'playerAdSide': { key: '7b1a83c331bba9ffca5578fa5f7e56c7', w: 300, h: 250 }
-            */
         },
 
         // External Scripts
         scripts: {
-            popunder: ['https://glamournakedemployee.com/c4/71/78/c47178ac0d23a0bd87322accefde9fc7.js'],
-            socialbar: ['https://glamournakedemployee.com/88/d7/20/88d720634f18389c613c9ccab28cea5f.js'],
+            popunder: ['https://benchform.org/1/c47178ac0d23a0bd87322accefde9fc7'],
+            socialbar: ['https://biomanos.org/14/88d720634f18389c613c9ccab28cea5f'],
             monetag: 'https://al5sm.com/tag.min.js'
         },
 
@@ -66,7 +64,19 @@
     // ==========================================
 
     function loadAdsterraDeferred(containerId, key, width, height) {
-        // Paused
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+        container.style.cssText = 'display:flex; justify-content:center; align-items:center; min-height:' + height + 'px; width:100%; overflow:hidden;';
+
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width:' + width + 'px; height:' + height + 'px; max-width:100%; border:none; overflow:hidden; display:block;';
+        iframe.src = '/ad-wrapper.html?key=' + encodeURIComponent(key) + '&width=' + width + '&height=' + height + '&format=iframe';
+        iframe.title = 'Advertisement';
+        iframe.loading = 'lazy';
+        container.appendChild(iframe);
+        kLog('Loaded banner ' + key + ' (' + width + 'x' + height + ') in #' + containerId);
     }
 
     function injectCustomBanner() {

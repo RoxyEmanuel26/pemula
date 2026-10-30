@@ -36,7 +36,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
           GEMINI_BATCH_SIZE: 5
-        run: node scripts/seo-enrich.mjs --limit 50
+        run: node scripts/seo-enrich.mjs --limit 100
 
       - name: Regenerate video sitemaps with newly enriched videos (Phase 5D Gate)
         run: node scripts/generate-sitemaps.mjs --offline

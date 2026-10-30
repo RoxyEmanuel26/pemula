@@ -139,10 +139,52 @@ export default async function handler(req, res) {
     schemaItems
   );
 
+  // Load Unique Editorial & FAQ Hub Content
+  const descriptions = await getCategoryDescriptions();
+  const editorial = descriptions[cleanSlug] || {
+    title: `Explore Free ${categoryName} Videos & Leaks`,
+    paragraphs: [
+      `Welcome to our curated collection of ${categoryName} adult videos and trending leaks on lusthub.my.id. Browse through top-rated streaming clips, fresh community uploads, and verified releases updated daily in full HD resolution.`,
+      `Enjoy uninterrupted mobile and desktop streaming with zero registration requirements and fast cloud delivery. Use the sorting menu to explore trending videos by popularity, rating, or release date.`
+    ]
+  };
+
+  let faqSchemaScript = '';
+  let faqHtml = '';
+  if (Array.isArray(editorial.faq) && editorial.faq.length > 0) {
+    const faqSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': editorial.faq.map(item => ({
+        '@type': 'Question',
+        'name': item.q,
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': item.a
+        }
+      }))
+    };
+    faqSchemaScript = `\n    <script type="application/ld+json">${JSON.stringify(faqSchema)}</script>`;
+
+    const faqItemsHtml = editorial.faq.map(item => `
+        <div class="faq-item">
+            <h3 class="faq-question">${escapeHtml(item.q)}</h3>
+            <p class="faq-answer">${escapeHtml(item.a)}</p>
+        </div>`).join('');
+
+    faqHtml = `
+    <section class="category-faq-section" id="categoryFaq">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-list">
+${faqItemsHtml}
+        </div>
+    </section>`;
+  }
+
   const schemaScript = `
     <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>
     <script type="application/ld+json">${JSON.stringify(collectionSchema)}</script>
-    <script type="application/ld+json">${JSON.stringify(itemListSchema)}</script>
+    <script type="application/ld+json">${JSON.stringify(itemListSchema)}</script>${faqSchemaScript}
   `;
 
   let html = cachedTemplate;
@@ -181,16 +223,7 @@ export default async function handler(req, res) {
     `<span id="breadcrumbKeyword">${escapeHtml(categoryName)}</span>`
   );
 
-  // Inject Unique Editorial Hub Content (2-3 paragraphs)
-  const descriptions = await getCategoryDescriptions();
-  const editorial = descriptions[cleanSlug] || {
-    title: `Explore Free ${categoryName} Videos & Leaks`,
-    paragraphs: [
-      `Welcome to our curated collection of ${categoryName} adult videos and trending leaks on lusthub.my.id. Browse through top-rated streaming clips, fresh community uploads, and verified releases updated daily in full HD resolution.`,
-      `Enjoy uninterrupted mobile and desktop streaming with zero registration requirements and fast cloud delivery. Use the sorting menu to explore trending videos by popularity, rating, or release date.`
-    ]
-  };
-
+  // Inject Unique Editorial Hub Content
   const editorialHtml = `
     <section class="category-editorial" id="categoryEditorial">
         <h2>${escapeHtml(editorial.title)}</h2>
@@ -201,6 +234,14 @@ export default async function handler(req, res) {
     /<section\s+class=["']category-editorial["']\s+id=["']categoryEditorial["'][^>]*>[\s\S]*?<\/section>/i,
     editorialHtml
   );
+
+  // Inject Category FAQ if available
+  if (faqHtml) {
+    html = html.replace(
+      /<section\s+class=["']category-faq-section["']\s+id=["']categoryFaq["'][^>]*>[\s\S]*?<\/section>/i,
+      faqHtml
+    );
+  }
 
   // Pre-render initial video cards with LCP optimization (fetchpriority="high" on top 2 cards)
   if (categoryVideos.length > 0) {

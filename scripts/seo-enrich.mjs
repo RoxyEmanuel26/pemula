@@ -346,6 +346,9 @@ async function main() {
         if (validation.valid) {
           db.videos[orig.id] = {
             video_id: orig.id,
+            title: orig.title || item.seo_title,
+            slug: orig.slug || (orig.title ? orig.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : orig.id),
+            thumbnail: orig.thumbnail || '',
             source_hash: hash,
             seo_title: item.seo_title,
             meta_description: item.meta_description,

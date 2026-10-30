@@ -896,6 +896,11 @@
 
         async function fetchSimilarVideos(video) {
             try {
+                const grid = document.getElementById('similarVideoGrid');
+                if (grid && grid.children.length > 0) {
+                    document.getElementById('similarVideosSection').style.display = 'block';
+                    return;
+                }
                 let query = 'indonesia';
                 if (video.keywords) {
                     const tagArray = typeof video.keywords === 'string' ? video.keywords.split(',').map(t => t.trim()) : video.keywords;

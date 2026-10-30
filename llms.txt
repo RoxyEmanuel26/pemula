@@ -1,26 +1,37 @@
 # lusthub.my.id
 
-> Platform galeri video viral dan streaming dewasa (18+) premium yang cepat, bersih, dan dioptimalkan untuk perangkat mobile.
+> Premium 18+ NSFW streaming gallery and viral video platform optimized for instant mobile playback without app downloads or mandatory accounts.
 
-## Info & Links
-- [Homepage](https://www.lusthub.my.id/)
-- [How to Download](https://www.lusthub.my.id/howto)
-- [About Us](https://www.lusthub.my.id/about)
-- [Contact](https://www.lusthub.my.id/contact)
-- [DMCA Takedown Policy](https://www.lusthub.my.id/dmca)
+## Overview
+lusthub.my.id provides fast, high-definition streaming of trending adult videos, viral leaks, and curated international categories. The platform uses serverless pre-rendering and global CDN caching to achieve sub-second page loads.
 
-## Platform Overview
-lusthub.my.id is a free, ad-supported adult video aggregator and streaming gallery. It specializes in trending viral adult content, Japanese Adult Video (JAV), amateur videos, and social media trends, streamed in high-definition (HD) quality. The platform features instant hover-to-play video previews and is highly optimized for mobile devices.
+## Sitemap & Technical Endpoints
+- Master Sitemap Index: https://www.lusthub.my.id/sitemap_index.xml
+- Category Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_categories.xml
+- Video Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_videos_001.xml
+- Static Pages Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_pages.xml
+- Robots Policy: https://www.lusthub.my.id/robots.txt
 
-## Content Categories & Search Queries
-The platform aggregates and catalogs content across several major tags:
-- **Indonesian Viral**: Amateur and trending local adult content.
-- **Japanese (JAV)**: Uncensored and censored Japanese adult videos.
-- **Amateur & Homemade**: Homemade videos and amateur couple content.
-- **Asian & East Asian**: Korean, Chinese, and Southeast Asian adult videos.
-- **Other popular tags**: Hijab, student leaks, massage, outdoor, hotel, hotel tapes, and couple videos.
+## Curated Video Categories
+- [Amateur](https://www.lusthub.my.id/c/amateur): Genuine homemade adult videos, real couples, and intimate amateur recordings.
+- [Asian](https://www.lusthub.my.id/c/asian): Premium Asian adult models, East Asian studio productions, and trending leaks.
+- [Celebrity](https://www.lusthub.my.id/c/celebrity): High-profile celebrity video leaks, lookalikes, and media scandals.
+- [Couple](https://www.lusthub.my.id/c/couple): Real couples sharing authentic bedroom intimacy and romantic encounters.
+- [Dance](https://www.lusthub.my.id/c/dance): Sensual adult dancing, twerk performances, and rhythmic video leaks.
+- [Hijab](https://www.lusthub.my.id/c/hijab): Trending hijab adult videos and viral regional aesthetic content.
+- [Homemade](https://www.lusthub.my.id/c/homemade): Self-recorded private bedroom videos and candid amateur tapes.
+- [Indonesia](https://www.lusthub.my.id/c/indonesia): Trending Indonesian adult video leaks and regional viral content.
+- [Japanese](https://www.lusthub.my.id/c/japanese): Full HD Japanese adult videos (JAV) with fast streaming.
+- [Korean](https://www.lusthub.my.id/c/korean): Korean adult cam streaming, models, and viral social media leaks.
+- [Live Cam](https://www.lusthub.my.id/c/live-cam): Recorded live webcam model shows and interactive adult streams.
+- [Mature](https://www.lusthub.my.id/c/mature): Experienced mature adult performers, MILFs, and sophisticated adult video.
+- [Outdoor](https://www.lusthub.my.id/c/outdoor): Public, nature, beach, and exhibitionist adult video encounters.
+- [Student](https://www.lusthub.my.id/c/student): College and university adult video leaks and campus lifestyle themes.
+- [Viral](https://www.lusthub.my.id/c/viral): Top trending adult leaks and high-velocity viral social videos.
 
-## Features
-- **Instant Video Previews**: Muted MP4 video previews load automatically when hovering over video cards (desktop) or cycling thumbnails (mobile).
-- **Fast CDN Streaming**: Assets and dynamic pages are cached globally using Cloudflare Pages to ensure fast page load times and optimal Core Web Vitals.
-- **Telegram Integration**: Connected to a dedicated updates channel (t.me/missav_jav_english) for instant notifications.
+## Trust & Legal
+- [About Us](https://www.lusthub.my.id/about): Platform overview, mission, and technical standards.
+- [DMCA & Copyright](https://www.lusthub.my.id/dmca): DMCA compliance notice and immediate takedown procedure.
+- [Privacy Policy](https://www.lusthub.my.id/privacy): User data handling, cookie policy, and privacy guarantees.
+- [Terms of Service](https://www.lusthub.my.id/terms): Age restriction (18+), acceptable use, and terms.
+- [Contact Support](https://www.lusthub.my.id/contact): Direct administration contact and inquiries.

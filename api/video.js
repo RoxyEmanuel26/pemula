@@ -349,6 +349,61 @@ export default async function handler(req, res) {
     `$1\n${visibleSeoMarkup}`
   );
 
+  // Inject SSR Similar Videos Mesh (PageRank mesh across enriched videos)
+  let similarCardsHtml = '';
+  if (enrichedDb?.videos) {
+    const allEnriched = Object.values(enrichedDb.videos).filter(
+      v => v.video_id !== videoId && v.status === 'enriched' && v.title && v.slug
+    );
+
+    const currentTags = [
+      catSlug,
+      ...(enrichedData?.tags || []),
+      ...(videoData?.keywords ? (typeof videoData.keywords === 'string' ? videoData.keywords.split(',') : videoData.keywords) : [])
+    ].map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
+
+    const scored = allEnriched.map(v => {
+      let score = 0;
+      if (Array.isArray(v.tags)) {
+        for (const t of v.tags) {
+          if (currentTags.includes(String(t).toLowerCase())) score++;
+        }
+      }
+      return { video: v, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    const relatedList = scored.slice(0, 8).map(s => s.video);
+
+    if (relatedList.length > 0) {
+      similarCardsHtml = relatedList.map(v => {
+        const title = escapeHtml(decodeMojibake(v.title || 'Untitled'));
+        const href = `/v/${v.video_id}-${v.slug}`;
+        const thumb = v.thumbnail || '/assets/icons/favicon-32x32.png';
+        return `
+        <a href="${href}" class="card" style="text-decoration: none;" aria-label="${title}">
+          <div class="card-img-wrapper">
+            <img src="${escapeHtml(thumb)}" alt="${title}" class="card-img" loading="lazy" width="320" height="180" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
+          </div>
+          <div class="card-body">
+            <div class="card-title">${title}</div>
+          </div>
+        </a>`;
+      }).join('\n');
+    }
+  }
+
+  if (similarCardsHtml) {
+    html = html.replace(
+      'id="similarVideosSection" style="margin-top: 40px; display: none;"',
+      'id="similarVideosSection" style="margin-top: 40px; display: block;"'
+    );
+    html = html.replace(
+      /(<div[^>]*id=["']similarVideoGrid["'][^>]*>)/i,
+      `$1\\n${similarCardsHtml}`
+    );
+  }
+
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=2592000, stale-while-revalidate=86400');

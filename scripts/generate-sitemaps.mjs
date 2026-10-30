@@ -70,6 +70,11 @@ function normalizeDate(value) {
   return Number.isNaN(date.valueOf()) ? null : date.toISOString();
 }
 
+function normalizeUrl(value) {
+  if (!value || typeof value !== 'string') return '';
+  return value.trim().replace(/(https?:\/\/)|(\/)+/g, (m, proto) => proto || '/');
+}
+
 function validHttpUrl(value) {
   try {
     const url = new URL(value);
@@ -80,8 +85,8 @@ function validHttpUrl(value) {
 function normalizeVideo(video) {
   const id = String(video?.id || '').trim();
   const title = decodeMojibake(video?.title) || (id ? `Video ${id}` : '');
-  const thumbnail = validHttpUrl(video?.thumbnail || video?.default_thumb?.src || video?.thumbs?.[0]?.src);
-  const player = validHttpUrl(video?.player || video?.embed || (id ? `https://www.eporner.com/embed/${id}/` : ''));
+  const thumbnail = normalizeUrl(validHttpUrl(video?.thumbnail || video?.default_thumb?.src || video?.thumbs?.[0]?.src));
+  const player = normalizeUrl(validHttpUrl(video?.player || video?.embed || (id ? `https://www.eporner.com/embed/${id}/` : '')));
   const published = normalizeDate(video?.published || video?.added);
   if (!id || !title || !thumbnail || !player || !published) return null;
   const duration = Number.parseInt(video?.duration || video?.length_sec || '0', 10);

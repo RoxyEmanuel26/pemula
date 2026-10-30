@@ -5,6 +5,17 @@
 
 export const BASE_URL = 'https://www.lusthub.my.id';
 
+/**
+ * Normalizes URLs: collapses double slashes while preserving protocol (https://)
+ * and trims whitespace.
+ * e.g. "https://www.eporner.com/embed/123//" -> "https://www.eporner.com/embed/123/"
+ * e.g. "https://www.lusthub.my.id//v/123" -> "https://www.lusthub.my.id/v/123"
+ */
+export function normalizeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  return url.trim().replace(/(https?:\/\/)|(\/)+/g, (m, proto) => proto || '/');
+}
+
 export function createWebSiteSchema() {
   return {
     '@context': 'https://schema.org',
@@ -50,12 +61,15 @@ export function createBreadcrumbSchema(items = []) {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    'itemListElement': items.map((item, index) => ({
-      '@type': 'ListItem',
-      'position': index + 1,
-      'name': item.name,
-      'item': item.url.startsWith('http') ? item.url : `${BASE_URL}${item.url.startsWith('/') ? '' : '/'}${item.url}`
-    }))
+    'itemListElement': items.map((item, index) => {
+      const fullUrl = item.url.startsWith('http') ? item.url : `${BASE_URL}${item.url.startsWith('/') ? '' : '/'}${item.url}`;
+      return {
+        '@type': 'ListItem',
+        'position': index + 1,
+        'name': item.name,
+        'item': normalizeUrl(fullUrl)
+      };
+    })
   };
 }
 
@@ -65,7 +79,7 @@ export function createBreadcrumbSchema(items = []) {
  * @param {Object} options
  */
 export function createVideoObjectSchema(video = {}, options = {}) {
-  const canonicalUrl = options.canonicalUrl || `${BASE_URL}/v/${video.id}`;
+  const canonicalUrl = normalizeUrl(options.canonicalUrl || `${BASE_URL}/v/${video.id}`);
   const title = options.title || video.title || 'Adult Video';
   const description = options.description || `Watch ${title} in full HD on lusthub.my.id.`;
   
@@ -73,6 +87,7 @@ export function createVideoObjectSchema(video = {}, options = {}) {
   if (!thumbUrl.startsWith('http')) {
     thumbUrl = `${BASE_URL}${thumbUrl.startsWith('/') ? '' : '/'}${thumbUrl}`;
   }
+  thumbUrl = normalizeUrl(thumbUrl);
 
   let uploadISO = '2026-01-01T00:00:00Z';
   if (video.added) {
@@ -82,7 +97,8 @@ export function createVideoObjectSchema(video = {}, options = {}) {
 
   const durationSec = Number(video.length_sec || 0);
   const durationISO = durationSec > 0 ? `PT${durationSec}S` : undefined;
-  const embedUrl = video.embed || options.embedUrl || undefined;
+  const rawEmbed = options.embedUrl || video.embed || undefined;
+  const embedUrl = rawEmbed ? normalizeUrl(rawEmbed) : undefined;
   const viewCount = Number(video.views || 0);
 
   const schema = {
@@ -135,7 +151,7 @@ export function createItemListSchema(name, description, items = []) {
         '@type': 'ListItem',
         'position': index + 1,
         'name': item.title,
-        'url': fullUrl
+        'url': normalizeUrl(fullUrl)
       };
     })
   };

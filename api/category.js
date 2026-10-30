@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { createBreadcrumbSchema, createItemListSchema } from './schema-helper.js';
+import { createBreadcrumbSchema, createItemListSchema, normalizeUrl } from './schema-helper.js';
 
 let cachedTemplate = null;
 let cachedDescriptions = null;
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
   const categoryName = formatCategoryName(cleanSlug || 'viral');
   const pageTitle = `Watch ${categoryName} Viral Videos in Full HD | lusthub.my.id`;
   const metaDesc = `Browse the best free ${categoryName} adult videos and trending leaks in full HD on lusthub.my.id. Fast mobile streaming with zero signups.`;
-  const canonicalUrl = `${domain}/c/${cleanSlug || 'viral'}`;
+  const canonicalUrl = normalizeUrl(`${domain}/c/${cleanSlug || 'viral'}`);
 
   if (!cachedTemplate) {
     cachedTemplate = await readFile(path.join(process.cwd(), 'category.html'), 'utf8');

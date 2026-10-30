@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { createVideoObjectSchema, createBreadcrumbSchema } from './schema-helper.js';
+import { createVideoObjectSchema, createBreadcrumbSchema, normalizeUrl } from './schema-helper.js';
 
 let cachedTemplate = null;
 let cached404 = null;
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
   }
 
   const videoSlug = videoData?.title ? slugify(videoData.title) : rawSlug.split('-').slice(1).join('-') || videoId;
-  const canonicalUrl = `${domain}/v/${videoId}-${videoSlug}`;
+  const canonicalUrl = normalizeUrl(`${domain}/v/${videoId}-${videoSlug}`);
 
   // Description strictly 120-155 characters (enriched description takes precedence if valid)
   const catSlug = primaryTag ? slugify(primaryTag) : 'viral';
@@ -220,7 +220,7 @@ export default async function handler(req, res) {
     (videoData?.thumbs && videoData.thumbs[0]?.src) || 
     `${domain}/assets/icons/og-image.png`;
 
-  const embedUrl = videoData?.embed || `https://www.eporner.com/embed/${videoId}/`;
+  const embedUrl = normalizeUrl(videoData?.embed || `https://www.eporner.com/embed/${videoId}/`);
 
   // Structured Data Schema using reusable schema-helper
   const videoObject = createVideoObjectSchema(videoData || {}, {

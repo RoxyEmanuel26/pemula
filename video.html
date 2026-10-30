@@ -828,7 +828,7 @@
                 "description": desc,
                 "thumbnailUrl": [thumbUrl],
                 "uploadDate": uploadISO,
-                "contentUrl": videoCanonicalUrl,
+                "contentUrl": String(videoCanonicalUrl).replace(/(https?:\/\/)|(\/)+/g, (m, proto) => proto || "/"),
                 "isFamilyFriendly": false,
                 "publisher": {
                     "@type": "Organization",
@@ -845,7 +845,7 @@
                 videoSchema.duration = "PT" + durationSec + "S";
             }
             if (video.embed && isSafeUrl(video.embed)) {
-                videoSchema.embedUrl = video.embed;
+                videoSchema.embedUrl = String(video.embed).replace(/(https?:\/\/)|(\/)+/g, (m, proto) => proto || '/');
             }
             const viewCount = parseInt(String(video.views || "0").replace(/\D/g, '')) || 0;
             if (viewCount > 0) {

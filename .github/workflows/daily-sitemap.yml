@@ -2,8 +2,8 @@ name: Daily SEO sitemap refresh
 
 on:
   schedule:
-    # 11:00 UTC = 18:00 WIB (Jam 6 sore Waktu Indonesia Barat)
-    - cron: "0 11 * * *"
+    # 11:15 UTC = 18:15 WIB (Menghindari bottleneck antrean GitHub Actions di menit :00)
+    - cron: "15 11 * * *"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out the default branch
         uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Fetch latest videos and refresh catalog state
         run: node scripts/generate-sitemaps.mjs

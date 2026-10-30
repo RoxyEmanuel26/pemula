@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
  * scripts/seo-enrich.mjs
- * Background Content Enrichment Pipeline with Gemini AI (Quota-Safe)
+ * Background Content Enrichment Pipeline with Gemini AI (Quota-Safe & Resilient)
  * 
  * Features:
  * - Offline queue prioritizing top-viewed & freshest videos first
  * - Batched processing (5-10 videos per request) to maximize free tier efficiency
  * - Strict quality gate validation (length, structure, anti-hallucination, anti-duplication)
- * - Safe error handling with exponential backoff on 429
+ * - Safe error handling with exponential backoff on 429 and 503
+ * - 35s hard timeout per request to prevent connection hangs
+ * - Automatic failover to gemini-2.0-flash if gemini-3.8-flash experiences 503 spikes
+ * - 12-minute runtime watchdog to guarantee clean exit and git commits before CI timeouts
  * - Daily quota tracking against GEMINI_DAILY_REQUEST_LIMIT
  * - Mock mode (--mock) for deterministic offline testing and CI
  */
@@ -27,6 +30,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '1200', 10);
 const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10), 1), 10);
 const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4000', 10);
+const MAX_RUNTIME_MS = parseInt(process.env.MAX_RUNTIME_MS || '720000', 10); // 12 minutes max
 
 // CLI args parsing
 const args = process.argv.slice(2);
@@ -165,12 +169,12 @@ function generateMockEnrichment(video) {
 }
 
 /**
- * Call Gemini API with JSON mode
+ * Call Gemini API with JSON mode, hard timeout, and failover model support
  */
 async function callGeminiBatch(batch) {
   if (IS_MOCK) {
     await sleep(200);
-    return batch.map(generateMockEnrichment);
+    return { results: batch.map(generateMockEnrichment), model: 'mock-enricher' };
   }
 
   const prompt = `You are a professional content editor for an adult video streaming site (lusthub.my.id).
@@ -198,15 +202,17 @@ RULES:
 INPUT VIDEOS:
 ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_min || '', tags: v.keywords || '' })), null, 2)}`;
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-  
   let attempts = 0;
+  let activeModel = GEMINI_MODEL;
+
   while (attempts < 3) {
     attempts++;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${GEMINI_API_KEY}`;
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(35000), // Hard 35s timeout to prevent stalled requests
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
@@ -216,9 +222,16 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
         })
       });
 
-      if (res.status === 429) {
-        const waitMs = Math.pow(2, attempts) * 5000;
-        console.warn(`[429 Rate Limit] Retrying in ${waitMs / 1000}s (attempt ${attempts}/3)...`);
+      if (res.status === 429 || res.status === 503) {
+        const waitMs = Math.pow(2, attempts) * 3000;
+        console.warn(`[${res.status} ${res.status === 429 ? 'Rate Limit' : 'Model High Demand'}] Waiting ${waitMs / 1000}s (attempt ${attempts}/3 on ${activeModel})...`);
+        
+        // If 503 persists on gemini-3.8-flash, failover to gemini-2.0-flash
+        if (res.status === 503 && activeModel === 'gemini-3.8-flash' && attempts >= 2) {
+          activeModel = 'gemini-2.0-flash';
+          console.warn(`[503 Failover] Switching active model to ${activeModel} for this batch...`);
+        }
+        
         await sleep(waitMs);
         continue;
       }
@@ -231,9 +244,17 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
       const json = await res.json();
       const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) throw new Error('Empty response from Gemini API');
-      return JSON.parse(rawText);
+      return { results: JSON.parse(rawText), model: activeModel };
     } catch (err) {
+      console.warn(`[Attempt ${attempts}/3 failed] ${err.name === 'TimeoutError' ? 'Request timed out after 35s' : err.message}`);
       if (attempts >= 3) throw err;
+      
+      // If error occurred and using gemini-3.8-flash, failover to gemini-2.0-flash on final retry
+      if (activeModel === 'gemini-3.8-flash' && attempts >= 2) {
+        activeModel = 'gemini-2.0-flash';
+        console.warn(`[Failover] Switching active model to ${activeModel} on final retry...`);
+      }
+      
       await sleep(3000 * attempts);
     }
   }
@@ -245,6 +266,8 @@ async function main() {
   console.log('=== GEMINI CONTENT ENRICHMENT PIPELINE ===');
   console.log(`Mode: ${IS_MOCK ? 'MOCK / OFFLINE' : `LIVE (Model: ${GEMINI_MODEL})`}`);
   console.log(`Batch Size: ${BATCH_SIZE} | Limit for this run: ${RUN_LIMIT}`);
+
+  const startTime = Date.now();
 
   // 1. Load Quota State
   const quota = await loadQuotaState();
@@ -297,6 +320,12 @@ async function main() {
   let rejectedCount = 0;
 
   for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+    // Safety Watchdog: Prevent GitHub Actions CI timeout by exiting cleanly at 12 minutes
+    if (Date.now() - startTime > MAX_RUNTIME_MS) {
+      console.log('⏱ Runtime safety threshold (12m) reached. Stopping loop cleanly so git can commit changes.');
+      break;
+    }
+
     if (quota.requestsToday >= DAILY_REQUEST_LIMIT && !IS_MOCK) {
       console.log('🛑 Daily request limit reached during execution. Stopping cleanly.');
       break;
@@ -307,7 +336,7 @@ async function main() {
 
     try {
       quota.requestsToday++;
-      const results = await callGeminiBatch(batch);
+      const { results, model: usedModel } = await callGeminiBatch(batch);
 
       results.forEach((item, idx) => {
         const orig = batch[idx] || batch.find(b => b.id === item.id) || batch[0];
@@ -325,7 +354,7 @@ async function main() {
             tags: item.tags,
             faq: item.faq,
             status: 'enriched',
-            model: IS_MOCK ? 'mock-enricher' : GEMINI_MODEL,
+            model: usedModel,
             generated_at: new Date().toISOString(),
             attempts: (db.videos[orig.id]?.attempts || 0) + 1
           };
@@ -337,7 +366,7 @@ async function main() {
             source_hash: hash,
             status: 'rejected',
             rejection_reason: validation.reason,
-            model: IS_MOCK ? 'mock-enricher' : GEMINI_MODEL,
+            model: usedModel,
             generated_at: new Date().toISOString(),
             attempts: (db.videos[orig.id]?.attempts || 0) + 1
           };
@@ -367,6 +396,12 @@ async function main() {
           attempts: (db.videos[v.id]?.attempts || 0) + 1
         };
       });
+
+      if (!IS_DRY_RUN) {
+        db.updated_at = new Date().toISOString();
+        await writeFile(ENRICHED_PATH, JSON.stringify(db, null, 2), 'utf8');
+        await saveQuotaState(quota);
+      }
     }
   }
 

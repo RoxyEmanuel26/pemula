@@ -4,7 +4,6 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "node -e \"console.log('Build skipped: static site')\"",
     "test": "node scripts/validate-sitemaps.mjs",
     "sitemap": "node scripts/generate-sitemaps.mjs",
     "validate:sitemaps": "node scripts/validate-sitemaps.mjs",

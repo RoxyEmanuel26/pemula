@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-30T22:30:38.817Z",
+  "updated_at": "2026-10-30T22:39:12.877Z",
   "videos": {
     "hYtUKcGMlRS": {
       "video_id": "hYtUKcGMlRS",
@@ -7221,6 +7221,306 @@
       "status": "enriched",
       "model": "gemini-3.8-flash",
       "generated_at": "2026-10-28T17:16:54.433Z",
+      "attempts": 1
+    },
+    "Vdku6XoiJz2": {
+      "video_id": "Vdku6XoiJz2",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "73NY8biH1sc": {
+      "video_id": "73NY8biH1sc",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "MyuaCgJ6pbs": {
+      "video_id": "MyuaCgJ6pbs",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "IJ4fyzqyvr4": {
+      "video_id": "IJ4fyzqyvr4",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "DO9ClYsWcSZ": {
+      "video_id": "DO9ClYsWcSZ",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "YXOabZA6XO2": {
+      "video_id": "YXOabZA6XO2",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "TIN5LjpR3jJ": {
+      "video_id": "TIN5LjpR3jJ",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "d3LSZQvyYQy": {
+      "video_id": "d3LSZQvyYQy",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "al3dHU1FGJA": {
+      "video_id": "al3dHU1FGJA",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "QTKb88BY6mI": {
+      "video_id": "QTKb88BY6mI",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "Y5Re2qjiwlC": {
+      "video_id": "Y5Re2qjiwlC",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "64qJkwgKec7": {
+      "video_id": "64qJkwgKec7",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "15BMF90PKnB": {
+      "video_id": "15BMF90PKnB",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "BgkBJ9iL8U1": {
+      "video_id": "BgkBJ9iL8U1",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "82B0LsAkRGZ": {
+      "video_id": "82B0LsAkRGZ",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "9tF4w3VXjsK": {
+      "video_id": "9tF4w3VXjsK",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "n3zQpHizo6M": {
+      "video_id": "n3zQpHizo6M",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "S141ADRyACt": {
+      "video_id": "S141ADRyACt",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "GFTgWOIqcKw": {
+      "video_id": "GFTgWOIqcKw",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "fsxhw3L7hsB": {
+      "video_id": "fsxhw3L7hsB",
+      "status": "failed",
+      "rejection_reason": "Gemini API error 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n",
+      "attempts": 1
+    },
+    "NrWIrnoVh8n": {
+      "video_id": "NrWIrnoVh8n",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "TIBuNSrBmGC": {
+      "video_id": "TIBuNSrBmGC",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "qK3vkYS4GWW": {
+      "video_id": "qK3vkYS4GWW",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "idM6YIq3KBd": {
+      "video_id": "idM6YIq3KBd",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "GW4oQkH8Wgp": {
+      "video_id": "GW4oQkH8Wgp",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "4Bly5k3scyL": {
+      "video_id": "4Bly5k3scyL",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "NX1fNa8X895": {
+      "video_id": "NX1fNa8X895",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "8GQfJYXY7Zj": {
+      "video_id": "8GQfJYXY7Zj",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "TdDez7dNwlT": {
+      "video_id": "TdDez7dNwlT",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "lPibIFzRwfU": {
+      "video_id": "lPibIFzRwfU",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "P54lpnrwERn": {
+      "video_id": "P54lpnrwERn",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "cvDzHv993af": {
+      "video_id": "cvDzHv993af",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "qrm7Nm36HIh": {
+      "video_id": "qrm7Nm36HIh",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "Y5maDr4N5Io": {
+      "video_id": "Y5maDr4N5Io",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "BtNMWbJ848B": {
+      "video_id": "BtNMWbJ848B",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "0UlQ8bxCWaB": {
+      "video_id": "0UlQ8bxCWaB",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "fGAIMq4DI2B": {
+      "video_id": "fGAIMq4DI2B",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "lLH1L4z63wR": {
+      "video_id": "lLH1L4z63wR",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "susScTfRIQm": {
+      "video_id": "susScTfRIQm",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "RqoCRdQnJbX": {
+      "video_id": "RqoCRdQnJbX",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "Nqbcj2jdZvY": {
+      "video_id": "Nqbcj2jdZvY",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "lewBBQSMmH9": {
+      "video_id": "lewBBQSMmH9",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "n6aJNtbIUPD": {
+      "video_id": "n6aJNtbIUPD",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "KZxQ6wj15i2": {
+      "video_id": "KZxQ6wj15i2",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "WNU4TR1ZIkr": {
+      "video_id": "WNU4TR1ZIkr",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "FUkwHlB7kkB": {
+      "video_id": "FUkwHlB7kkB",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "mU9lFAJZ3jH": {
+      "video_id": "mU9lFAJZ3jH",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "QqjMUg37gkc": {
+      "video_id": "QqjMUg37gkc",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "lJEO5rMzKYZ": {
+      "video_id": "lJEO5rMzKYZ",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
+      "attempts": 1
+    },
+    "butKI71IiFw": {
+      "video_id": "butKI71IiFw",
+      "status": "failed",
+      "rejection_reason": "Failed after 3 attempts",
       "attempts": 1
     }
   }

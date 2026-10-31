@@ -9,9 +9,9 @@
  * - Strict quality gate validation (length, structure, anti-hallucination, anti-duplication)
  * - Safe error handling with exponential backoff on 429 and 503
  * - 35s hard timeout per request to prevent connection hangs
- * - Automatic failover to gemini-3.5-flash-lite if gemini-3.8-flash experiences 503 spikes
+ * - Automatic failover to gemini-3.1-flash-lite if gemini-3.5-flash-lite experiences 503 spikes
  * - 12-minute runtime watchdog to guarantee clean exit and git commits before CI timeouts
- * - Daily quota tracking against GEMINI_DAILY_REQUEST_LIMIT
+ * - Daily quota tracking against GEMINI_DAILY_REQUEST_LIMIT (Safety cap: 450 of 500 RPD)
  * - Mock mode (--mock) for deterministic offline testing and CI
  */
 
@@ -24,13 +24,13 @@ const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
 const ENRICHED_PATH = path.join(ROOT, 'data', 'enriched-videos.json');
 const QUOTA_PATH = path.join(ROOT, 'data', 'enrich-quota-state.json');
 
-// Environment Configuration (Default: 80% of 1500 RPD = 1200)
+// Environment Configuration (Default: 450 RPD safe buffer for 500 RPD limit on Flash Lite)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
-const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '1200', 10);
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite';
+const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '450', 10);
 const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10), 1), 10);
-const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4000', 10);
+const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4500', 10);
 const MAX_RUNTIME_MS = parseInt(process.env.MAX_RUNTIME_MS || '720000', 10); // 12 minutes max
 
 // CLI args parsing
@@ -227,9 +227,9 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
         const waitMs = Math.pow(2, attempts) * 3000;
         console.warn(`[${res.status} ${res.status === 429 ? 'Rate Limit' : 'Model High Demand'}] Waiting ${waitMs / 1000}s (attempt ${attempts}/3 on ${activeModel})...`);
         
-        // If 503 persists on gemini-3.8-flash, failover to gemini-3.5-flash-lite
-        if (res.status === 503 && activeModel === 'gemini-3.8-flash' && attempts >= 2) {
-          activeModel = 'gemini-3.5-flash-lite';
+        // If 503 persists, failover to GEMINI_FALLBACK_MODEL (e.g. gemini-3.1-flash-lite)
+        if (res.status === 503 && activeModel !== GEMINI_FALLBACK_MODEL && attempts >= 2) {
+          activeModel = GEMINI_FALLBACK_MODEL;
           console.warn(`[503 Failover] Switching active model to ${activeModel} for this batch...`);
         }
         
@@ -250,9 +250,9 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
       console.warn(`[Attempt ${attempts}/3 failed] ${err.name === 'TimeoutError' ? 'Request timed out after 35s' : err.message}`);
       if (attempts >= 3) throw err;
       
-      // If error occurred and using gemini-3.8-flash, failover to gemini-3.5-flash-lite on final retry
-      if (activeModel === 'gemini-3.8-flash' && attempts >= 2) {
-        activeModel = 'gemini-3.5-flash-lite';
+      // If error occurred, failover to GEMINI_FALLBACK_MODEL on final retry
+      if (activeModel !== GEMINI_FALLBACK_MODEL && attempts >= 2) {
+        activeModel = GEMINI_FALLBACK_MODEL;
         console.warn(`[Failover] Switching active model to ${activeModel} on final retry...`);
       }
       

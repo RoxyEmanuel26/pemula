@@ -9,7 +9,7 @@
  * - Strict quality gate validation (length, structure, anti-hallucination, anti-duplication)
  * - Safe error handling with exponential backoff on 429 and 503
  * - 35s hard timeout per request to prevent connection hangs
- * - Automatic failover to gemini-2.0-flash if gemini-3.8-flash experiences 503 spikes
+ * - Automatic failover to gemini-3.5-flash-lite if gemini-3.8-flash experiences 503 spikes
  * - 12-minute runtime watchdog to guarantee clean exit and git commits before CI timeouts
  * - Daily quota tracking against GEMINI_DAILY_REQUEST_LIMIT
  * - Mock mode (--mock) for deterministic offline testing and CI
@@ -27,6 +27,7 @@ const QUOTA_PATH = path.join(ROOT, 'data', 'enrich-quota-state.json');
 // Environment Configuration (Default: 80% of 1500 RPD = 1200)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
 const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '1200', 10);
 const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10), 1), 10);
 const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4000', 10);
@@ -226,9 +227,9 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
         const waitMs = Math.pow(2, attempts) * 3000;
         console.warn(`[${res.status} ${res.status === 429 ? 'Rate Limit' : 'Model High Demand'}] Waiting ${waitMs / 1000}s (attempt ${attempts}/3 on ${activeModel})...`);
         
-        // If 503 persists on gemini-3.8-flash, failover to gemini-2.0-flash
+        // If 503 persists on gemini-3.8-flash, failover to gemini-3.5-flash-lite
         if (res.status === 503 && activeModel === 'gemini-3.8-flash' && attempts >= 2) {
-          activeModel = 'gemini-2.0-flash';
+          activeModel = 'gemini-3.5-flash-lite';
           console.warn(`[503 Failover] Switching active model to ${activeModel} for this batch...`);
         }
         
@@ -249,9 +250,9 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
       console.warn(`[Attempt ${attempts}/3 failed] ${err.name === 'TimeoutError' ? 'Request timed out after 35s' : err.message}`);
       if (attempts >= 3) throw err;
       
-      // If error occurred and using gemini-3.8-flash, failover to gemini-2.0-flash on final retry
+      // If error occurred and using gemini-3.8-flash, failover to gemini-3.5-flash-lite on final retry
       if (activeModel === 'gemini-3.8-flash' && attempts >= 2) {
-        activeModel = 'gemini-2.0-flash';
+        activeModel = 'gemini-3.5-flash-lite';
         console.warn(`[Failover] Switching active model to ${activeModel} on final retry...`);
       }
       

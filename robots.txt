@@ -144,5 +144,6 @@ Disallow: /assets/js/loader.min.js
 Disallow: /.env
 Crawl-delay: 2
 
-# Sitemap location — 1 master index only
+# Sitemap location
 Sitemap: https://www.lusthub.my.id/sitemap_index.xml
+Sitemap: https://www.lusthub.my.id/sitemap.xml

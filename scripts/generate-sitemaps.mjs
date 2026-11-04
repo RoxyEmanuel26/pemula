@@ -280,9 +280,10 @@ async function main() {
   }
 
   const removedFiles = await removeObsoleteSitemaps(keep);
+  const indexXml = buildIndex(indexEntries);
   if (await writeIfChanged(STATE_PATH, `${JSON.stringify({ version: 1, videos })}\n`)) changed.push('data/sitemap-state.json');
-  if (await writeIfChanged(path.join(ROOT, 'sitemap.xml'), buildRootSitemap())) changed.push('sitemap.xml');
-  if (await writeIfChanged(path.join(ROOT, 'sitemap_index.xml'), buildIndex(indexEntries))) changed.push('sitemap_index.xml');
+  if (await writeIfChanged(path.join(ROOT, 'sitemap.xml'), indexXml)) changed.push('sitemap.xml');
+  if (await writeIfChanged(path.join(ROOT, 'sitemap_index.xml'), indexXml)) changed.push('sitemap_index.xml');
 
   const newCount = latest.filter((video) => !knownIds.has(video.id)).length;
   const removedCount = state.videos.filter((video) => removedIds.has(video.id)).length;

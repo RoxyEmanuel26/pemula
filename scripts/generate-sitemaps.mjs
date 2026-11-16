@@ -23,7 +23,7 @@ const PER_PAGE = envNumber('SITEMAP_PER_PAGE', 1000, 1, 1000);
 const MAX_FETCH_PAGES = envNumber('SITEMAP_MAX_FETCH_PAGES', 10, 1, 50);
 const BOOTSTRAP_PAGES = envNumber('SITEMAP_BOOTSTRAP_PAGES', Math.min(10, MAX_FETCH_PAGES), 1, MAX_FETCH_PAGES);
 const MAX_RECORDS = envNumber('SITEMAP_MAX_VIDEOS', 20000, 1000, 45000);
-const CHUNK_SIZE = envNumber('SITEMAP_CHUNK_SIZE', 5000, 500, 45000);
+const CHUNK_SIZE = envNumber('SITEMAP_CHUNK_SIZE', 1000, 100, 45000);
 const FETCH_DELAY_MS = envNumber('SITEMAP_FETCH_DELAY_MS', 350, 0, 5000);
 const USER_AGENT = 'lusthub-sitemap-bot/9.0 (+https://www.lusthub.my.id/robots.txt)';
 

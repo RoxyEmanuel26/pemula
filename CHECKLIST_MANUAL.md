@@ -1,48 +1,51 @@
 # Checklist Manual Pemilik Website (lusthub.my.id)
 
-Panduan langkah demi langkah untuk pengaturan di luar kode sumber (Cloudflare, Google Search Console, Bing/Yandex Webmaster, dan Analitik) agar trafik dari **US & EU** mencapai potensi puncaknya.
+Panduan langkah demi langkah untuk pengaturan di luar kode sumber (Cloudflare, Google Search Console, Bing/Yandex Webmaster, dan Analitik) agar sitemap terbaca 100% sukses dan trafik **US & EU** mencapai potensi puncaknya.
 
 ---
 
-## 1. Cloudflare Edge Caching Rule *(Wajib untuk Kecepatan US & EU < 50ms)*
+## 1. Pengaturan Cloudflare *(Wajib agar Sitemap Tidak Terblokir & Edge < 50ms)*
 
-Meskipun server Vercel telah dipindahkan ke `iad1` (US East) dan sudah mengirim header `CDN-Cache-Control`, Cloudflare secara *default* tidak men-cache dokumen HTML `/v/*` dan `/c/*`. Aktifkan 1 aturan cache gratis ini di Dashboard Cloudflare Anda:
+### A. Perbaikan Akar Masalah Sitemap Tidak Bisa Diambil Google
+> [!CAUTION]
+> **Penyebab paling umum "Tidak dapat mengambil peta situs" di paket Cloudflare Free:**
+> Pada **Cloudflare Free Plan**, aturan WAF Custom Rule `Allow Known Bots (cf.client.bot -> Skip)` **TIDAK bisa melewati `Bot Fight Mode`**, karena *Bot Fight Mode* berjalan di *pipeline* terpisah di luar Ruleset Engine! Hal ini sering menjatuhkan/menantang fetcher latar belakang Sitemap Google walaupun `Test Live URL` berhasil.
 
-1. Login ke [Cloudflare Dashboard](https://dash.cloudflare.com/) → pilih domain **`lusthub.my.id`**.
-2. Masuk ke menu **Caching > Cache Rules** → klik **Create rule**.
-3. Beri nama aturan: `Cache SSR Video, Category & Feed`.
-4. Pada **When incoming requests match...**, pilih **Custom filter expression**, lalu isi logika **OR** berikut:
-   * `URI Path` **starts with** `/v/`
-   * **OR** `URI Path` **starts with** `/c/`
-   * **OR** `URI Path` **equals** `/feed.xml`
-   * **OR** `URI Path` **equals** `/llms.txt`
-5. Pada bagian **Cache eligibility**, pilih **Eligible for cache**.
-6. Pada bagian **Edge TTL**, pilih **Use cache-control header if present, bypass cache if not** *(agar aturan 24 jam + stale-while-revalidate dari Vercel `api/video.js` & `api/category.js` otomatis dihormati!)*.
-7. Pada **Browser TTL**, pilih **Respect origin**.
-8. Klik **Deploy**.
-
-> [!TIP]
-> **Pastikan DNS Security tidak menghalangi crawler:** Di Cloudflare **Security > Settings**, pastikan **Bot Fight Mode** tetap diizinkan melewati aturan Custom WAF `Allow Known Bots (cf.client.bot -> Skip)` seperti yang sudah Anda pasang agar `Googlebot`, `Bingbot`, `DuckDuckBot`, `Yandex`, dan `GPTBot` tidak pernah ditantang CAPTCHA.
+Lakukan 4 langkah ini di [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub.my.id`**:
+1. **Matikan `Bot Fight Mode` (`Security > Bots` atau `Security > Settings`):**
+   * Set **`Bot Fight Mode`** ke posisi **OFF**. *(Tetap pertahankan WAF Custom Rule Anda `Allow Known Bots` dan proteksi lain di Ruleset Engine)*.
+2. **Periksa `AI Crawl Control` (di menu kiri Dashboard Cloudflare):**
+   * Pastikan crawler mesin pencari (`Googlebot`, `GoogleOther`, `Bingbot`, `Applebot`, `DuckDuckBot`, `OAI-SearchBot`) berada pada status **Allow** untuk tujuan pencarian/pengindeksan.
+   * Buka juga **`Security > Events`** dan filter path `sitemap` untuk memastikan tidak ada lagi action `Block` atau `Managed Challenge` yang menyentuh IP Google.
+3. **Aktifkan URL Normalization ke Origin (`Rules > Settings` → `URL Normalization`):**
+   * Pastikan **`Normalize incoming URLs` = ON** dan aktifkan **`Normalize URLs to origin` = ON**.
+   * Ini menghilangkan redirect `HTTP 308` pada URL ber-slash ganda (`https://www.lusthub.my.id//sitemap_index.xml`) sehingga langsung melayani `200 OK` sebelum mencapai Vercel.
+4. **Pastikan Cache Rule & Purge Everything:**
+   * Di **`Caching > Cache Rules`**, pastikan rule `Cache SSR Video, Category & Feed` sudah berstatus **Active / Deployed** dengan `URI Path` dimulai `/v/`, `/c/`, atau equals `/feed.xml`, `/llms.txt`, dan **Edge TTL = `Use cache-control header if present, bypass cache if not`**.
+   * Di **`Speed > Optimization > Content Optimization`**, pastikan **`Cloudflare Fonts` = OFF** dan **`Rocket Loader` = OFF**.
+   * Terakhir, buka **`Caching > Configuration`** → klik **`Purge Everything`** satu kali setelah deploy terbaru.
 
 ---
 
-## 2. Google Search Console (GSC)
+## 2. Google Search Console (GSC) — Reset Sitemap & Validasi
 
-1. Buka [Google Search Console](https://search.google.com/search-console) pada properti domain Anda (`https://www.lusthub.my.id/`).
-2. Pastikan pada menu **Sitemaps / Peta Situs**, Anda hanya mengirimkan:
-   ```text
-   sitemap_index.xml
-   ```
-   *(Jangan menambahkan `/` di depan huruf `s`)*.
-3. **Inspeksi URL Prioritas (Request Indexing):** Uji & ajukan indeks untuk URL strategis berikut:
-   * `https://www.lusthub.my.id/` *(Homepage dengan SSR 24 video & 20 hub US/EU)*
-   * `https://www.lusthub.my.id/c/milf`
-   * `https://www.lusthub.my.id/c/blonde`
-   * `https://www.lusthub.my.id/c/pov`
-   * `https://www.lusthub.my.id/c/onlyfans`
-   * `https://www.lusthub.my.id/c/european`
-   * `https://www.lusthub.my.id/c/amateur`
-4. Uji 1 halaman video ter-enrich di [Google Rich Results Test](https://search.google.com/test/rich-results) untuk memastikan skema **`VideoObject`** (`embedUrl` + thumbnail HD) dan **`FAQPage`** terdeteksi hijau tanpa error.
+1. Buka [Google Search Console](https://search.google.com/search-console) pada properti **`https://www.lusthub.my.id/`**.
+2. **Reset Sitemap Lama yang Macet Sejak `5 Nov 2026`:**
+   * Masuk ke menu **Peta Situs (Sitemaps)**.
+   * Klik baris `/sitemap.xml` → klik ikon titik tiga `⋮` di kanan atas → pilih **Hapus peta situs**.
+   * Klik baris `/sitemap_index.xml` → klik ikon titik tiga `⋮` → pilih **Hapus peta situs**.
+3. **Uji Kesiapan Live Googlebot Sebelum Kirim:**
+   * Tempel URL **`https://www.lusthub.my.id/sitemap_index.xml`** pada bilah **Periksa semua URL** di atas → klik **UJI URL AKTIF (Live Test)**. Pastikan hasil menampilkan `Pengambilan halaman: Berhasil` (`200 OK`).
+4. **Kirim Ulang 1 Master Index (atau Sub-Sitemap Langsung):**
+   * Pada kotak *Tambahkan peta situs baru* (`https://www.lusthub.my.id/`), ketik **hanya** `sitemap_index.xml` *(jangan ketik `/` di depan dan jangan kirim `sitemap.xml` secara bersamaan)* lalu klik **KIRIM**.
+   * **Jalur Cepat (Opsional/Anti-Macet):** Jika master index masih berstatus menunggu antrean, Anda juga boleh mengirimkan file anak `<urlset>` secara langsung:
+     * `sitemaps/sitemap_videos_001.xml` *(1.000 video AI)*
+     * `sitemaps/sitemap_videos_002.xml` *(sisa video AI)*
+     * `sitemaps/sitemap_categories.xml` *(44 kategori US/EU & global)*
+     * `sitemaps/sitemap_pages.xml` *(7 halaman inti & compliance)*
+5. **Validasi `Diblokir oleh robots.txt` (8 URL `/?q=...`):**
+   * Setelah `Purge Everything` di Cloudflare, buka **Pengindeksan halaman → Diblokir oleh robots.txt** → klik **`VALIDASI PERBAIKAN`**. Kini 8 URL lama tersebut terbaca `X-Robots-Tag: noindex, follow` dan tidak ada link `?q=` baru yang dibuat di HTML.
+6. **Inspeksi URL Prioritas (Request Indexing):** Uji & ajukan indeks untuk `/`, `/c/milf`, `/c/blonde`, `/c/pov`, `/c/onlyfans`, `/c/european`, `/c/amateur`, serta uji 1 halaman video ter-enrich di [Google Rich Results Test](https://search.google.com/test/rich-results).
 
 ---
 
@@ -65,9 +68,9 @@ Langkah verifikasi akun:
 
 ## 4. Pemasangan Analitik Pengunjung (GA4 / Yandex Metrica)
 
-Agar Anda dapat melihat berapa persen pengunjung datang dari **US, UK, Jerman, Prancis, Belanda, Kanada, dll.**:
+Cloudflare Web Analytics (RUM) sudah aktif di dashboard Anda. Jika ingin melacak detail konversi video di Google Analytics 4 atau Yandex Metrica:
 1. Buat properti **Google Analytics 4 (GA4)** di [analytics.google.com](https://analytics.google.com) → salin Measurement ID (`G-XXXXXXXXXX`).
-2. Masukkan ID tersebut ke variabel `window.GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';` di [`index.html`](file:///e:/00%20projek%20rumah/antigravity/website%20tuyul/index.html), [`video.html`](file:///e:/00%20projek%20rumah/antigravity/website%20tuyul/video.html), [`category.html`](file:///e:/00%20projek%20rumah/antigravity/website%20tuyul/category.html), dan halaman statis lainnya. *(Atau aktifkan **Cloudflare Web Analytics** gratis langsung dari Dashboard Cloudflare tanpa mengubah HTML!)*.
+2. Masukkan ID tersebut ke variabel `window.GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';` di template HTML terkait.
 
 ---
 

@@ -59,6 +59,8 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 Allow: /feed.xml
 Disallow: /api/
 
@@ -72,6 +74,8 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 Allow: /feed.xml
 Disallow: /api/
 
@@ -80,6 +84,8 @@ User-agent: Googlebot-Video
 Allow: /
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 
 # Google Images
 User-agent: Googlebot-Image
@@ -91,6 +97,8 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 Allow: /feed.xml
 Disallow: /api/
 
@@ -100,6 +108,8 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 Allow: /feed.xml
 Disallow: /api/
 
@@ -109,12 +119,16 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 Allow: /feed.xml
 Disallow: /api/
 
 # Baidu Search
 User-agent: Baiduspider
 Allow: /
+Allow: /sitemaps/
+Allow: /sitemap_index.xml
 Disallow: /api/
 
 # DuckDuckGo
@@ -122,6 +136,8 @@ User-agent: DuckDuckBot
 Allow: /
 Allow: /c/
 Allow: /v/
+Allow: /sitemaps/
+Allow: /sitemap_index.xml
 Allow: /feed.xml
 Disallow: /api/
 
@@ -131,6 +147,8 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /sitemap_index.xml
+Allow: /sitemap.xml
 Allow: /feed.xml
 Allow: /about
 Allow: /dmca
@@ -145,6 +163,5 @@ Disallow: /assets/js/loader.js
 Disallow: /assets/js/loader.min.js
 Disallow: /.env
 
-# Sitemap & Feed locations
+# Single Master Sitemap Index
 Sitemap: https://www.lusthub.my.id/sitemap_index.xml
-Sitemap: https://www.lusthub.my.id/sitemap.xml

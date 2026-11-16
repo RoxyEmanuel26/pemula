@@ -1872,3 +1872,51 @@ body {
         margin: 8px auto 16px;
     }
 }
+
+/* ===== SSR CATEGORY HUB STRIP ===== */
+.ssr-category-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px auto 14px;
+    max-width: 1100px;
+}
+
+.ssr-cat-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(232, 168, 0, 0.25);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.ssr-cat-pill:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] .ssr-cat-pill {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(176, 134, 0, 0.3);
+    color: #8a6400;
+}
+
+@media (max-width: 480px) {
+    .ssr-category-strip {
+        gap: 6px;
+        margin: 8px auto 12px;
+    }
+    .ssr-cat-pill {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+}

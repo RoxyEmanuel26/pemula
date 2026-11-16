@@ -9,8 +9,9 @@
     <title>lusthub.my.id — High-Speed 18+ NSFW Streaming</title>
     <meta name="description"
         content="Watch trending viral video leaks and premium 18+ JAV content on lusthub.my.id. Fast, free HD streaming with zero app downloads or mandatory signups.">
-    <meta name="robots" content="index, follow">
-    <meta name="rating" content="adult">
+    <meta http-equiv="content-language" content="en">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="rating" content="RTA-5042-1996-1400-1577-RTA">
 
     <!-- Performance Preconnects -->
     <link rel="preconnect" href="https://www.eporner.com">
@@ -24,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 
     <!-- MAIN CSS -->
-    <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en32">
+    <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en33">
 
     <!-- SEO Meta Tags -->
     <link rel="canonical" href="">
@@ -683,7 +684,7 @@
             whatsappBtn.style.cssText = 'background: #25D366; color: #fff; text-shadow: none; font-weight: 600;';
             whatsappBtn.target = '_blank';
             whatsappBtn.rel = 'noopener noreferrer';
-            whatsappBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Tonton video viral ini gratis di lusthub.my.id! 🔥\n' + shareUrl + '?ref=whatsapp');
+            whatsappBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Watch this HD video free on lusthub.my.id! 🔥\n' + shareUrl + '?ref=whatsapp');
             whatsappBtn.innerHTML = '💬 WhatsApp';
             whatsappBtn.addEventListener('click', () => {
                 if (window.trackEvent) {
@@ -827,7 +828,8 @@
                 "description": desc,
                 "thumbnailUrl": [thumbUrl],
                 "uploadDate": uploadISO,
-                "contentUrl": String(videoCanonicalUrl).replace(/(https?:\/\/)|(\/)+/g, (m, proto) => proto || "/"),
+                "url": String(videoCanonicalUrl).replace(/(https?:\/\/)|(\/)+/g, (m, proto) => proto || "/"),
+                "inLanguage": "en",
                 "isFamilyFriendly": false,
                 "publisher": {
                     "@type": "Organization",
@@ -965,7 +967,7 @@
                         dateLabel.textContent = '📅 ' + String(v.added || '').substring(0, 10);
                         const viewsLabel = document.createElement('span');
                         viewsLabel.style.color = '#aaa';
-                        viewsLabel.textContent = '👁 ' + (Number(v.views) || 0).toLocaleString('id-ID');
+                        viewsLabel.textContent = '👁 ' + (Number(v.views) || 0).toLocaleString('en-US');
                         dateViews.append(dateLabel, viewsLabel);
 
                         const titleLabel = document.createElement('div');
@@ -1025,8 +1027,8 @@
 
     <!-- Load Ads Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/postscribe/2.0.8/postscribe.min.js"></script>
-    <script src="/assets/js/ad-manager.min.js?v=en32" defer></script>
-    <script src="/assets/js/analytics.min.js?v=en32" defer></script>
+    <script src="/assets/js/ad-manager.min.js?v=en33" defer></script>
+    <script src="/assets/js/analytics.min.js?v=en33" defer></script>
 
     <!-- Adsterra Social Bar -->
     <script data-cfasync="false" src="https://biomanos.org/14/88d720634f18389c613c9ccab28cea5f"></script>

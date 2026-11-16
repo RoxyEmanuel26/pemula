@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["iad1"],
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "",
@@ -29,7 +30,9 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=2592000, stale-while-revalidate=86400" },
+        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800" },
+        { "key": "CDN-Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },
+        { "key": "Rating", "value": "RTA-5042-1996-1400-1577-RTA" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()" }
@@ -47,6 +50,14 @@
       "source": "/sitemap_index.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/feed.xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" },
         { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" },
         { "key": "Vercel-CDN-Cache-Control", "value": "max-age=3600, stale-while-revalidate=86400" }
       ]

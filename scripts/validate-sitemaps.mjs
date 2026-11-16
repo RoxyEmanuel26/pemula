@@ -21,6 +21,7 @@ for (const name of files) {
     const location = block.match(/<loc>(.*?)<\/loc>/)?.[1];
     if (!location) { errors.push(`${name}: URL entry has no loc`); continue; }
     if (!location.startsWith('https://www.lusthub.my.id/')) errors.push(`${name}: non-canonical loc ${location}`);
+    if (/lusthub\.my\.id\/\//.test(location)) errors.push(`${name}: double-slash loc ${location}`);
     if (seen.has(location)) errors.push(`${name}: duplicate loc also in ${seen.get(location)}: ${location}`);
     else seen.set(location, name);
     if (name.startsWith('sitemap_videos_')) {
@@ -34,9 +35,21 @@ for (const name of files) {
 }
 
 const index = await readFile(path.join(ROOT, 'sitemap_index.xml'), 'utf8');
+const rootSitemap = await readFile(path.join(ROOT, 'sitemap.xml'), 'utf8');
+if (index !== rootSitemap) errors.push('sitemap.xml and sitemap_index.xml have drifted out of sync');
+
 const indexed = captureAll(index, /<loc>https:\/\/www\.lusthub\.my\.id\/sitemaps\/(.*?)<\/loc>/g);
 for (const name of indexed) if (!files.includes(name)) errors.push(`sitemap_index.xml references missing ${name}`);
 for (const name of files) if (!indexed.includes(name)) errors.push(`${name} is not referenced by sitemap_index.xml`);
+
+try {
+  const feed = await readFile(path.join(ROOT, 'feed.xml'), 'utf8');
+  if (!feed.startsWith('<?xml version="1.0" encoding="UTF-8"?>') || !feed.includes('<rss version="2.0"')) {
+    errors.push('feed.xml: invalid RSS 2.0 structure');
+  }
+} catch {
+  errors.push('feed.xml: missing RSS feed file');
+}
 
 if (errors.length) {
   console.error(`Sitemap validation failed with ${errors.length} issue(s):`);

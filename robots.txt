@@ -1,7 +1,6 @@
 # ==============================================
 # robots.txt — lusthub.my.id
-# Optimized for maximum SEO, AI Citations & Resource Protection
-# Last updated: 2026-10-31
+# Optimized for US/EU Multi-Engine Discovery, AI Citations & High Crawl Speed
 # ==============================================
 
 # ==============================================
@@ -85,27 +84,27 @@ Allow: /sitemaps/
 User-agent: Googlebot-Image
 Allow: /assets/icons/
 
-# Bing Search
+# Bing Search (powers Bing, DuckDuckGo, Yahoo, Ecosia & Copilot)
 User-agent: Bingbot
 Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /feed.xml
 Disallow: /*?q=
 Disallow: /*?*q=
 Disallow: /api/
-Crawl-delay: 2
 
-# Yandex Search
+# Yandex Search (Eastern Europe & Russia)
 User-agent: Yandex
 Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /feed.xml
 Disallow: /*?q=
 Disallow: /*?*q=
 Disallow: /api/
-Crawl-delay: 2
 
 # Baidu Search
 User-agent: Baiduspider
@@ -113,11 +112,12 @@ Allow: /
 Disallow: /*?q=
 Disallow: /*?*q=
 Disallow: /api/
-Crawl-delay: 2
 
 # DuckDuckGo
 User-agent: DuckDuckBot
 Allow: /
+Allow: /c/
+Allow: /v/
 Disallow: /*?q=
 Disallow: /*?*q=
 Disallow: /api/
@@ -128,6 +128,7 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
+Allow: /feed.xml
 Allow: /about
 Allow: /dmca
 Allow: /contact
@@ -142,8 +143,7 @@ Disallow: /assets/js/ads.min.js
 Disallow: /assets/js/loader.js
 Disallow: /assets/js/loader.min.js
 Disallow: /.env
-Crawl-delay: 2
 
-# Sitemap location
+# Sitemap & Feed locations
 Sitemap: https://www.lusthub.my.id/sitemap_index.xml
 Sitemap: https://www.lusthub.my.id/sitemap.xml

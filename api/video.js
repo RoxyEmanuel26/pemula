@@ -1,10 +1,21 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { createVideoObjectSchema, createBreadcrumbSchema, normalizeUrl } from './schema-helper.js';
+import {
+  BASE_URL,
+  CURATED_CATEGORIES,
+  normalizeUrl,
+  escapeHtml,
+  decodeMojibake,
+  slugify,
+  cleanSourceTitle,
+  createVideoObjectSchema,
+  createBreadcrumbSchema,
+} from './schema-helper.js';
 
 let cachedTemplate = null;
 let cached404 = null;
 let cachedEnriched = null;
+const CURATED_SET = new Set(CURATED_CATEGORIES);
 const VIDEO_CACHE = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server-side in-memory cache
 
@@ -20,89 +31,46 @@ async function getEnrichedDatabase() {
   return cachedEnriched;
 }
 
-function escapeHtml(str) {
-  return String(str || '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function decodeMojibake(text) {
-  const str = String(text || '').trim();
-  if (!/[ÃÂâ]/.test(str)) return str;
-  try {
-    const bytes = Buffer.from(str, 'latin1');
-    const decoded = bytes.toString('utf8');
-    return decoded.includes('\uFFFD') ? str : decoded;
-  } catch {
-    return str;
-  }
-}
-
-function slugify(text) {
-  return decodeMojibake(text)
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-    .replace(/-+$/g, '');
-}
-
+/**
+ * Builds a concise word-boundary-safe SEO title (target 45-60 chars).
+ */
 function buildVideoTitle(title, tag) {
-  const brand = ' | lusthub.my.id'; // 16 chars
-  const maxTitlePart = 60 - brand.length; // 44 chars
-  let t = title.trim();
+  const brand = ' | LustHub'; // Compact brand suffix preserves room for keywords
+  const maxTitlePart = 60 - brand.length;
+  const cleaned = cleanSourceTitle(title) || String(title || '').trim();
 
-  // If title alone is already too long (> 44 chars)
-  if (t.length > maxTitlePart) {
-    let truncated = t.slice(0, maxTitlePart - 3).trim();
+  if (cleaned.length > maxTitlePart) {
+    let truncated = cleaned.slice(0, maxTitlePart).trim();
     const lastSpace = truncated.lastIndexOf(' ');
-    if (lastSpace > 25) truncated = truncated.slice(0, lastSpace);
-    return `${truncated}...${brand}`;
+    if (lastSpace > 20) truncated = truncated.slice(0, lastSpace);
+    return `${truncated}${brand}`;
   }
 
-  const tagName = tag ? (tag.charAt(0).toUpperCase() + tag.slice(1)) : 'Viral';
-  
-  // Try pattern A: "Watch {title} - {tag} HD Video | lusthub.my.id" (target 50-60 chars)
-  let candidate = `Watch ${t} - ${tagName} HD Video${brand}`;
-  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
-
-  // Try pattern B: "{title} - {tag} Viral Video HD | lusthub.my.id"
-  candidate = `${t} - ${tagName} Viral Video HD${brand}`;
-  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
-
-  // Try pattern C: "{title} - {tag} HD Video Streaming | lusthub.my.id"
-  candidate = `${t} - ${tagName} HD Video Streaming${brand}`;
-  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
-
-  // Try pattern D: "{title} - {tag} HD Video${brand}"
-  candidate = `${t} - ${tagName} HD Video${brand}`;
-  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
-
-  // Try pattern E: "Watch {title} in Full HD Free Online | lusthub.my.id"
-  candidate = `Watch ${t} in Full HD Free Online${brand}`;
-  if (candidate.length >= 50 && candidate.length <= 60) return candidate;
-
-  // Try pattern F: "{title} - {tag} HD${brand}"
-  candidate = `${t} - ${tagName} HD${brand}`;
-  if (candidate.length >= 45 && candidate.length <= 60) return candidate;
-
-  // Fallback:
-  candidate = `${t}${brand}`;
-  if (candidate.length > 60) {
-    return `${t.slice(0, maxTitlePart - 3)}...${brand}`;
+  const tagName = tag ? (tag.charAt(0).toUpperCase() + tag.slice(1)) : 'HD';
+  const candidates = [
+    `${cleaned} - ${tagName} Full HD${brand}`,
+    `Watch ${cleaned} in HD${brand}`,
+    `${cleaned} Full HD${brand}`,
+    `${cleaned}${brand}`,
+  ];
+  for (const candidate of candidates) {
+    if (candidate.length >= 42 && candidate.length <= 60) return candidate;
   }
-  return candidate;
+  return `${cleaned}${brand}`.slice(0, 60);
+}
+
+/**
+ * Formats view counts cleanly for international US/EU readers.
+ */
+function formatViews(val) {
+  const num = parseInt(String(val || '0').replace(/\D/g, ''), 10) || 0;
+  return num.toLocaleString('en-US');
 }
 
 export default async function handler(req, res) {
   const { slug } = req.query;
   const rawSlug = String(slug || '').trim();
-  
+
   if (!rawSlug) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -112,11 +80,9 @@ export default async function handler(req, res) {
     return res.end(cached404);
   }
 
-  // Extract video ID (e.g. from "hYtUKcGMlRS-ahyon-3" -> "hYtUKcGMlRS")
   const videoId = rawSlug.split('-')[0];
-  const domain = 'https://www.lusthub.my.id';
+  const domain = BASE_URL;
 
-  // Read base template once (cached in memory)
   if (!cachedTemplate) {
     cachedTemplate = await readFile(path.join(process.cwd(), 'video.html'), 'utf8');
   }
@@ -124,7 +90,6 @@ export default async function handler(req, res) {
   let videoData = null;
   let videoNotFound = false;
 
-  // Check in-memory cache
   const cachedEntry = VIDEO_CACHE.get(videoId);
   if (cachedEntry && (Date.now() - cachedEntry.ts < CACHE_TTL_MS)) {
     videoData = cachedEntry.data;
@@ -135,7 +100,7 @@ export default async function handler(req, res) {
       const apiUrl = `https://www.eporner.com/api/v2/video/id/?id=${encodeURIComponent(videoId)}&thumbsize=big&format=json`;
       const apiRes = await fetch(apiUrl, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'lusthub-bot/1.0 (+https://www.lusthub.my.id/robots.txt)' }
+        headers: { 'User-Agent': 'lusthub-bot/2.0 (+https://www.lusthub.my.id/robots.txt)' },
       });
       clearTimeout(timeout);
 
@@ -144,20 +109,17 @@ export default async function handler(req, res) {
         if (json && !json.error && !Array.isArray(json) && json.id) {
           videoData = json;
           VIDEO_CACHE.set(videoId, { data: json, ts: Date.now() });
-        } else if (Array.isArray(json) && json.length === 0) {
-          videoNotFound = true;
-        } else if (json && json.error) {
+        } else if ((Array.isArray(json) && json.length === 0) || (json && json.error)) {
           videoNotFound = true;
         }
       } else if (apiRes.status === 404) {
         videoNotFound = true;
       }
-    } catch (err) {
-      // API timeout or network error - will fall back to slug-derived metadata if video was not confirmed non-existent
+    } catch {
+      // Upstream timeout or transient error: fall back to local enriched/slug metadata
     }
   }
 
-  // If video explicitly does not exist or was removed
   if (videoNotFound || (!videoData && (!videoId || videoId.length < 5))) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -168,73 +130,85 @@ export default async function handler(req, res) {
     return res.end(cached404);
   }
 
-  // Primary category / tag from API keywords
-  let primaryTag = '';
-  if (videoData?.keywords) {
-    const kList = typeof videoData.keywords === 'string'
-      ? videoData.keywords.split(',').map(s => s.trim()).filter(Boolean)
-      : (Array.isArray(videoData.keywords) ? videoData.keywords : []);
-    if (kList.length > 0) primaryTag = kList[0];
-  }
+  // Extract raw keywords list
+  const rawKeywords = videoData?.keywords
+    ? (typeof videoData.keywords === 'string'
+      ? videoData.keywords.split(',').map(s => decodeMojibake(s).trim()).filter(Boolean)
+      : (Array.isArray(videoData.keywords) ? videoData.keywords.map(k => decodeMojibake(k).trim()).filter(Boolean) : []))
+    : [];
 
   // Load Enriched Content from background Gemini pipeline
   const enrichedDb = await getEnrichedDatabase();
-  const enrichedData = (enrichedDb.videos && enrichedDb.videos[videoId]?.status === 'enriched')
-    ? enrichedDb.videos[videoId]
+  const rawEnriched = enrichedDb.videos?.[videoId];
+  const enrichedData = (rawEnriched?.status === 'enriched' && rawEnriched?.model !== 'mock-enricher')
+    ? rawEnriched
     : null;
 
-  // Derive title strictly 50-60 chars (enriched title takes precedence if valid)
-  const rawTitle = videoData?.title || rawSlug.split('-').slice(1).join(' ') || `Video ${videoId}`;
-  const decodedTitle = decodeMojibake(rawTitle) || 'Premium Adult Video';
+  // Match best primary curated category (for breadcrumbs & clean category linking)
+  const allCandidateTags = [...(enrichedData?.tags || []), ...rawKeywords];
+  let primaryTag = rawKeywords[0] || enrichedData?.tags?.[0] || 'viral';
+  for (const candidate of allCandidateTags) {
+    const candidateSlug = slugify(candidate, 40, '');
+    if (CURATED_SET.has(candidateSlug)) {
+      primaryTag = candidate;
+      break;
+    }
+  }
+
+  const rawTitle = videoData?.title || enrichedData?.title || rawSlug.split('-').slice(1).join(' ') || `Video ${videoId}`;
+  const decodedTitle = cleanSourceTitle(rawTitle) || decodeMojibake(rawTitle) || 'HD Adult Video';
+
   let pageTitle = buildVideoTitle(decodedTitle, primaryTag);
-  if (enrichedData?.seo_title && enrichedData.seo_title.length >= 20 && enrichedData.seo_title.length <= 60) {
+  if (enrichedData?.seo_title && enrichedData.seo_title.length >= 20 && enrichedData.seo_title.length <= 65) {
     pageTitle = enrichedData.seo_title;
   }
 
-  const videoSlug = videoData?.title ? slugify(videoData.title) : rawSlug.split('-').slice(1).join('-') || videoId;
+  const videoSlug = slugify(videoData?.title || enrichedData?.title || rawSlug.split('-').slice(1).join('-'), 80, videoId);
   const canonicalUrl = normalizeUrl(`${domain}/v/${videoId}-${videoSlug}`);
 
-  // Description strictly 120-155 characters (enriched description takes precedence if valid)
-  const catSlug = primaryTag ? slugify(primaryTag) : 'viral';
-  const catName = primaryTag ? (primaryTag.charAt(0).toUpperCase() + primaryTag.slice(1)) : 'Viral';
-  let metaDesc = `Watch ${decodedTitle} in full HD on lusthub.my.id. Stream trending adult videos and viral leaks with fast loading and zero signups required.`;
+  const catSlug = CURATED_SET.has(slugify(primaryTag, 40, ''))
+    ? slugify(primaryTag, 40, 'viral')
+    : 'viral';
+  const catName = catSlug.split('-').map(w => (w === '4k' || w === 'uhd' || w === 'hd' || w === 'pov' || w === 'milf') ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  let metaDesc = `Watch ${decodedTitle} free in full HD on lusthub.my.id. Instant mobile-ready streaming with fast cloud loading and zero account signup.`;
   if (metaDesc.length > 155) {
-    metaDesc = `Watch ${decodedTitle} on lusthub.my.id. Stream free viral adult videos in full HD with fast loading and no signup.`;
-    if (metaDesc.length > 155) {
-      metaDesc = metaDesc.slice(0, 152).trim() + '...';
-    }
-  } else if (metaDesc.length < 120) {
-    metaDesc = `Watch ${decodedTitle} in high definition full HD on lusthub.my.id. Stream free trending adult videos and leaks with fast loading and zero signups required.`;
+    metaDesc = metaDesc.slice(0, 152).replace(/\s+\S*$/, '').trim() + '...';
   }
-  if (enrichedData?.meta_description && enrichedData.meta_description.length >= 120 && enrichedData.meta_description.length <= 155) {
+  if (enrichedData?.meta_description && enrichedData.meta_description.length >= 110 && enrichedData.meta_description.length <= 165) {
     metaDesc = enrichedData.meta_description;
   }
 
-  // Phase 5D Quality Gate: Only enriched content is indexable; un-enriched thin pages get noindex
+  // Quality Gate: Only genuine AI-enriched videos are indexable (excludes mock-enricher & thin pages)
   const robotsMeta = enrichedData
-    ? '<meta name="robots" content="index, follow">'
+    ? '<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">'
     : '<meta name="robots" content="noindex, follow">';
 
-  // Thumbnail
-  const thumbUrl = videoData?.default_thumb?.src || 
-    (videoData?.thumbs && videoData.thumbs[0]?.src) || 
-    `${domain}/assets/icons/og-image.png`;
+  const thumbUrl = normalizeUrl(
+    videoData?.default_thumb?.src ||
+    (videoData?.thumbs && videoData.thumbs[0]?.src) ||
+    enrichedData?.thumbnail ||
+    `${domain}/assets/icons/og-image.png`
+  );
 
   const embedUrl = normalizeUrl(videoData?.embed || `https://www.eporner.com/embed/${videoId}/`);
 
-  // Structured Data Schema using reusable schema-helper
   const videoObject = createVideoObjectSchema(videoData || {}, {
     canonicalUrl,
     title: decodedTitle,
     description: metaDesc,
     thumbnailUrl: thumbUrl,
-    embedUrl
+    embedUrl,
+    keywords: enrichedData?.tags || rawKeywords.slice(0, 6),
+    durationSec: videoData?.length_sec,
+    uploadDate: videoData?.added,
+    views: videoData?.views,
   });
 
   const breadcrumbList = createBreadcrumbSchema([
     { name: 'Home', url: '/' },
     { name: `${catName} Videos`, url: `/c/${catSlug}` },
-    { name: decodedTitle, url: canonicalUrl }
+    { name: decodedTitle, url: canonicalUrl },
   ]);
 
   const graphItems = [videoObject, breadcrumbList];
@@ -246,20 +220,40 @@ export default async function handler(req, res) {
         'name': f.question,
         'acceptedAnswer': {
           '@type': 'Answer',
-          'text': f.answer
-        }
-      }))
+          'text': f.answer,
+        },
+      })),
     });
   }
 
   const graphSchema = {
     '@context': 'https://schema.org',
-    '@graph': graphItems
+    '@graph': graphItems,
   };
-
   const schemaScript = `<script id="jsonLdScript" type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;
 
-  // Build Enriched Overview, Highlights & FAQ markup
+  // Build SSR clickable topic tag pills (curated hubs pass clean authority; non-curated search fallback uses rel="nofollow")
+  const uniqueTags = [];
+  const seenTagSlugs = new Set();
+  for (const tag of allCandidateTags) {
+    const cleanT = String(tag || '').trim();
+    if (!cleanT || cleanT.length > 35 || cleanT.toLowerCase() === decodedTitle.toLowerCase()) continue;
+    const tSlug = slugify(cleanT, 40, '');
+    if (!tSlug || seenTagSlugs.has(tSlug)) continue;
+    seenTagSlugs.add(tSlug);
+    uniqueTags.push({ label: cleanT, slug: tSlug, isCurated: CURATED_SET.has(tSlug) });
+    if (uniqueTags.length >= 6) break;
+  }
+
+  const tagPillsHtml = uniqueTags.length > 0
+    ? `<div class="video-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0;">
+        ${uniqueTags.map(t => t.isCurated
+          ? `<a href="/c/${escapeHtml(t.slug)}" class="video-tag">${escapeHtml(t.label)}</a>`
+          : `<a href="/?q=${encodeURIComponent(t.label)}" rel="nofollow" class="video-tag">${escapeHtml(t.label)}</a>`
+        ).join('\n        ')}
+      </div>`
+    : '';
+
   let enrichedHtml = '';
   if (enrichedData) {
     const highlightsLi = (enrichedData.highlights || [])
@@ -276,7 +270,7 @@ export default async function handler(req, res) {
 
     enrichedHtml = `
       <div class="video-enriched-block" style="margin-top: 25px; background: #141414; padding: 22px; border-radius: 12px; border: 1px solid #222;">
-        <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Video Overview</h3>
+        <h2 style="font-size: 1.15rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Video Overview</h2>
         <p style="color: #ccc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 18px;">${escapeHtml(enrichedData.summary || '')}</p>
         
         <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Key Highlights</h3>
@@ -292,13 +286,20 @@ export default async function handler(req, res) {
     `;
   }
 
-  // Visible initial Breadcrumbs, Video Facade, H1 heading, summary, and enriched editorial for crawlers and instant LCP
+  const metaStatsHtml = videoData
+    ? `<div class="video-meta" style="margin: 10px 0;">
+        <span>⏱ ${escapeHtml(videoData.length_min || '0:00')}</span>
+        <span>👁 ${formatViews(videoData.views)} views</span>
+        ${videoData.rate ? `<span>⭐ ${escapeHtml(String(videoData.rate))} rating</span>` : ''}
+      </div>`
+    : '';
+
   const visibleSeoMarkup = `
     <div class="video-initial-seo" style="margin-bottom: 20px;">
         <nav class="video-breadcrumbs" aria-label="Breadcrumb" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin-bottom: 16px; color: #888;">
             <a href="/" style="color: #e8a800; text-decoration: none;">🏠 Home</a>
             <span style="color: #555;">›</span>
-            <a href="/c/${catSlug}" style="color: #e8a800; text-decoration: none;">${escapeHtml(catName)}</a>
+            <a href="/c/${escapeHtml(catSlug)}" style="color: #e8a800; text-decoration: none;">${escapeHtml(catName)}</a>
             <span style="color: #555;">›</span>
             <span style="color: #bbb;">${escapeHtml(decodedTitle)}</span>
         </nav>
@@ -310,58 +311,44 @@ export default async function handler(req, res) {
             </div>
         </div>
         <h1 class="video-title" style="font-size: 1.6rem; color: #fff; margin-bottom: 10px; font-weight: 700;">${escapeHtml(decodedTitle)}</h1>
-        <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">${escapeHtml(metaDesc)}</p>
+        ${metaStatsHtml}
+        <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(metaDesc)}</p>
+        ${tagPillsHtml}
         ${enrichedHtml}
     </div>
   `;
 
   let html = cachedTemplate;
 
-  // Replace Title & Meta Description
-  html = html.replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(pageTitle)}</title>`);
-  html = html.replace(/<meta\s+name=["']description["']\s+content=["'].*?["']>/i, `<meta name="description" content="${escapeHtml(metaDesc)}">`);
-  
-  // Replace Robots tag for Phase 5D Quality Gate
-  html = html.replace(/<meta\s+name=["']robots["']\s+content=["'].*?["']>/i, robotsMeta);
-  
-  // Replace Canonical Link
-  html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'].*?["']>/i, `<link rel="canonical" href="${canonicalUrl}">`);
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(pageTitle)}</title>`);
+  html = html.replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*>/i, `<meta name="description" content="${escapeHtml(metaDesc)}">`);
+  html = html.replace(/<meta\s+name=["']robots["']\s+content=["'][\s\S]*?["']\s*>/i, robotsMeta);
+  html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'][\s\S]*?["']\s*>/i, `<link rel="canonical" href="${canonicalUrl}">`);
 
-  // Replace Open Graph Tags
   html = html.replace(/<meta\s+id=["']ogTitle["'][^>]*>/i, `<meta id="ogTitle" property="og:title" content="${escapeHtml(pageTitle)}">`);
   html = html.replace(/<meta\s+id=["']ogDesc["'][^>]*>/i, `<meta id="ogDesc" property="og:description" content="${escapeHtml(metaDesc)}">`);
-  html = html.replace(/<meta\s+id=["']ogImage["'][^>]*>/i, `<meta id="ogImage" property="og:image" content="${thumbUrl}">`);
-  
-  const ogVideoExtra = embedUrl ? `\n    <meta property="og:video" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:url" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:secure_url" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:type" content="text/html">\n    <meta property="og:video:width" content="1280">\n    <meta property="og:video:height" content="720">` : '';
+  html = html.replace(/<meta\s+id=["']ogImage["'][^>]*>/i, `<meta id="ogImage" property="og:image" content="${escapeHtml(thumbUrl)}">`);
+
+  const ogVideoExtra = embedUrl
+    ? `\n    <meta property="og:video" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:url" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:secure_url" content="${escapeHtml(embedUrl)}">\n    <meta property="og:video:type" content="text/html">\n    <meta property="og:video:width" content="1280">\n    <meta property="og:video:height" content="720">`
+    : '';
   html = html.replace(/<meta\s+id=["']ogUrl["'][^>]*>/i, `<meta id="ogUrl" property="og:url" content="${canonicalUrl}">${ogVideoExtra}`);
 
-  // Replace Twitter Card Tags
   html = html.replace(/<meta\s+id=["']twitterTitle["'][^>]*>/i, `<meta id="twitterTitle" name="twitter:title" content="${escapeHtml(pageTitle)}">`);
   html = html.replace(/<meta\s+id=["']twitterDesc["'][^>]*>/i, `<meta id="twitterDesc" name="twitter:description" content="${escapeHtml(metaDesc)}">`);
-  html = html.replace(/<meta\s+id=["']twitterImage["'][^>]*>/i, `<meta id="twitterImage" name="twitter:image" content="${thumbUrl}">`);
+  html = html.replace(/<meta\s+id=["']twitterImage["'][^>]*>/i, `<meta id="twitterImage" name="twitter:image" content="${escapeHtml(thumbUrl)}">`);
 
-  // Inject Structured Data Schema Script
   html = html.replace(/<script\s+id=["']jsonLdScript["'][^>]*>[\s\S]*?<\/script>/i, schemaScript);
+  html = html.replace(/(<main[^>]*id=["']videoContainer["'][^>]*>)/i, `$1\n${visibleSeoMarkup}`);
 
-  // Inject visible H1 and Facade right before loader inside main container
-  html = html.replace(
-    /(<main[^>]*id=["']videoContainer["'][^>]*>)/i,
-    `$1\n${visibleSeoMarkup}`
-  );
-
-  // Inject SSR Similar Videos Mesh (PageRank mesh across enriched videos)
+  // Inject SSR Similar Videos Mesh (genuine AI-enriched videos only)
   let similarCardsHtml = '';
   if (enrichedDb?.videos) {
     const allEnriched = Object.values(enrichedDb.videos).filter(
-      v => v.video_id !== videoId && v.status === 'enriched' && v.title && v.slug
+      v => v.video_id !== videoId && v.status === 'enriched' && v.model !== 'mock-enricher' && v.title && v.slug
     );
 
-    const currentTags = [
-      catSlug,
-      ...(enrichedData?.tags || []),
-      ...(videoData?.keywords ? (typeof videoData.keywords === 'string' ? videoData.keywords.split(',') : videoData.keywords) : [])
-    ].map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
-
+    const currentTags = allCandidateTags.map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
     const scored = allEnriched.map(v => {
       let score = 0;
       if (Array.isArray(v.tags)) {
@@ -377,15 +364,15 @@ export default async function handler(req, res) {
 
     if (relatedList.length > 0) {
       similarCardsHtml = relatedList.map(v => {
-        const title = escapeHtml(decodeMojibake(v.title || 'Untitled'));
+        const title = escapeHtml(cleanSourceTitle(v.title) || decodeMojibake(v.title || 'Untitled'));
         const href = `/v/${v.video_id}-${v.slug}`;
         const thumb = v.thumbnail || '/assets/icons/favicon-32x32.png';
         return `
         <a href="${href}" class="card" style="text-decoration: none;" aria-label="${title}">
           <div class="card-img-wrapper">
-            <img src="${escapeHtml(thumb)}" alt="${title}" class="card-img" loading="lazy" width="320" height="180" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
+            <img src="${escapeHtml(thumb)}" alt="${title}" class="card-img loaded" loading="lazy" width="320" height="180" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
           </div>
-          <div class="card-body">
+          <div class="card-meta">
             <div class="card-title">${title}</div>
           </div>
         </a>`;
@@ -400,12 +387,15 @@ export default async function handler(req, res) {
     );
     html = html.replace(
       /(<div[^>]*id=["']similarVideoGrid["'][^>]*>)/i,
-      `$1\\n${similarCardsHtml}`
+      `$1\n${similarCardsHtml}`
     );
   }
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=2592000, stale-while-revalidate=86400');
+  res.setHeader('Rating', 'RTA-5042-1996-1400-1577-RTA');
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800');
+  res.setHeader('CDN-Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+  res.setHeader('Vercel-CDN-Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
   return res.end(html);
 }

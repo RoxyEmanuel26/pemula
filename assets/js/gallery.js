@@ -60,46 +60,52 @@ const INDO_QUERIES = ['indo', 'cewe', 'bokep', 'mahasiswa', 'hijab', 'goyang'];
 //  VIRAL TAGS — Tag/keyword list for "viral" tab
 // =====================================================
 const VIRAL_TAGS = [
-    { label: '🇮🇩 Indo', query: 'indonesia' },
-    { label: '👩 Girl', query: 'cewe' },
-    { label: '🔥 Viral', query: 'viral' },
-    { label: '📱 Indo Viral', query: 'bokep indo' },
-    { label: '🎓 Student', query: 'mahasiswi' },
-    { label: '💑 Couple', query: 'pasutri' },
-    { label: '🏠 Homemade', query: 'rumahan' },
-    { label: '📸 Hijab', query: 'hijab' },
-    { label: '🌙 Night', query: 'malam' },
-    { label: '💃 Dance', query: 'goyang' },
-    { label: '🎥 Live', query: 'live streaming' },
-    { label: '⭐ Celebrity', query: 'artis indo' },
-    { label: '🏖️ Beach', query: 'pantai' },
-    { label: '🏨 Hotel', query: 'hotel' },
+    { label: '🔥 Trending', query: 'viral' },
+    { label: '💎 OnlyFans', query: 'onlyfans' },
+    { label: '🏠 Amateur', query: 'amateur' },
+    { label: '👩 MILF', query: 'milf' },
+    { label: '💛 Blonde', query: 'blonde' },
+    { label: '💃 Latina', query: 'latina' },
+    { label: '🌍 European', query: 'european' },
+    { label: '🎥 POV', query: 'pov' },
+    { label: '📺 4K UHD', query: '4k uhd' },
+    { label: '🎌 Japanese', query: 'japanese' },
+    { label: '🇰🇷 Korean', query: 'korean' },
+    { label: '🍒 Big Tits', query: 'big tits' },
+    { label: '🍑 Big Ass', query: 'big ass' },
+    { label: '🌈 Lesbian', query: 'lesbian' },
     { label: '📲 TikTok', query: 'tiktok viral' },
-    { label: '💋 Hot', query: 'hot indo' }
+    { label: '🇮🇩 Indo', query: 'indonesia' }
 ];
 
 // =====================================================
-//  CATEGORY LIST — List of all video categories
+//  CATEGORY LIST — Global US/EU + Viral Categories
 // =====================================================
 const KATEGORI_LIST = [
     { label: '🔥 Most Popular', query: 'all', order: 'most-popular', icon: '🔥' },
-    { label: '🆕 Latest', query: 'all', order: 'latest', icon: '🆕' },
-    { label: '📈 Top This Week', query: 'all', order: 'top-weekly', icon: '📈' },
-    { label: '📅 Top This Month', query: 'all', order: 'top-monthly', icon: '📅' },
-    { label: '🇮🇩 Indonesia', query: 'indonesia', order: 'most-popular', icon: '🇮🇩' },
-    { label: '👩 Girl', query: 'girl', order: 'most-popular', icon: '👩' },
-    { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' },
-    { label: '🎌 Japan', query: 'japanese', order: 'most-popular', icon: '🎌' },
-    { label: '🇰🇷 Korea', query: 'korean', order: 'most-popular', icon: '🇰🇷' },
+    { label: '👩 MILF', query: 'milf', order: 'most-popular', icon: '👩' },
+    { label: '💛 Blonde', query: 'blonde', order: 'most-popular', icon: '💛' },
+    { label: '💃 Latina', query: 'latina', order: 'most-popular', icon: '💃' },
+    { label: '✨ Ebony', query: 'ebony', order: 'most-popular', icon: '✨' },
     { label: '🏠 Amateur', query: 'amateur', order: 'most-popular', icon: '🏠' },
-    { label: '🎓 Student', query: 'student', order: 'most-popular', icon: '🎓' },
+    { label: '🎥 POV', query: 'pov', order: 'most-popular', icon: '🎥' },
+    { label: '💎 OnlyFans', query: 'onlyfans', order: 'most-popular', icon: '💎' },
+    { label: '🌍 European', query: 'european', order: 'most-popular', icon: '🌍' },
+    { label: '🍒 Big Tits', query: 'big tits', order: 'most-popular', icon: '🍒' },
+    { label: '🍑 Big Ass', query: 'big ass', order: 'most-popular', icon: '🍑' },
+    { label: '🔥 Anal', query: 'anal', order: 'most-popular', icon: '🔥' },
+    { label: '💦 Blowjob', query: 'blowjob', order: 'most-popular', icon: '💦' },
+    { label: '🌈 Lesbian', query: 'lesbian', order: 'most-popular', icon: '🌈' },
+    { label: '👥 Threesome', query: 'threesome', order: 'most-popular', icon: '👥' },
+    { label: '💘 Creampie', query: 'creampie', order: 'most-popular', icon: '💘' },
+    { label: '📺 4K UHD', query: '4k uhd', order: 'most-popular', icon: '📺' },
+    { label: '👘 Cosplay', query: 'cosplay', order: 'most-popular', icon: '👘' },
+    { label: '🎌 Japanese', query: 'japanese', order: 'most-popular', icon: '🎌' },
+    { label: '🇰🇷 Korean', query: 'korean', order: 'most-popular', icon: '🇰🇷' },
+    { label: '🌸 Asian', query: 'asian', order: 'most-popular', icon: '🌸' },
     { label: '💑 Couple', query: 'couple', order: 'most-popular', icon: '💑' },
-    { label: '📸 Hijab', query: 'hijab', order: 'most-popular', icon: '📸' },
-    { label: '⭐ Celebrity', query: 'celebrity', order: 'most-popular', icon: '⭐' },
     { label: '🏖️ Outdoor', query: 'outdoor', order: 'most-popular', icon: '🏖️' },
-    { label: '💃 Dance', query: 'dance', order: 'most-popular', icon: '💃' },
-    { label: '🎥 Live Cam', query: 'live cam', order: 'latest', icon: '🎥' },
-    { label: '💋 Mature', query: 'mature', order: 'most-popular', icon: '💋' }
+    { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' }
 ];
 
 // =====================================================
@@ -471,7 +477,7 @@ function mapAPIVideoToCard(video) {
         image: (video.default_thumb && isSafeUrl(video.default_thumb.src)) ? video.default_thumb.src : '',
         link: isSafeUrl(video.url) ? video.url : '#',
         date: video.added ? video.added.slice(0, 10) : '',
-        views: video.views ? video.views.toLocaleString('id-ID') : '0',
+        views: video.views ? video.views.toLocaleString('en-US') : '0',
         length: video.length_min || '',
         lengthSec: video.length_sec || 0,
         embedUrl: video.embed || '',
@@ -1488,7 +1494,7 @@ function initViewCounterAnimation() {
                     // Easing: ease-out
                     var easedProgress = 1 - Math.pow(1 - progress, 3);
                     var currentVal = Math.floor(easedProgress * targetNum);
-                    el.textContent = '👁 ' + currentVal.toLocaleString('id-ID');
+                    el.textContent = '👁 ' + currentVal.toLocaleString('en-US');
 
                     if (progress < 1) {
                         requestAnimationFrame(animate);
@@ -1717,8 +1723,8 @@ function renderSortBar() {
     }
 
     var sortOptions = [
-        { label: '🇮🇩 Indo', order: 'indo', query: 'indo' },
         { label: '🔥 Popular', order: 'most-popular', query: 'all' },
+        { label: '🇮🇩 Indo', order: 'indo', query: 'indo' },
         { label: '🆕 Latest', order: 'latest', query: 'all' },
         { label: '⭐ Top Rated', order: 'top-rated', query: 'all' },
         { label: '📈 Top Weekly', order: 'top-weekly', query: 'all' },
@@ -1927,7 +1933,7 @@ function injectModalShareButtons(card) {
 
     // WhatsApp
     var waBtn = document.createElement('a');
-    waBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Tonton video viral ini gratis! \uD83D\uDD25\n' + shareUrl + '?ref=modal');
+    waBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Watch this HD video free on lusthub.my.id! \uD83D\uDD25\n' + shareUrl + '?ref=modal');
     waBtn.target = '_blank';
     waBtn.rel = 'noopener noreferrer';
     waBtn.style.cssText = 'background:#25D366;color:#fff;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity 0.3s;';
@@ -2097,8 +2103,9 @@ function injectVideoSchema(cardsToRender) {
             'thumbnailUrl': [thumbUrl],
             'uploadDate': card.date ? card.date + 'T00:00:00Z' : '2026-01-01T00:00:00Z',
             'duration': isoDuration,
-            'contentUrl': 'https://www.lusthub.my.id/',
+            'url': window.location.origin + '/v/' + (card.videoId ? card.videoId + '-' : '') + (card.name || 'video').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
             'embedUrl': card.embedUrl || '',
+            'inLanguage': 'en',
             'interactionStatistic': {
                 '@type': 'InteractionCounter',
                 'interactionType': { '@type': 'WatchAction' },
@@ -2200,8 +2207,39 @@ window.addEventListener('resize', function () {
     // Override openPlayerModal with enhanced version
     window.openPlayerModal = enhancedOpenPlayerModal;
 
-    // Load and render data for the first time
-    loadAndRender();
+    // Hydrate SSR pre-rendered cards first so initial load has zero skeleton flash or API failure loss
+    var ssrNodes = document.querySelectorAll('#cardGrid a.card[data-ssr="1"]');
+    if (ssrNodes.length > 0 && !isSearchActive && currentPage === 1 && currentTab === 'popular') {
+        currentDisplayCards = Array.prototype.map.call(ssrNodes, function (node, idx) {
+            node.dataset.index = String(idx);
+            var img = node.querySelector('img');
+            return {
+                name: node.dataset.title || 'Untitled',
+                image: img ? img.src : '',
+                link: node.getAttribute('href') || '#',
+                date: node.dataset.date || '',
+                views: node.dataset.views || '0',
+                length: node.dataset.duration || '',
+                lengthSec: Number(node.dataset.durationSec || 0),
+                embedUrl: node.dataset.embed || '',
+                videoId: node.dataset.videoId || '',
+                rate: node.dataset.rate || '',
+                keywords: node.dataset.keywords ? node.dataset.keywords.split(',').filter(Boolean) : [],
+                thumbs: []
+            };
+        });
+        // Silently sync live API pagination & fresh results without wiping SSR grid
+        fetchFromAPI('all', 1, 'top-weekly').then(function (apiResponse) {
+            if (!apiResponse || !apiResponse.videos || !apiResponse.videos.length) return;
+            if (currentTab !== 'popular' || currentPage !== 1 || isSearchActive || currentSortOrder !== 'top-weekly') return;
+            currentDisplayCards = filterRemovedVideos(apiResponse.videos.map(mapAPIVideoToCard));
+            totalPagesFromAPI = apiResponse.total_pages || 1;
+            renderCardsToGrid(currentDisplayCards);
+            renderPagination(totalPagesFromAPI);
+        }).catch(function () { /* Keep SSR cards visible silently if client API fails */ });
+    } else {
+        loadAndRender();
+    }
 
     // Lazy load: fetch removed videos after 3 seconds
     setTimeout(function () {

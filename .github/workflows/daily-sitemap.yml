@@ -2,7 +2,7 @@ name: Daily SEO sitemap refresh
 
 on:
   schedule:
-    # 11:15 UTC = 18:15 WIB (Menghindari bottleneck antrean GitHub Actions di menit :00)
+    # 11:15 UTC = 18:15 WIB (Avoids top-of-hour GitHub Actions queue congestion)
     - cron: "15 11 * * *"
   workflow_dispatch:
 
@@ -28,33 +28,40 @@ jobs:
         with:
           node-version: 22
 
-      - name: Fetch latest videos and refresh catalog state
+      - name: Fetch latest & US/EU popular videos and refresh catalog state
         run: node scripts/generate-sitemaps.mjs
 
-      - name: Enrich priority videos with Gemini AI (Phase 5 Pipeline)
+      - name: Enrich top-priority US/EU videos with Gemini AI
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
-          GEMINI_BATCH_SIZE: 5
-        run: node scripts/seo-enrich.mjs --limit 100
+          GEMINI_FALLBACK_MODEL: gemini-3.1-flash-lite
+          GEMINI_BATCH_SIZE: 8
+        run: node scripts/seo-enrich.mjs --limit 400
 
-      - name: Regenerate video sitemaps with newly enriched videos (Phase 5D Gate)
+      - name: Regenerate sitemaps and RSS video feed with newly enriched videos
         run: node scripts/generate-sitemaps.mjs --offline
 
-      - name: Validate sitemap limits and required video fields
+      - name: Rebuild static SSR homepage categories, top videos, and schema
+        run: node scripts/build-home-ssr.mjs
+
+      - name: Validate sitemap limits, RSS feed, and video metadata
         run: node scripts/validate-sitemaps.mjs
 
-      - name: Commit only meaningful sitemap & enrichment changes
+      - name: Commit & push updated SEO catalog, sitemaps, feed, and homepage
         shell: bash
         run: |
-          if git diff --quiet -- sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json; then
+          if git diff --quiet -- sitemap.xml sitemap_index.xml feed.xml index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json; then
             echo "No new changes; skipping commit and Vercel deployment."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A sitemap.xml sitemap_index.xml sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json
-          git commit -m "chore(seo): refresh daily video sitemap & enriched metadata"
+          git add -A sitemap.xml sitemap_index.xml feed.xml index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json
+          git commit -m "chore(seo): refresh daily video sitemap, RSS feed, home SSR & enriched metadata"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Submit updated URLs to IndexNow (Bing, DuckDuckGo, Yahoo, Seznam, Yandex)
+        run: node scripts/indexnow-submit.mjs

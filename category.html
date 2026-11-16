@@ -6,8 +6,9 @@
     <meta charset="UTF-8">
     <meta name="yandex-verification" content="a25cbe2b4f64ad3a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="content-language" content="en">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="rating" content="adult">
+    <meta name="rating" content="RTA-5042-1996-1400-1577-RTA">
 
     <!-- SEO: Dynamic title & description set by JS -->
     <title id="pageTitle">Loading... — lusthub.my.id</title>
@@ -36,7 +37,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 
     <!-- Main CSS (same as index) -->
-    <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en32">
+    <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en33">
 
     <!-- Favicon & PWA -->
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
@@ -492,7 +493,7 @@
 
             // ─── Config
             const API_BASE = 'https://www.eporner.com/api/v2/video/search/';
-            const PER_PAGE = 40;
+            const PER_PAGE = 24;
             const BASE_URL = 'https://www.lusthub.my.id';
             const TITLE_CAP = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -512,13 +513,24 @@
             let totalCount = 0;
             let currentSort = 'most-popular';
 
+            function getSlug(text, fallback) {
+                return String(text || '')
+                    .normalize('NFKD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .slice(0, 80)
+                    .replace(/-+$/g, '') || String(fallback || 'video');
+            }
+
             // ─── Update SEO meta tags
             function updateSEO(page) {
                 const cap = TITLE_CAP(keyword);
                 const pageStr = page > 1 ? ` — Page ${page}` : '';
-                const title = `${cap} Videos${pageStr} — Free HD Streaming on lusthub.my.id`;
-                const desc = `Watch the best free ${cap} porn videos in full HD on lusthub.my.id. ${totalCount.toLocaleString()} videos available. Updated daily.`;
-                const canon = `${BASE_URL}/c/${rawSlug}${page > 1 ? '?page=' + page : ''}`;
+                const title = `Free ${cap} HD Videos${pageStr} | LustHub`;
+                const desc = `Watch the best free ${cap} adult videos in full HD on lusthub.my.id. ${totalCount.toLocaleString('en-US')} videos available. Updated daily.`;
+                const canon = `${BASE_URL}/c/${canonSlug}${page > 1 ? '?page=' + page : ''}`;
 
                 document.title = title;
                 document.getElementById('pageTitle').textContent = title;
@@ -535,13 +547,13 @@
                 const heroKeyword = document.createElement('span');
                 heroKeyword.id = 'heroKeyword';
                 heroKeyword.textContent = cap;
-                heroTitle.replaceChildren(document.createTextNode('Free '), heroKeyword, document.createTextNode(' Videos'));
+                heroTitle.replaceChildren(document.createTextNode('Free '), heroKeyword, document.createTextNode(' Videos' + pageStr));
                 document.getElementById('heroDesc').textContent =
-                    `Browse ${totalCount.toLocaleString()}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
+                    `Browse ${totalCount.toLocaleString('en-US')}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
                 document.getElementById('breadcrumbKeyword').textContent = cap;
 
                 // Stats
-                document.getElementById('statTotal').textContent = totalCount.toLocaleString();
+                document.getElementById('statTotal').textContent = totalCount.toLocaleString('en-US');
                 document.getElementById('statPage').textContent = `${page} / ${totalPages}`;
                 document.getElementById('categoryStats').style.display = '';
 
@@ -576,7 +588,7 @@
                         "numberOfItems": window._currentVideos.length,
                         "itemListElement": window._currentVideos.map(function (v, idx) {
                             const rawTitle = String(v.title || 'Untitled');
-                            const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
+                            const slug = getSlug(rawTitle, v.id);
                             return {
                                 "@type": "ListItem",
                                 "position": idx + 1,
@@ -624,8 +636,8 @@
                     // Build slug from title
                     const rawTitle = String(v.title || '');
                     const displayTitle = rawTitle || 'Untitled';
-                    const slug = rawTitle.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 100);
-                    const url = `/v/${encodeURIComponent(videoId)}-${slug || encodeURIComponent(videoId)}`;
+                    const slug = getSlug(rawTitle, videoId);
+                    const url = `/v/${encodeURIComponent(videoId)}-${slug}`;
                     const thumb = (v.default_thumb && v.default_thumb.src) ? v.default_thumb.src :
                         (v.thumbs && v.thumbs[0] ? v.thumbs[0].src : '');
                     const dur = formatDuration(v.length_sec);
@@ -760,7 +772,7 @@
                 document.getElementById('emptyState').style.display = 'none';
                 document.getElementById('pagination').innerHTML = '';
 
-                const url = `${API_BASE}?query=${encodeURIComponent(keyword)}&per_page=${PER_PAGE}&page=${page}&order=${currentSort}&thumbsize=small&format=json`;
+                const url = `${API_BASE}?query=${encodeURIComponent(keyword)}&per_page=24&page=${page}&order=${currentSort}&thumbsize=big&gay=0&lq=1&format=json`;
 
                 fetch(url)
                     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -791,8 +803,22 @@
                 loadPage(1);
             };
 
-            // ─── Init
-            loadPage(1);
+            // ─── Init (hydrate SSR cards without redundant reload)
+            const hasSsrCards = document.querySelectorAll('#videoGrid .video-card').length > 0;
+            if (hasSsrCards) {
+                document.getElementById('loadingState').style.display = 'none';
+                document.querySelectorAll('#pagination a.page-btn[data-page]').forEach(btn => {
+                    const targetPage = parseInt(btn.getAttribute('data-page'), 10);
+                    if (!isNaN(targetPage)) {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            loadPage(targetPage);
+                        });
+                    }
+                });
+            } else {
+                loadPage(currentPage);
+            }
         })();
     </script>
     <!-- Adsterra Social Bar -->

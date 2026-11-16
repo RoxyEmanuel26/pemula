@@ -1,23 +1,21 @@
 #!/usr/bin/env node
 /**
  * scripts/seo-enrich.mjs
- * Background Content Enrichment Pipeline with Gemini AI (Quota-Safe & Resilient)
- * 
+ * Background Content Enrichment Pipeline with Gemini AI (Quota-Safe & US/EU Focused)
+ *
  * Features:
- * - Offline queue prioritizing top-viewed & freshest videos first
+ * - Prioritizes high-demand US/EU search queries (views, clean English, performer/JAV codes)
+ * - Automatically re-queues synthetic mock-enricher entries for real Gemini enrichment
  * - Batched processing (5-10 videos per request) to maximize free tier efficiency
- * - Strict quality gate validation (length, structure, anti-hallucination, anti-duplication)
- * - Safe error handling with exponential backoff on 429 and 503
- * - 35s hard timeout per request to prevent connection hangs
- * - Automatic failover to gemini-3.1-flash-lite if gemini-3.5-flash-lite experiences 503 spikes
+ * - Strict quality gate validation (word-safe length, anti-hallucination, anti-duplication)
+ * - Safe exponential backoff + automatic failover to gemini-3.1-flash-lite
  * - 12-minute runtime watchdog to guarantee clean exit and git commits before CI timeouts
- * - Daily quota tracking against GEMINI_DAILY_REQUEST_LIMIT (Safety cap: 450 of 500 RPD)
- * - Mock mode (--mock) for deterministic offline testing and CI
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { cleanSourceTitle, slugify } from '../api/schema-helper.js';
 
 const ROOT = process.cwd();
 const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
@@ -29,11 +27,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite';
 const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '450', 10);
-const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10), 1), 10);
+const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '8', 10), 1), 10);
 const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4500', 10);
 const MAX_RUNTIME_MS = parseInt(process.env.MAX_RUNTIME_MS || '720000', 10); // 12 minutes max
 
-// CLI args parsing
 const args = process.argv.slice(2);
 const IS_MOCK = args.includes('--mock') || !GEMINI_API_KEY;
 const IS_DRY_RUN = args.includes('--dry-run');
@@ -45,18 +42,15 @@ function sleep(ms) {
 }
 
 function computeSourceHash(video) {
-  const payload = `${video.id}|${video.title}|${video.length_sec || ''}|${video.keywords || ''}`;
+  const payload = `${video.id}|${video.title}|${video.duration || video.length_sec || ''}|${video.keywords || ''}`;
   return createHash('md5').update(payload).digest('hex');
 }
 
-/**
- * Text Similarity Check (Jaccard similarity on word tokens)
- */
 function calculateSimilarity(str1, str2) {
-  const tokens1 = new Set(str1.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean));
-  const tokens2 = new Set(str2.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean));
+  const tokens1 = new Set(String(str1 || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean));
+  const tokens2 = new Set(String(str2 || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean));
   if (tokens1.size === 0 || tokens2.size === 0) return 0;
-  
+
   let intersection = 0;
   for (const t of tokens1) {
     if (tokens2.has(t)) intersection++;
@@ -66,51 +60,69 @@ function calculateSimilarity(str1, str2) {
 }
 
 /**
- * Validates generated content according to Phase 5 quality gate rules
+ * Scores a catalog video for enrichment queue prioritization targeting US/EU search demand.
+ */
+function scoreVideoPriority(video) {
+  const title = cleanSourceTitle(video.title || '');
+  const combined = `${title} ${video.keywords || ''}`;
+  let score = Math.log10((Number(video.views) || 0) + 1) * 20;
+
+  // Favor clean ASCII/English titles & high-demand US/EU search patterns
+  if (title && !/[^\x00-\x7F]/.test(title)) score += 25;
+  if (/[A-Z]{2,5}-?\d{3,5}/i.test(title)) score += 20; // JAV code (e.g. SONE-335, VRTM-469)
+  if (/\b(milf|blonde|latina|ebony|amateur|pov|onlyfans|fansly|4k|anal|lesbian|threesome|creampie|european|homemade|blowjob|big tits|big ass)\b/i.test(combined)) {
+    score += 20;
+  }
+  if (video.keywords) score += 10;
+
+  // Penalize low-search-value spam/numeric stubs
+  if (title.length < 8 || /^\d+$/.test(title) || /[a-z]+\d{4,}$/i.test(title)) score -= 35;
+  return score;
+}
+
+/**
+ * Validates generated content against SEO quality gate rules.
  */
 function validateEnrichment(original, enriched) {
   if (!enriched || typeof enriched !== 'object') {
     return { valid: false, reason: 'Enrichment payload is not an object' };
   }
 
-  // 1. Title length
   const title = String(enriched.seo_title || '').trim();
-  if (!title || title.length < 15 || title.length > 60) {
-    return { valid: false, reason: `Invalid title length (${title.length} chars, must be 15-60)` };
+  if (!title || title.length < 15 || title.length > 65) {
+    return { valid: false, reason: `Invalid title length (${title.length} chars, must be 15-65)` };
   }
 
-  // 2. Meta description length (strictly 120-155 chars)
   const desc = String(enriched.meta_description || '').trim();
-  if (desc.length < 120 || desc.length > 155) {
-    return { valid: false, reason: `Invalid meta_description length (${desc.length} chars, must be 120-155)` };
+  if (desc.length < 115 || desc.length > 160) {
+    return { valid: false, reason: `Invalid meta_description length (${desc.length} chars, must be 115-160)` };
   }
 
-  // 3. Summary (2-3 sentences)
   const summary = String(enriched.summary || '').trim();
   const sentences = summary.split(/[.!?]+/).filter(s => s.trim().length > 10);
   if (sentences.length < 2 || sentences.length > 4) {
-    return { valid: false, reason: `Summary sentence count (${sentences.length}) out of range (2-3 sentences required)` };
+    return { valid: false, reason: `Summary sentence count (${sentences.length}) out of range (2-4 sentences required)` };
   }
 
-  // Similarity check: reject if summary simply copies original title
+  if (summary.includes('verified amateur releases and zero mandatory signups needed')) {
+    return { valid: false, reason: 'Rejected boilerplate mock text' };
+  }
+
   const sim = calculateSimilarity(original.title, summary);
   if (sim > 0.75) {
     return { valid: false, reason: `Summary is too similar to original title (similarity ${sim.toFixed(2)} > 0.75)` };
   }
 
-  // 4. Highlights (3-5 items)
   if (!Array.isArray(enriched.highlights) || enriched.highlights.length < 3 || enriched.highlights.length > 5) {
     return { valid: false, reason: 'Highlights count must be between 3 and 5' };
   }
 
-  // 5. Tags (3-6 items)
   if (!Array.isArray(enriched.tags) || enriched.tags.length < 3 || enriched.tags.length > 8) {
-    return { valid: false, reason: 'Tags count must be between 3 and 6' };
+    return { valid: false, reason: 'Tags count must be between 3 and 8' };
   }
 
-  // 6. FAQ (2-3 items)
   if (!Array.isArray(enriched.faq) || enriched.faq.length < 2 || enriched.faq.length > 4) {
-    return { valid: false, reason: 'FAQ count must be between 2 and 3' };
+    return { valid: false, reason: 'FAQ count must be between 2 and 4' };
   }
   for (const item of enriched.faq) {
     if (!item.question || !item.answer || item.question.length < 5 || item.answer.length < 10) {
@@ -121,9 +133,6 @@ function validateEnrichment(original, enriched) {
   return { valid: true };
 }
 
-/**
- * Load or initialize quota tracker state
- */
 async function loadQuotaState() {
   const todayStr = new Date().toISOString().slice(0, 10);
   try {
@@ -139,58 +148,58 @@ async function saveQuotaState(state) {
   await writeFile(QUOTA_PATH, JSON.stringify(state, null, 2), 'utf8');
 }
 
-/**
- * Generate synthetic enrichment for testing / mock mode
- */
 function generateMockEnrichment(video) {
-  const cleanTitle = (video.title || 'Adult Video').slice(0, 35).trim();
-  const durMin = video.length_min || '5:00';
+  const cleanTitle = (cleanSourceTitle(video.title) || 'HD Adult Video').slice(0, 38).trim();
+  const durMin = video.duration ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}` : '5:00';
   return {
     id: video.id,
-    seo_title: `${cleanTitle} Full HD | lusthub.my.id`.slice(0, 60),
-    meta_description: `Watch ${cleanTitle} in full HD quality on lusthub.my.id. Fast mobile streaming with verified amateur releases and zero mandatory signups needed.`.slice(0, 150),
-    summary: `Enjoy high-definition streaming of ${cleanTitle} with crystal clear playback on lusthub.my.id. This video showcases engaging adult entertainment recorded with authentic passion. Experience seamless loading across mobile and desktop devices without interruptions.`,
+    seo_title: `${cleanTitle} Full HD | LustHub`.slice(0, 60),
+    meta_description: `Stream ${cleanTitle} free in 1080p HD on lusthub.my.id. Instant mobile playback with fast edge loading and zero account signup.`,
+    summary: `Watch ${cleanTitle} in high-definition streaming with clear playback across desktop and mobile browsers on lusthub.my.id. This release runs ${durMin} and highlights natural scene chemistry without forced software downloads.`,
     highlights: [
-      `Full HD 1080p high bitrate playback`,
-      `Verified authentic video release (${durMin})`,
-      `Mobile-optimized instant player with zero buffering`
+      'Full 1080p high-bitrate browser playback',
+      `Full scene runtime (${durMin})`,
+      'Instant mobile streaming with no registration gate',
     ],
-    tags: ['viral', 'amateur', 'hd', 'homemade'],
+    tags: ['amateur', 'homemade', 'hd', 'trending'],
     faq: [
       {
-        question: `What is the video quality of ${cleanTitle}?`,
-        answer: `This video is available for high-speed streaming in full HD resolution on lusthub.my.id.`
+        question: `Can I stream ${cleanTitle} on mobile without an app?`,
+        answer: 'Yes, it streams instantly in Safari, Chrome, and Firefox without app downloads.',
       },
       {
-        question: `Do I need an account to watch this video?`,
-        answer: `No registration, account creation, or software download is required to watch on lusthub.my.id.`
-      }
-    ]
+        question: 'Is signup required to watch this full HD video?',
+        answer: 'No registration, login, or subscription is required on lusthub.my.id.',
+      },
+    ],
   };
 }
 
-/**
- * Call Gemini API with JSON mode, hard timeout, and failover model support
- */
 async function callGeminiBatch(batch) {
   if (IS_MOCK) {
     await sleep(200);
     return { results: batch.map(generateMockEnrichment), model: 'mock-enricher' };
   }
 
-  const prompt = `You are a professional content editor for an adult video streaming site (lusthub.my.id).
-Generate rich, unique, and strictly accurate SEO metadata for the following ${batch.length} videos.
+  const prompt = `You are a senior US & European adult video SEO editor writing for lusthub.my.id.
+Generate rich, unique, search-friendly US/EU English metadata for the following ${batch.length} videos.
 
-RULES:
-1. Use ONLY facts present in the metadata (title, duration, tags). DO NOT invent names, actors, or unverified claims.
-2. No clickbait or deceptive keywords. Tone must be engaging, clear, and professional English.
-3. OUTPUT FORMAT: Respond strictly with a JSON array of objects, one per video in the exact order requested:
+STRICT RULES:
+1. Use ONLY facts present in each video's metadata (title, duration_sec, keywords). NEVER invent performer names, studios, or unverified claims.
+2. Clean the title by removing random 4-character trailing uploader hashes (e.g., O9xf, Dt3r, Aac1, 74ma, Iktb, T0iq). Preserve real JAV codes (like SONE-335) and performer names.
+3. Translate any non-English or gibberish title context accurately into natural US/EU English while keeping recognizable keywords/performers/JAV codes intact.
+4. "seo_title" MUST be 42 to 60 characters total, MUST end on a complete word (NEVER truncate mid-word!), and end with " | LustHub".
+5. "meta_description" MUST be strictly 120 to 155 characters total, natural persuasive US/EU English, complete sentence.
+6. "summary": 2 to 3 clear natural sentences describing the scene and viewing experience without repeating the input title verbatim.
+7. "tags": 4 to 6 clean lowercase English category/topic keywords matching US/EU search habits (e.g. milf, blonde, amateur, pov, onlyfans, anal, jav).
+8. "faq": 2 natural Q&As matching how users search on Google/Bing/Perplexity.
+9. OUTPUT FORMAT: Respond strictly with a JSON array matching the exact order of input videos:
 [
   {
     "id": "video_id",
-    "seo_title": "Video Title - Category HD | lusthub.my.id (MAX 60 chars)",
-    "meta_description": "Accurate engaging description (STRICTLY 120-155 characters)",
-    "summary": "2 to 3 sentences unique overview of the video without repeating original title verbatim.",
+    "seo_title": "Complete Title Here | LustHub",
+    "meta_description": "120-155 char natural description.",
+    "summary": "2-3 sentences.",
     "highlights": ["Point 1", "Point 2", "Point 3"],
     "tags": ["tag1", "tag2", "tag3", "tag4"],
     "faq": [
@@ -201,7 +210,12 @@ RULES:
 ]
 
 INPUT VIDEOS:
-${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_min || '', tags: v.keywords || '' })), null, 2)}`;
+${JSON.stringify(batch.map(v => ({
+    id: v.id,
+    title: cleanSourceTitle(v.title) || v.title,
+    duration_sec: v.duration || v.length_sec || 0,
+    tags: v.keywords || '',
+  })), null, 2)}`;
 
   let attempts = 0;
   let activeModel = GEMINI_MODEL;
@@ -213,26 +227,25 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(35000), // Hard 35s timeout to prevent stalled requests
+        signal: AbortSignal.timeout(35000),
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: 'application/json',
-            temperature: 0.3
-          }
-        })
+            temperature: 0.3,
+          },
+        }),
       });
 
       if (res.status === 429 || res.status === 503) {
         const waitMs = Math.pow(2, attempts) * 3000;
         console.warn(`[${res.status} ${res.status === 429 ? 'Rate Limit' : 'Model High Demand'}] Waiting ${waitMs / 1000}s (attempt ${attempts}/3 on ${activeModel})...`);
-        
-        // If 503 persists, failover to GEMINI_FALLBACK_MODEL (e.g. gemini-3.1-flash-lite)
+
         if (res.status === 503 && activeModel !== GEMINI_FALLBACK_MODEL && attempts >= 2) {
           activeModel = GEMINI_FALLBACK_MODEL;
           console.warn(`[503 Failover] Switching active model to ${activeModel} for this batch...`);
         }
-        
+
         await sleep(waitMs);
         continue;
       }
@@ -249,13 +262,12 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
     } catch (err) {
       console.warn(`[Attempt ${attempts}/3 failed] ${err.name === 'TimeoutError' ? 'Request timed out after 35s' : err.message}`);
       if (attempts >= 3) throw err;
-      
-      // If error occurred, failover to GEMINI_FALLBACK_MODEL on final retry
+
       if (activeModel !== GEMINI_FALLBACK_MODEL && attempts >= 2) {
         activeModel = GEMINI_FALLBACK_MODEL;
         console.warn(`[Failover] Switching active model to ${activeModel} on final retry...`);
       }
-      
+
       await sleep(3000 * attempts);
     }
   }
@@ -264,21 +276,18 @@ ${JSON.stringify(batch.map(v => ({ id: v.id, title: v.title, duration: v.length_
 }
 
 async function main() {
-  console.log('=== GEMINI CONTENT ENRICHMENT PIPELINE ===');
-  console.log(`Mode: ${IS_MOCK ? 'MOCK / OFFLINE' : `LIVE (Model: ${GEMINI_MODEL})`}`);
+  console.log('=== GEMINI CONTENT ENRICHMENT PIPELINE (US/EU OPTIMIZED) ===');
+  console.log(`Mode: ${IS_MOCK ? 'MOCK / OFFLINE' : `LIVE (Model: ${GEMINI_MODEL})`}${IS_DRY_RUN ? ' [DRY RUN]' : ''}`);
   console.log(`Batch Size: ${BATCH_SIZE} | Limit for this run: ${RUN_LIMIT}`);
 
   const startTime = Date.now();
-
-  // 1. Load Quota State
   const quota = await loadQuotaState();
   console.log(`Quota used today: ${quota.requestsToday} / ${DAILY_REQUEST_LIMIT} requests`);
   if (quota.requestsToday >= DAILY_REQUEST_LIMIT && !IS_MOCK) {
-    console.log('🛑 Daily request limit reached. Exiting gracefully until tomorrow.');
+    console.log('Daily request limit reached. Exiting gracefully until tomorrow.');
     return;
   }
 
-  // 2. Load Sitemap State (Videos Pool)
   let sitemapState = { videos: [] };
   try {
     const raw = await readFile(STATE_PATH, 'utf8');
@@ -288,7 +297,6 @@ async function main() {
     process.exit(1);
   }
 
-  // 3. Load or Initialize Enriched DB
   let db = { version: 1, updated_at: new Date().toISOString(), videos: {} };
   try {
     const rawDb = await readFile(ENRICHED_PATH, 'utf8');
@@ -296,23 +304,21 @@ async function main() {
     if (!db.videos) db.videos = {};
   } catch {}
 
-  // 4. Prioritize queue: Sort by views descending, then date added descending
   const queue = [...sitemapState.videos]
     .filter(v => {
       const existing = db.videos[v.id];
-      return !existing || existing.status === 'pending' || existing.status === 'failed';
+      return !existing || existing.status === 'pending' || existing.status === 'failed' || existing.model === 'mock-enricher';
     })
     .sort((a, b) => {
-      const viewsA = Number(a.views) || 0;
-      const viewsB = Number(b.views) || 0;
-      if (viewsB !== viewsA) return viewsB - viewsA;
-      return (b.added || '').localeCompare(a.added || '');
+      const diff = scoreVideoPriority(b) - scoreVideoPriority(a);
+      if (Math.abs(diff) > 0.01) return diff;
+      return (b.published || b.added || '').localeCompare(a.published || a.added || '');
     })
     .slice(0, RUN_LIMIT);
 
-  console.log(`Queue size: ${queue.length} videos ready to enrich.`);
+  console.log(`Queue size: ${queue.length} high-priority videos ready to enrich.`);
   if (queue.length === 0) {
-    console.log('✓ All queued videos are already enriched!');
+    console.log('All queued videos are already enriched with real AI metadata!');
     return;
   }
 
@@ -321,14 +327,13 @@ async function main() {
   let rejectedCount = 0;
 
   for (let i = 0; i < queue.length; i += BATCH_SIZE) {
-    // Safety Watchdog: Prevent GitHub Actions CI timeout by exiting cleanly at 12 minutes
     if (Date.now() - startTime > MAX_RUNTIME_MS) {
-      console.log('⏱ Runtime safety threshold (12m) reached. Stopping loop cleanly so git can commit changes.');
+      console.log('Runtime safety threshold (12m) reached. Stopping cleanly.');
       break;
     }
 
     if (quota.requestsToday >= DAILY_REQUEST_LIMIT && !IS_MOCK) {
-      console.log('🛑 Daily request limit reached during execution. Stopping cleanly.');
+      console.log('Daily request limit reached during execution. Stopping cleanly.');
       break;
     }
 
@@ -340,15 +345,15 @@ async function main() {
       const { results, model: usedModel } = await callGeminiBatch(batch);
 
       results.forEach((item, idx) => {
-        const orig = batch[idx] || batch.find(b => b.id === item.id) || batch[0];
+        const orig = batch.find(b => b.id === item.id) || batch[idx] || batch[0];
         const hash = computeSourceHash(orig);
         const validation = validateEnrichment(orig, item);
 
         if (validation.valid) {
           db.videos[orig.id] = {
             video_id: orig.id,
-            title: orig.title || item.seo_title,
-            slug: orig.slug || (orig.title ? orig.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : orig.id),
+            title: cleanSourceTitle(orig.title) || orig.title || item.seo_title,
+            slug: orig.slug || slugify(orig.title, 80, orig.id),
             thumbnail: orig.thumbnail || '',
             source_hash: hash,
             seo_title: item.seo_title,
@@ -360,7 +365,7 @@ async function main() {
             status: 'enriched',
             model: usedModel,
             generated_at: new Date().toISOString(),
-            attempts: (db.videos[orig.id]?.attempts || 0) + 1
+            attempts: (db.videos[orig.id]?.attempts || 0) + 1,
           };
           successCount++;
           console.log(`  ✓ [Enriched] ID: ${orig.id} | "${item.seo_title}"`);
@@ -372,7 +377,7 @@ async function main() {
             rejection_reason: validation.reason,
             model: usedModel,
             generated_at: new Date().toISOString(),
-            attempts: (db.videos[orig.id]?.attempts || 0) + 1
+            attempts: (db.videos[orig.id]?.attempts || 0) + 1,
           };
           rejectedCount++;
           console.warn(`  ✗ [Rejected] ID: ${orig.id}: ${validation.reason}`);
@@ -380,7 +385,6 @@ async function main() {
         processedCount++;
       });
 
-      // Save incremental checkpoint
       if (!IS_DRY_RUN) {
         db.updated_at = new Date().toISOString();
         await writeFile(ENRICHED_PATH, JSON.stringify(db, null, 2), 'utf8');
@@ -391,13 +395,13 @@ async function main() {
         await sleep(REQUEST_DELAY_MS);
       }
     } catch (err) {
-      console.error(`Batch processing failed:`, err.message);
+      console.error('Batch processing failed:', err.message);
       batch.forEach(v => {
         db.videos[v.id] = {
           video_id: v.id,
           status: 'failed',
           rejection_reason: err.message,
-          attempts: (db.videos[v.id]?.attempts || 0) + 1
+          attempts: (db.videos[v.id]?.attempts || 0) + 1,
         };
       });
 

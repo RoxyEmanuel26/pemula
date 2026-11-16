@@ -8,6 +8,8 @@
     "sitemap": "node scripts/generate-sitemaps.mjs",
     "validate:sitemaps": "node scripts/validate-sitemaps.mjs",
     "seo:enrich": "node scripts/seo-enrich.mjs",
-    "seo:status": "node scripts/seo-status.mjs"
+    "seo:status": "node scripts/seo-status.mjs",
+    "home:ssr": "node scripts/build-home-ssr.mjs",
+    "indexnow": "node scripts/indexnow-submit.mjs"
   }
 }

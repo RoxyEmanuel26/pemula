@@ -10,7 +10,7 @@
     <meta name="description"
         content="Watch trending viral video leaks and premium 18+ JAV content on lusthub.my.id. Fast, free HD streaming with zero app downloads or mandatory signups.">
     <meta http-equiv="content-language" content="en">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="rating" content="RTA-5042-1996-1400-1577-RTA">
 
     <!-- Performance Preconnects -->
@@ -364,14 +364,16 @@
 
             <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Popular Categories & Filters</h3>
             <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0;">
-                <li><a href="/c/indonesia" style="color: #e8a800; text-decoration: none;">🇮🇩 Indonesian Viral</a></li>
-                <li><a href="/c/viral" style="color: #e8a800; text-decoration: none;">🔥 Latest Viral</a></li>
+                <li><a href="/c/milf" style="color: #e8a800; text-decoration: none;">👩 MILF</a></li>
+                <li><a href="/c/blonde" style="color: #e8a800; text-decoration: none;">💛 Blonde</a></li>
+                <li><a href="/c/pov" style="color: #e8a800; text-decoration: none;">🎥 POV</a></li>
+                <li><a href="/c/onlyfans" style="color: #e8a800; text-decoration: none;">💎 OnlyFans</a></li>
+                <li><a href="/c/european" style="color: #e8a800; text-decoration: none;">🌍 European</a></li>
+                <li><a href="/c/amateur" style="color: #e8a800; text-decoration: none;">🏠 Homemade Amateur</a></li>
                 <li><a href="/c/japanese" style="color: #e8a800; text-decoration: none;">🎌 Japanese Uncensored</a></li>
                 <li><a href="/c/korean" style="color: #e8a800; text-decoration: none;">🇰🇷 Korean Adult</a></li>
-                <li><a href="/c/amateur" style="color: #e8a800; text-decoration: none;">🏠 Homemade Amateur</a></li>
-                <li><a href="/c/hijab" style="color: #e8a800; text-decoration: none;">📸 Hijab Hot</a></li>
-                <li><a href="/c/student" style="color: #e8a800; text-decoration: none;">🎓 Student Leaks</a></li>
-                <li><a href="/c/couple" style="color: #e8a800; text-decoration: none;">💑 Hot Couples</a></li>
+                <li><a href="/c/viral" style="color: #e8a800; text-decoration: none;">🔥 Latest Viral</a></li>
+                <li><a href="/c/indonesia" style="color: #e8a800; text-decoration: none;">🇮🇩 Indonesian Viral</a></li>
             </ul>
 
             <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Related Video Tags</h3>
@@ -426,6 +428,137 @@
             }
         }
 
+        function toCategorySlug(tag) {
+            return String(tag || '')
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 40) || 'viral';
+        }
+
+        function attachFacadePlay(facade, wrapper, embedUrl, idForAnalytics) {
+            if (!facade || !wrapper || !embedUrl || !isSafeUrl(embedUrl)) return;
+            function activatePlayer() {
+                // Open Adsterra Direct Link on first user interaction (preserving 100% ad monetization)
+                window.open('https://apiguinee.org/4/e1c2395d627677a3e5c9287579e151ea', '_blank');
+                if (window.trackEvent) {
+                    window.trackEvent('direct_link_clicked', { video_id: idForAnalytics });
+                }
+
+                // Swap facade with actual live iframe with autoplay
+                wrapper.innerHTML = '';
+                const iframe = document.createElement('iframe');
+                iframe.src = embedUrl.includes('?') ? (embedUrl + '&autoplay=1') : (embedUrl + '?autoplay=1');
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allowfullscreen', 'true');
+                iframe.setAttribute('allow', 'autoplay; fullscreen');
+                iframe.setAttribute('scrolling', 'no');
+                wrapper.appendChild(iframe);
+            }
+            facade.addEventListener('click', activatePlayer);
+            facade.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    activatePlayer();
+                }
+            });
+        }
+
+        function mountActionAndShare(targetEl, videoInfo) {
+            if (!targetEl) return;
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'video-actions';
+            actionsContainer.style.cssText = 'display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;';
+
+            const downloadBtn = document.createElement('a');
+            downloadBtn.className = 'player-open-tab player-open-tab-primary';
+            downloadBtn.href = 'https://apiguinee.org/4/e1c2395d627677a3e5c9287579e151ea';
+            downloadBtn.target = '_blank';
+            downloadBtn.rel = 'noopener noreferrer';
+            downloadBtn.innerHTML = '⚡ Download HD Video';
+            downloadBtn.addEventListener('click', () => {
+                if (window.trackEvent) {
+                    window.trackEvent('video_download_clicked', {
+                        video_id: videoInfo.id,
+                        video_title: videoInfo.title,
+                        url: downloadBtn.href
+                    });
+                }
+            });
+            actionsContainer.appendChild(downloadBtn);
+            targetEl.appendChild(actionsContainer);
+
+            const cleanTitle = (videoInfo.title || 'Untitled').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().substring(0, 80);
+            const cleanSlug = videoInfo.id ? videoInfo.id + '-' + cleanTitle : cleanTitle;
+            const shareUrl = videoInfo.canonicalUrl || (window.location.origin + '/v/' + cleanSlug);
+
+            const shareHeader = document.createElement('div');
+            shareHeader.style.cssText = 'margin-top: 24px; padding-top: 20px; border-top: 1px solid #333;';
+            shareHeader.innerHTML = '<p style="color: #aaa; font-size: 0.85rem; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">📤 Share &amp; Spread</p>';
+            targetEl.appendChild(shareHeader);
+
+            const shareContainer = document.createElement('div');
+            shareContainer.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap;';
+
+            const whatsappBtn = document.createElement('a');
+            whatsappBtn.className = 'player-open-tab';
+            whatsappBtn.style.cssText = 'background: #25D366; color: #fff; text-shadow: none; font-weight: 600;';
+            whatsappBtn.target = '_blank';
+            whatsappBtn.rel = 'noopener noreferrer';
+            whatsappBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Watch this HD video free on lusthub.my.id! 🔥\n' + shareUrl + '?ref=whatsapp');
+            whatsappBtn.innerHTML = '💬 WhatsApp';
+            whatsappBtn.addEventListener('click', () => {
+                if (window.trackEvent) window.trackEvent('video_share_whatsapp', { video_id: videoInfo.id, video_title: videoInfo.title, share_url: shareUrl + '?ref=whatsapp' });
+            });
+
+            const telegramBtn = document.createElement('a');
+            telegramBtn.className = 'player-open-tab';
+            telegramBtn.style.cssText = 'background: #229ED9; color: #fff; text-shadow: none; font-weight: 600;';
+            telegramBtn.target = '_blank';
+            telegramBtn.rel = 'noopener noreferrer';
+            telegramBtn.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl + '?ref=telegram') + '&text=' + encodeURIComponent('Watch ' + (videoInfo.title || 'this video') + ' on lusthub.my.id! 🔥');
+            telegramBtn.innerHTML = '✈️ Telegram';
+            telegramBtn.addEventListener('click', () => {
+                if (window.trackEvent) window.trackEvent('video_share_telegram', { video_id: videoInfo.id, video_title: videoInfo.title, share_url: shareUrl + '?ref=telegram' });
+            });
+
+            const twitterBtn = document.createElement('a');
+            twitterBtn.className = 'player-open-tab';
+            twitterBtn.style.cssText = 'background: #000; color: #fff; text-shadow: none; font-weight: 600; border: 1px solid #333;';
+            twitterBtn.target = '_blank';
+            twitterBtn.rel = 'noopener noreferrer';
+            twitterBtn.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent((videoInfo.title || 'Check this out') + ' 🔥') + '&url=' + encodeURIComponent(shareUrl + '?ref=twitter');
+            twitterBtn.innerHTML = '𝕏 Twitter';
+            twitterBtn.addEventListener('click', () => {
+                if (window.trackEvent) window.trackEvent('video_share_twitter', { video_id: videoInfo.id, video_title: videoInfo.title, share_url: shareUrl + '?ref=twitter' });
+            });
+
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'player-open-tab player-open-tab-secondary';
+            copyBtn.style.cursor = 'pointer';
+            copyBtn.innerHTML = '🔗 Copy Link';
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(shareUrl + '?ref=copy').then(() => {
+                    copyBtn.innerHTML = '✅ Link Copied!';
+                    setTimeout(() => { copyBtn.innerHTML = '🔗 Copy Link'; }, 2000);
+                });
+                if (window.trackEvent) window.trackEvent('video_share_copy', { video_id: videoInfo.id, video_title: videoInfo.title, share_url: shareUrl + '?ref=copy' });
+            });
+
+            shareContainer.append(whatsappBtn, telegramBtn, twitterBtn, copyBtn);
+            targetEl.appendChild(shareContainer);
+        }
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.video-tag-search[data-search]');
+            if (!btn) return;
+            const term = btn.getAttribute('data-search');
+            if (term) window.location.href = '/?q=' + encodeURIComponent(term);
+        });
+
         // Get video slug from query param or path
         const urlParams = new URLSearchParams(window.location.search);
         let videoId = urlParams.get('id') || urlParams.get('v');
@@ -439,16 +572,34 @@
             }
         }
 
-        // If URL from sitemap uses format ?v=ID-SLUG or /v/ID-SLUG,
-        // we only need the ID (the part before the first hyphen).
         if (videoId && videoId.includes('-')) {
             videoId = videoId.split('-')[0];
         }
 
-        if (!videoId) {
-            showError('Video ID not found.');
-        } else {
-            fetchVideoData(videoId);
+        function hydrateSsrVideo() {
+            const ssrFacade = document.querySelector('#videoContainer .video-facade[data-ssr-video="1"]');
+            if (!ssrFacade) return false;
+            const ssrWrapper = ssrFacade.closest('.video-wrapper');
+            const ssrId = ssrFacade.getAttribute('data-video-id') || videoId;
+            const ssrEmbed = ssrFacade.getAttribute('data-embed') || '';
+            const ssrTitle = ssrFacade.getAttribute('data-title') || document.title;
+            const ssrCanonical = ssrFacade.getAttribute('data-canonical') || '';
+            attachFacadePlay(ssrFacade, ssrWrapper, ssrEmbed, ssrId);
+
+            const actionsSlot = document.getElementById('ssrVideoActionsSlot');
+            if (actionsSlot) {
+                mountActionAndShare(actionsSlot, { id: ssrId, title: ssrTitle, canonicalUrl: ssrCanonical });
+            }
+
+            const similarGrid = document.getElementById('similarVideoGrid');
+            if (!similarGrid || similarGrid.children.length === 0) {
+                const tagTexts = Array.from(document.querySelectorAll('.video-tags .video-tag')).map(el => el.textContent.trim()).filter(Boolean);
+                fetchSimilarVideos({ id: ssrId, title: ssrTitle, keywords: tagTexts });
+            } else {
+                const simSection = document.getElementById('similarVideosSection');
+                if (simSection) simSection.style.display = 'block';
+            }
+            return true;
         }
 
         async function fetchVideoData(id) {
@@ -555,32 +706,7 @@
                     facade.appendChild(durPill);
                 }
 
-                function activatePlayer() {
-                    // Open Adsterra Direct Link on first user interaction (preserving 100% ad monetization)
-                    window.open('https://apiguinee.org/4/e1c2395d627677a3e5c9287579e151ea', '_blank');
-                    if (window.trackEvent) {
-                        window.trackEvent('direct_link_clicked', { video_id: video.id });
-                    }
-
-                    // Swap facade with actual live iframe with autoplay
-                    wrapper.innerHTML = '';
-                    const iframe = document.createElement('iframe');
-                    const autoplayUrl = video.embed.includes('?') ? (video.embed + '&autoplay=1') : (video.embed + '?autoplay=1');
-                    iframe.src = autoplayUrl;
-                    iframe.setAttribute('frameborder', '0');
-                    iframe.setAttribute('allowfullscreen', 'true');
-                    iframe.setAttribute('allow', 'autoplay; fullscreen');
-                    iframe.setAttribute('scrolling', 'no');
-                    wrapper.appendChild(iframe);
-                }
-
-                facade.addEventListener('click', activatePlayer);
-                facade.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        activatePlayer();
-                    }
-                });
+                attachFacadePlay(facade, wrapper, video.embed, video.id);
 
                 wrapper.appendChild(facade);
                 container.appendChild(wrapper);
@@ -631,131 +757,17 @@
 
                 tagArray.forEach(tag => {
                     if (!tag) return;
-                    const tagLink = document.createElement('a');
-                    tagLink.className = 'video-tag';
-                    tagLink.href = '/c/' + encodeURIComponent(tag);
-                    tagLink.textContent = tag;
-                    tagsContainer.appendChild(tagLink);
+                    const tagBtn = document.createElement('a');
+                    tagBtn.className = 'video-tag';
+                    tagBtn.href = '/c/' + toCategorySlug(tag);
+                    tagBtn.textContent = tag;
+                    tagsContainer.appendChild(tagBtn);
                 });
 
                 details.appendChild(tagsContainer);
             }
 
-            // Action buttons (Download, Copy Link, Share to Telegram)
-            const actionsContainer = document.createElement('div');
-            actionsContainer.className = 'video-actions';
-            actionsContainer.style.cssText = 'display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;';
-
-            const downloadBtn = document.createElement('a');
-            downloadBtn.className = 'player-open-tab player-open-tab-primary';
-            const adLinks = [
-                "https://apiguinee.org/4/e1c2395d627677a3e5c9287579e151ea"
-            ];
-            downloadBtn.href = adLinks[Math.floor(Math.random() * adLinks.length)];
-            downloadBtn.target = '_blank';
-            downloadBtn.rel = 'noopener noreferrer';
-            downloadBtn.innerHTML = '⚡ Download HD Video';
-            downloadBtn.addEventListener('click', () => {
-                if (window.trackEvent) {
-                    window.trackEvent('video_download_clicked', {
-                        video_id: video.id,
-                        video_title: video.title,
-                        url: downloadBtn.href
-                    });
-                }
-            });
-
-            const cleanTitle = (video.title || 'Untitled').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().substring(0, 80);
-            const cleanSlug = video.id ? video.id + '-' + cleanTitle : cleanTitle;
-            const shareUrl = window.location.origin + '/v/' + cleanSlug;
-
-            // Share section header
-            const shareHeader = document.createElement('div');
-            shareHeader.style.cssText = 'margin-top: 24px; padding-top: 20px; border-top: 1px solid #333;';
-            shareHeader.innerHTML = '<p style="color: #aaa; font-size: 0.85rem; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">📤 Share & Spread</p>';
-            details.appendChild(shareHeader);
-
-            const shareContainer = document.createElement('div');
-            shareContainer.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap;';
-
-            // WhatsApp Share
-            const whatsappBtn = document.createElement('a');
-            whatsappBtn.className = 'player-open-tab';
-            whatsappBtn.style.cssText = 'background: #25D366; color: #fff; text-shadow: none; font-weight: 600;';
-            whatsappBtn.target = '_blank';
-            whatsappBtn.rel = 'noopener noreferrer';
-            whatsappBtn.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent('Watch this HD video free on lusthub.my.id! 🔥\n' + shareUrl + '?ref=whatsapp');
-            whatsappBtn.innerHTML = '💬 WhatsApp';
-            whatsappBtn.addEventListener('click', () => {
-                if (window.trackEvent) {
-                    window.trackEvent('video_share_whatsapp', {
-                        video_id: video.id,
-                        video_title: video.title,
-                        share_url: shareUrl + '?ref=whatsapp'
-                    });
-                }
-            });
-
-            // Telegram Share
-            const telegramBtn = document.createElement('a');
-            telegramBtn.className = 'player-open-tab';
-            telegramBtn.style.cssText = 'background: #229ED9; color: #fff; text-shadow: none; font-weight: 600;';
-            telegramBtn.target = '_blank';
-            telegramBtn.rel = 'noopener noreferrer';
-            telegramBtn.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl + '?ref=telegram') + '&text=' + encodeURIComponent('Watch ' + (video.title || 'this video') + ' on lusthub.my.id! 🔥');
-            telegramBtn.innerHTML = '✈️ Telegram';
-            telegramBtn.addEventListener('click', () => {
-                if (window.trackEvent) {
-                    window.trackEvent('video_share_telegram', {
-                        video_id: video.id,
-                        video_title: video.title,
-                        share_url: shareUrl + '?ref=telegram'
-                    });
-                }
-            });
-
-            // Twitter/X Share
-            const twitterBtn = document.createElement('a');
-            twitterBtn.className = 'player-open-tab';
-            twitterBtn.style.cssText = 'background: #000; color: #fff; text-shadow: none; font-weight: 600; border: 1px solid #333;';
-            twitterBtn.target = '_blank';
-            twitterBtn.rel = 'noopener noreferrer';
-            twitterBtn.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent((video.title || 'Check this out') + ' 🔥') + '&url=' + encodeURIComponent(shareUrl + '?ref=twitter');
-            twitterBtn.innerHTML = '𝕏 Twitter';
-            twitterBtn.addEventListener('click', () => {
-                if (window.trackEvent) {
-                    window.trackEvent('video_share_twitter', {
-                        video_id: video.id,
-                        video_title: video.title,
-                        share_url: shareUrl + '?ref=twitter'
-                    });
-                }
-            });
-
-            // Copy Link
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'player-open-tab player-open-tab-secondary';
-            copyBtn.style.cursor = 'pointer';
-            copyBtn.innerHTML = '🔗 Copy Link';
-            copyBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(shareUrl + '?ref=copy').then(() => {
-                    copyBtn.innerHTML = '✅ Link Copied!';
-                    setTimeout(() => { copyBtn.innerHTML = '🔗 Copy Link'; }, 2000);
-                });
-                if (window.trackEvent) {
-                    window.trackEvent('video_share_copy', {
-                        video_id: video.id,
-                        video_title: video.title,
-                        share_url: shareUrl + '?ref=copy'
-                    });
-                }
-            });
-
-            shareContainer.appendChild(whatsappBtn);
-            shareContainer.appendChild(telegramBtn);
-            shareContainer.appendChild(twitterBtn);
-            shareContainer.appendChild(copyBtn);
-            details.appendChild(shareContainer);
+            mountActionAndShare(details, video);
 
             container.appendChild(details);
         }
@@ -1007,6 +1019,14 @@
             errDiv.appendChild(backBtn);
 
             container.appendChild(errDiv);
+        }
+
+        if (!hydrateSsrVideo()) {
+            if (!videoId) {
+                showError('Video ID not found.');
+            } else {
+                fetchVideoData(videoId);
+            }
         }
     </script>
 

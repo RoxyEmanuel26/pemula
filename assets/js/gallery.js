@@ -108,6 +108,26 @@ const KATEGORI_LIST = [
     { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' }
 ];
 
+const CURATED_HUB_SLUGS = new Set([
+    'milf', 'blonde', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
+    'big-tits', 'big-ass', 'anal', 'blowjob', 'lesbian', 'threesome', 'creampie',
+    'interracial', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public',
+    'asian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade',
+    'indonesia', 'japanese', 'korean', 'live-cam', 'mature', 'outdoor', 'student',
+    'viral', 'bokep-indo', 'mahasiswi', 'pasutri', 'rumahan', 'artis-indo',
+    'pantai', 'hotel', 'tiktok-viral', 'hot-indo'
+]);
+
+function toCategorySlug(tag) {
+    return String(tag || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60);
+}
+
 // =====================================================
 //  CACHE STORE — In-memory cache for API responses
 //  Key: "{tab}_{page}_{query}", expires in 5 minutes
@@ -805,15 +825,29 @@ function createCardElement(card, idx) {
         tagsContainer.className = 'card-tags';
         
         card.keywords.forEach(function(tag) {
-            var tagSpan = document.createElement('a');
-            tagSpan.className = 'card-tag';
-            tagSpan.href = '/c/' + encodeURIComponent(tag);
-            tagSpan.textContent = tag;
-            tagSpan.addEventListener('click', function(e) {
-                // Let the browser navigate naturally to the category page for full SEO benefit
-                e.stopPropagation(); 
-            });
-            tagsContainer.appendChild(tagSpan);
+            var tagSlug = toCategorySlug(tag);
+            if (tagSlug && CURATED_HUB_SLUGS.has(tagSlug)) {
+                var tagLink = document.createElement('a');
+                tagLink.className = 'card-tag';
+                tagLink.href = '/c/' + tagSlug;
+                tagLink.textContent = tag;
+                tagLink.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                tagsContainer.appendChild(tagLink);
+            } else {
+                var tagBtn = document.createElement('button');
+                tagBtn.type = 'button';
+                tagBtn.className = 'card-tag';
+                tagBtn.style.cssText = 'border:none;font:inherit;cursor:pointer;';
+                tagBtn.textContent = tag;
+                tagBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    clickTag(tag);
+                });
+                tagsContainer.appendChild(tagBtn);
+            }
         });
         
         var metaDiv = cardEl.querySelector('.card-meta');
@@ -1033,11 +1067,16 @@ function renderPagination(totalPages) {
     var frag = document.createDocumentFragment();
 
     function createBtn(text, pageNum, className = 'page-btn') {
-        var btn = document.createElement('a');
+        var btn;
+        if (isSearchActive && currentQuery) {
+            btn = document.createElement('button');
+            btn.type = 'button';
+        } else {
+            btn = document.createElement('a');
+            btn.href = pageNum <= 1 ? '/' : '?page=' + pageNum;
+        }
         btn.className = className;
         btn.textContent = text;
-        var q = currentQuery ? '&q=' + encodeURIComponent(currentQuery) : '';
-        btn.href = '?page=' + pageNum + q;
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             goToPage(pageNum);

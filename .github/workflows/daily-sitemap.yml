@@ -39,11 +39,11 @@ jobs:
           GEMINI_BATCH_SIZE: 8
         run: node scripts/seo-enrich.mjs --limit 400
 
-      - name: Regenerate sitemaps and RSS video feed with newly enriched videos
-        run: node scripts/generate-sitemaps.mjs --offline
-
       - name: Rebuild static SSR homepage categories, top videos, and schema
         run: node scripts/build-home-ssr.mjs
+
+      - name: Regenerate sitemaps and RSS video feed with newly enriched videos
+        run: node scripts/generate-sitemaps.mjs --offline
 
       - name: Validate sitemap limits, RSS feed, and video metadata
         run: node scripts/validate-sitemaps.mjs

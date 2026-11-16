@@ -1,6 +1,8 @@
 # ==============================================
 # robots.txt — lusthub.my.id
 # Optimized for US/EU Multi-Engine Discovery, AI Citations & High Crawl Speed
+# Search parameter URLs (?q=) are controlled via HTTP X-Robots-Tag: noindex, follow
+# so crawlers can process noindex directives instead of stalling in robots.txt blocks.
 # ==============================================
 
 # ==============================================
@@ -48,6 +50,7 @@ Disallow: /
 # (Enables discovery & citations in ChatGPT Search, Perplexity, Claude & Gemini)
 # ==============================================
 User-agent: GPTBot
+User-agent: OAI-SearchBot
 User-agent: ChatGPT-User
 User-agent: PerplexityBot
 User-agent: ClaudeBot
@@ -56,8 +59,7 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
-Disallow: /*?q=
-Disallow: /*?*q=
+Allow: /feed.xml
 Disallow: /api/
 
 # ==============================================
@@ -70,8 +72,7 @@ Allow: /
 Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
-Disallow: /*?q=
-Disallow: /*?*q=
+Allow: /feed.xml
 Disallow: /api/
 
 # Google Video Bot
@@ -84,6 +85,15 @@ Allow: /sitemaps/
 User-agent: Googlebot-Image
 Allow: /assets/icons/
 
+# Applebot (US/EU iOS Safari, Siri & Spotlight Search)
+User-agent: Applebot
+Allow: /
+Allow: /c/
+Allow: /v/
+Allow: /sitemaps/
+Allow: /feed.xml
+Disallow: /api/
+
 # Bing Search (powers Bing, DuckDuckGo, Yahoo, Ecosia & Copilot)
 User-agent: Bingbot
 Allow: /
@@ -91,8 +101,6 @@ Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
 Allow: /feed.xml
-Disallow: /*?q=
-Disallow: /*?*q=
 Disallow: /api/
 
 # Yandex Search (Eastern Europe & Russia)
@@ -102,15 +110,11 @@ Allow: /c/
 Allow: /v/
 Allow: /sitemaps/
 Allow: /feed.xml
-Disallow: /*?q=
-Disallow: /*?*q=
 Disallow: /api/
 
 # Baidu Search
 User-agent: Baiduspider
 Allow: /
-Disallow: /*?q=
-Disallow: /*?*q=
 Disallow: /api/
 
 # DuckDuckGo
@@ -118,8 +122,7 @@ User-agent: DuckDuckBot
 Allow: /
 Allow: /c/
 Allow: /v/
-Disallow: /*?q=
-Disallow: /*?*q=
+Allow: /feed.xml
 Disallow: /api/
 
 # Default rules for all other benign crawlers
@@ -135,8 +138,6 @@ Allow: /contact
 Allow: /privacy
 Allow: /terms
 Allow: /howto
-Disallow: /*?q=
-Disallow: /*?*q=
 Disallow: /api/
 Disallow: /assets/js/ads.js
 Disallow: /assets/js/ads.min.js

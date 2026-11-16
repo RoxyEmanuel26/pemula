@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import {
@@ -8,6 +8,7 @@ import {
   US_EU_CATEGORIES,
   decodeMojibake,
   slugify,
+  cleanSourceTitle,
   normalizeUrl,
 } from '../api/schema-helper.js';
 
@@ -75,7 +76,7 @@ function normalizeKeywords(raw) {
 
 function normalizeVideo(video) {
   const id = String(video?.id || '').trim();
-  const title = decodeMojibake(video?.title) || (id ? `Video ${id}` : '');
+  const title = cleanSourceTitle(video?.title) || decodeMojibake(video?.title) || (id ? `Video ${id}` : '');
   const thumbnail = normalizeUrl(validHttpUrl(video?.thumbnail || video?.default_thumb?.src || video?.thumbs?.[0]?.src));
   const player = normalizeUrl(validHttpUrl(video?.player || video?.embed || (id ? `https://www.eporner.com/embed/${id}/` : '')));
   const published = normalizeDate(video?.published || video?.added);
@@ -88,7 +89,7 @@ function normalizeVideo(video) {
 
   const normalized = {
     id,
-    slug: slugify(video?.slug || title, 100, id),
+    slug: slugify(title, 80, id),
     title: title.slice(0, 300),
     description: String(video?.description || `Watch ${title} in HD on lusthub.my.id.`).slice(0, 2048),
     thumbnail,
@@ -204,10 +205,23 @@ async function fetchRemovedIds() {
 
 function gitLastModified(file) {
   try {
+    const dirty = execFileSync('git', ['status', '--porcelain', '--', file], {
+      cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (dirty) return new Date().toISOString().slice(0, 10);
     const value = execFileSync('git', ['log', '-1', '--format=%cI', '--', file], {
       cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
     return normalizeDate(value)?.slice(0, 10) || null;
+  } catch { return null; }
+}
+
+async function fileLastModified(file) {
+  const fromGit = gitLastModified(file);
+  if (fromGit) return fromGit;
+  try {
+    const st = await stat(path.join(ROOT, file));
+    return st.mtime.toISOString().slice(0, 10);
   } catch { return null; }
 }
 
@@ -310,27 +324,7 @@ async function main() {
   const latest = OFFLINE ? [] : await fetchCatalogVideos(knownIds, state.videos.length > 0);
   const removedIds = OFFLINE ? new Set() : await fetchRemovedIds();
 
-  // Preserve freshly fetched metadata (views/rate/keywords/big thumb) over stale state records
-  const merged = new Map();
-  for (const video of [...latest, ...state.videos]) {
-    const normalized = normalizeVideo(video);
-    if (normalized && !removedIds.has(normalized.id) && !merged.has(normalized.id)) {
-      merged.set(normalized.id, normalized);
-    }
-  }
-  const videos = [...merged.values()]
-    .sort((a, b) => b.published.localeCompare(a.published) || a.id.localeCompare(b.id))
-    .slice(0, MAX_RECORDS);
-  if (!videos.length) throw new Error('No valid videos available; refusing to replace a good sitemap with an empty one.');
-
-  const changed = [];
-  const indexEntries = [];
-  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_pages.xml'), buildPagesSitemap())) changed.push('sitemap_pages.xml');
-  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap())) changed.push('sitemap_categories.xml');
-  indexEntries.push({ file: 'sitemap_pages.xml', lastmod: gitLastModified('index.html') || new Date().toISOString().slice(0, 10) });
-  indexEntries.push({ file: 'sitemap_categories.xml', lastmod: gitLastModified('data/category-descriptions.json') || gitLastModified('category.html') || new Date().toISOString().slice(0, 10) });
-
-  // Quality Gate: ONLY genuine AI-enriched videos (exclude mock-enricher & pending/failed thin pages)
+  // Load genuine AI-enriched videos FIRST so they are pinned and never evicted by the rolling 20k cap
   const enrichedIds = new Set();
   let enrichedMap = {};
   try {
@@ -346,6 +340,59 @@ async function main() {
     }
   } catch {}
 
+  // Preserve freshly fetched metadata (views/rate/keywords/big thumb) over stale state records
+  const merged = new Map();
+  for (const video of [...latest, ...state.videos]) {
+    const normalized = normalizeVideo(video);
+    if (normalized && !removedIds.has(normalized.id) && !merged.has(normalized.id)) {
+      merged.set(normalized.id, normalized);
+    }
+  }
+
+  // Recover previously evicted genuine AI-enriched videos back into the active sitemap pool
+  let recoveredCount = 0;
+  for (const id of enrichedIds) {
+    if (merged.has(id) || removedIds.has(id)) continue;
+    const e = enrichedMap[id];
+    if (!e || !e.title) continue;
+    const recovered = normalizeVideo({
+      id,
+      slug: e.slug,
+      title: e.title,
+      description: e.meta_description || e.summary || `Watch ${e.title} in HD on lusthub.my.id.`,
+      thumbnail: e.thumbnail,
+      player: `https://www.eporner.com/embed/${id}/`,
+      published: e.generated_at || '2026-10-28T00:00:00Z',
+      keywords: Array.isArray(e.tags) ? e.tags.join(', ') : '',
+    });
+    if (recovered) {
+      merged.set(id, recovered);
+      recoveredCount += 1;
+    }
+  }
+
+  // Pin all AI-enriched videos first (newest first), then fill remainder with newest non-enriched catalog videos
+  const allMerged = [...merged.values()];
+  const pinnedEnriched = allMerged
+    .filter((v) => enrichedIds.has(v.id))
+    .sort((a, b) => b.published.localeCompare(a.published) || a.id.localeCompare(b.id));
+  const otherVideos = allMerged
+    .filter((v) => !enrichedIds.has(v.id))
+    .sort((a, b) => b.published.localeCompare(a.published) || a.id.localeCompare(b.id));
+  const videos = [...pinnedEnriched, ...otherVideos].slice(0, MAX_RECORDS);
+  if (!videos.length) throw new Error('No valid videos available; refusing to replace a good sitemap with an empty one.');
+  if (recoveredCount > 0) console.log(`Recovered ${recoveredCount} AI-enriched video(s) into sitemap pool.`);
+
+  const changed = [];
+  const indexEntries = [];
+  const pagesLastMod = await fileLastModified('index.html') || new Date().toISOString().slice(0, 10);
+  const catLastMod = await fileLastModified('data/category-descriptions.json') || await fileLastModified('category.html') || new Date().toISOString().slice(0, 10);
+  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_pages.xml'), buildPagesSitemap())) changed.push('sitemap_pages.xml');
+  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap())) changed.push('sitemap_categories.xml');
+  indexEntries.push({ file: 'sitemap_pages.xml', lastmod: pagesLastMod });
+  indexEntries.push({ file: 'sitemap_categories.xml', lastmod: catLastMod });
+
+  // Quality Gate: ONLY genuine AI-enriched videos (exclude mock-enricher & pending/failed thin pages)
   const sitemapVideos = enrichedIds.size > 0
     ? videos.filter((v) => enrichedIds.has(v.id))
     : videos;

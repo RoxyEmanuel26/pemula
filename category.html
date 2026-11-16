@@ -7,7 +7,7 @@
     <meta name="yandex-verification" content="a25cbe2b4f64ad3a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="content-language" content="en">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="rating" content="RTA-5042-1996-1400-1577-RTA">
 
     <!-- SEO: Dynamic title & description set by JS -->
@@ -483,8 +483,8 @@
             const decodedSlug = decodeURIComponent(rawSlug);
             // Convert dashes to spaces for API query (slug is always dash-separated)
             const keyword = decodedSlug.replace(/-/g, ' ').trim();
-            // Canonical slug always uses dashes (for URL consistency)
-            const canonSlug = decodedSlug.replace(/\s+/g, '-').replace(/%20/g, '-').trim();
+            // Canonical slug always matches backend slugify rules
+            const canonSlug = decodedSlug.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'viral';
 
             if (!keyword) {
                 window.location.href = '/';
@@ -718,7 +718,7 @@
                 prev.className = 'page-btn';
                 prev.textContent = '← Prev';
                 if (current > 1) {
-                    prev.href = `/c/${rawSlug}?page=${current - 1}`;
+                    prev.href = current === 2 ? `/c/${canonSlug}` : `/c/${canonSlug}?page=${current - 1}`;
                     prev.addEventListener('click', (e) => { e.preventDefault(); loadPage(current - 1); });
                 } else {
                     prev.style.opacity = '0.3';
@@ -736,7 +736,7 @@
                         const btn = document.createElement('a');
                         btn.className = 'page-btn' + (p === current ? ' active' : '');
                         btn.textContent = p;
-                        btn.href = `/c/${rawSlug}?page=${p}`;
+                        btn.href = p === 1 ? `/c/${canonSlug}` : `/c/${canonSlug}?page=${p}`;
                         btn.addEventListener('click', (e) => { e.preventDefault(); loadPage(p); });
                         pag.appendChild(btn);
                     }
@@ -747,7 +747,7 @@
                 next.className = 'page-btn';
                 next.textContent = 'Next →';
                 if (current < total) {
-                    next.href = `/c/${rawSlug}?page=${current + 1}`;
+                    next.href = `/c/${canonSlug}?page=${current + 1}`;
                     next.addEventListener('click', (e) => { e.preventDefault(); loadPage(current + 1); });
                 } else {
                     next.style.opacity = '0.3';
@@ -786,8 +786,8 @@
                         renderVideos(data.videos || []);
                         renderPagination(page, totalPages);
 
-                        // Update URL without reload
-                        const newUrl = `/c/${rawSlug}${page > 1 ? '?page=' + page : ''}`;
+                        // Update URL cleanly using canonical slug
+                        const newUrl = `/c/${canonSlug}${page > 1 ? '?page=' + page : ''}`;
                         window.history.replaceState(null, '', newUrl);
                     })
                     .catch(err => {

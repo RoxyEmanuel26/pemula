@@ -75,12 +75,26 @@ function buildSsrPagination(slug, currentPage, totalPages) {
 
 export default async function handler(req, res) {
   const { slug, page: rawPageParam, order: rawOrderParam } = req.query;
-  const rawSlug = String(slug || '').trim().toLowerCase();
-  const cleanSlug = rawSlug.replace(/[^a-z0-9\-]/g, '') || 'viral';
+  let decodedSlug = String(slug || '').trim();
+  try {
+    decodedSlug = decodeURIComponent(decodedSlug);
+  } catch {
+    // Keep raw value if malformed percent-encoding
+  }
+  const cleanSlug = slugify(decodedSlug, 60, 'viral');
   const currentPage = Math.max(1, Math.min(100, parseInt(String(rawPageParam || '1'), 10) || 1));
   const order = ALLOWED_ORDERS.has(String(rawOrderParam || '')) ? String(rawOrderParam) : 'most-popular';
-
   const domain = BASE_URL;
+
+  // Permanent 301 redirect when URL contains spaces, uppercase, or non-canonical punctuation (e.g. /c/big%20tits -> /c/big-tits)
+  if (slug && String(slug).trim() !== cleanSlug) {
+    const targetUrl = normalizeUrl(`${domain}/c/${cleanSlug}${currentPage > 1 ? `?page=${currentPage}` : ''}`);
+    res.statusCode = 301;
+    res.setHeader('Location', targetUrl);
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    return res.end();
+  }
+
   const categoryName = formatCategoryName(cleanSlug);
   const queryTerm = cleanSlug.replace(/-/g, ' ');
 
@@ -137,7 +151,8 @@ export default async function handler(req, res) {
 
   const descriptions = await getCategoryDescriptions();
   const isCurated = Boolean(descriptions[cleanSlug]);
-  const isIndexable = order === 'most-popular' && (isCurated || categoryVideos.length >= 4);
+  const hasNoindexParam = Boolean(req.query?.ref || req.query?.q);
+  const isIndexable = order === 'most-popular' && !hasNoindexParam && (isCurated || categoryVideos.length >= 4);
   const robotsMeta = isIndexable
     ? '<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">'
     : '<meta name="robots" content="noindex, follow">';
@@ -362,6 +377,9 @@ ${faqItemsHtml}
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  if (!isIndexable) {
+    res.setHeader('X-Robots-Tag', 'noindex, follow');
+  }
   res.setHeader('Rating', 'RTA-5042-1996-1400-1577-RTA');
   res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800');
   res.setHeader('CDN-Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');

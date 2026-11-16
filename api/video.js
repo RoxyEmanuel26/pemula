@@ -179,10 +179,13 @@ export default async function handler(req, res) {
     metaDesc = enrichedData.meta_description;
   }
 
-  // Quality Gate: Only genuine AI-enriched videos are indexable (excludes mock-enricher & thin pages)
-  const robotsMeta = enrichedData
-    ? '<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">'
-    : '<meta name="robots" content="noindex, follow">';
+  // Quality Gate: Only genuine AI-enriched videos without tracking/search params are indexable
+  const hasNoindexParam = Boolean(req.query?.ref || req.query?.q || req.query?.order);
+  const isIndexable = Boolean(enrichedData) && !hasNoindexParam;
+  const robotsValue = isIndexable
+    ? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+    : 'noindex, follow';
+  const robotsMeta = `<meta name="robots" content="${robotsValue}">`;
 
   const thumbUrl = normalizeUrl(
     videoData?.default_thumb?.src ||
@@ -249,7 +252,7 @@ export default async function handler(req, res) {
     ? `<div class="video-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0;">
         ${uniqueTags.map(t => t.isCurated
           ? `<a href="/c/${escapeHtml(t.slug)}" class="video-tag">${escapeHtml(t.label)}</a>`
-          : `<a href="/?q=${encodeURIComponent(t.label)}" rel="nofollow" class="video-tag">${escapeHtml(t.label)}</a>`
+          : `<button type="button" class="video-tag video-tag-search" data-search="${escapeHtml(t.label)}" style="cursor:pointer;">${escapeHtml(t.label)}</button>`
         ).join('\n        ')}
       </div>`
     : '';
@@ -295,7 +298,7 @@ export default async function handler(req, res) {
     : '';
 
   const visibleSeoMarkup = `
-    <div class="video-initial-seo" style="margin-bottom: 20px;">
+    <div class="video-initial-seo" data-ssr-page="1" style="margin-bottom: 20px;">
         <nav class="video-breadcrumbs" aria-label="Breadcrumb" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; margin-bottom: 16px; color: #888;">
             <a href="/" style="color: #e8a800; text-decoration: none;">🏠 Home</a>
             <span style="color: #555;">›</span>
@@ -303,17 +306,27 @@ export default async function handler(req, res) {
             <span style="color: #555;">›</span>
             <span style="color: #bbb;">${escapeHtml(decodedTitle)}</span>
         </nav>
-        <div class="video-wrapper" style="position: relative; margin-bottom: 25px;">
-            <div class="video-facade" role="button" aria-label="Play ${escapeHtml(decodedTitle)}">
+        <div class="video-wrapper" itemscope itemtype="https://schema.org/VideoObject" style="position: relative; margin-bottom: 25px;">
+            <meta itemprop="name" content="${escapeHtml(decodedTitle)}">
+            <meta itemprop="description" content="${escapeHtml(metaDesc)}">
+            <meta itemprop="uploadDate" content="${escapeHtml(videoObject.uploadDate)}">
+            ${videoObject.duration ? `<meta itemprop="duration" content="${escapeHtml(videoObject.duration)}">` : ''}
+            <link itemprop="thumbnailUrl" href="${escapeHtml(thumbUrl)}">
+            ${embedUrl ? `<link itemprop="embedUrl" href="${escapeHtml(embedUrl)}">` : ''}
+            <div class="video-facade" role="button" tabindex="0" data-ssr-video="1" data-video-id="${escapeHtml(videoId)}" data-embed="${escapeHtml(embedUrl)}" data-title="${escapeHtml(decodedTitle)}" data-canonical="${escapeHtml(canonicalUrl)}" aria-label="Play ${escapeHtml(decodedTitle)}">
                 <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(decodedTitle)}" class="video-facade-img" fetchpriority="high" width="1280" height="720">
-                <button class="video-facade-play" aria-label="Play Video">▶</button>
+                <button type="button" class="video-facade-play" aria-label="Play Video">▶</button>
                 ${videoData?.length_min ? `<span class="video-facade-duration">⏱ ${escapeHtml(videoData.length_min)}</span>` : ''}
             </div>
+            ${embedUrl ? `<noscript><iframe src="${escapeHtml(embedUrl)}" frameborder="0" allowfullscreen loading="lazy" title="${escapeHtml(decodedTitle)}" style="position:absolute;inset:0;width:100%;height:100%;"></iframe></noscript>` : ''}
         </div>
-        <h1 class="video-title" style="font-size: 1.6rem; color: #fff; margin-bottom: 10px; font-weight: 700;">${escapeHtml(decodedTitle)}</h1>
-        ${metaStatsHtml}
-        <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(metaDesc)}</p>
-        ${tagPillsHtml}
+        <div class="video-details" style="margin-bottom: 20px;">
+            <h1 class="video-title" style="font-size: 1.6rem; color: #fff; margin-bottom: 10px; font-weight: 700;">${escapeHtml(decodedTitle)}</h1>
+            ${metaStatsHtml}
+            <p style="color: #aaa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 10px;">${escapeHtml(metaDesc)}</p>
+            ${tagPillsHtml}
+            <div id="ssrVideoActionsSlot"></div>
+        </div>
         ${enrichedHtml}
     </div>
   `;
@@ -339,7 +352,11 @@ export default async function handler(req, res) {
   html = html.replace(/<meta\s+id=["']twitterImage["'][^>]*>/i, `<meta id="twitterImage" name="twitter:image" content="${escapeHtml(thumbUrl)}">`);
 
   html = html.replace(/<script\s+id=["']jsonLdScript["'][^>]*>[\s\S]*?<\/script>/i, schemaScript);
-  html = html.replace(/(<main[^>]*id=["']videoContainer["'][^>]*>)/i, `$1\n${visibleSeoMarkup}`);
+  if (html.includes('<div class="loader" id="videoLoader"></div>')) {
+    html = html.replace('<div class="loader" id="videoLoader"></div>', visibleSeoMarkup);
+  } else {
+    html = html.replace(/(<main[^>]*id=["']videoContainer["'][^>]*>)/i, `$1\n${visibleSeoMarkup}`);
+  }
 
   // Inject SSR Similar Videos Mesh (genuine AI-enriched videos only)
   let similarCardsHtml = '';
@@ -393,6 +410,9 @@ export default async function handler(req, res) {
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  if (!isIndexable) {
+    res.setHeader('X-Robots-Tag', 'noindex, follow');
+  }
   res.setHeader('Rating', 'RTA-5042-1996-1400-1577-RTA');
   res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800');
   res.setHeader('CDN-Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');

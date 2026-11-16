@@ -24,7 +24,42 @@
     {
       "source": "/404",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" }
+        { "key": "Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/(video|category|ad-wrapper)(.html)?",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "q" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "page" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "query", "key": "ref" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "query", "key": "order" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
       ]
     },
     {

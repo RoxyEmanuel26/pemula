@@ -21,11 +21,13 @@
     <meta id="ogTitle" property="og:title" content="lusthub.my.id — Premium 18+ NSFW">
     <meta id="ogDesc" property="og:description" content="Browse free adult videos on lusthub.my.id.">
     <meta id="ogUrl" property="og:url" content="">
+    <meta id="ogImage" property="og:image" content="https://www.lusthub.my.id/assets/icons/og-image.png">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta id="twitterTitle" name="twitter:title" content="lusthub.my.id — Premium 18+ NSFW">
     <meta id="twitterDesc" name="twitter:description" content="Browse free adult videos on lusthub.my.id.">
+    <meta id="twitterImage" name="twitter:image" content="https://www.lusthub.my.id/assets/icons/og-image.png">
 
     <!-- Performance Preconnects -->
     <link rel="preconnect" href="https://www.eporner.com">
@@ -34,7 +36,8 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"></noscript>
 
     <!-- Main CSS (same as index) -->
     <link rel="stylesheet" href="/assets/css/gallery.min.css?v=en33">
@@ -541,6 +544,15 @@
                 document.getElementById('ogUrl').setAttribute('content', canon);
                 document.getElementById('twitterTitle').setAttribute('content', title);
                 document.getElementById('twitterDesc').setAttribute('content', desc);
+                if (window._currentVideos && window._currentVideos[0]) {
+                    const topThumb = getSafeImageUrl(window._currentVideos[0]?.default_thumb?.src || window._currentVideos[0]?.thumbs?.[0]?.src || '');
+                    if (topThumb) {
+                        const ogImg = document.getElementById('ogImage');
+                        const twImg = document.getElementById('twitterImage');
+                        if (ogImg) ogImg.setAttribute('content', topThumb);
+                        if (twImg) twImg.setAttribute('content', topThumb);
+                    }
+                }
 
                 // Hero
                 const heroTitle = document.getElementById('heroTitle');
@@ -682,10 +694,12 @@
                     title.className = 'video-card-title';
                     title.textContent = displayTitle;
                     body.appendChild(title);
-                    if (date) {
+                    const viewsNum = parseInt(String(v.views || '0').replace(/\D/g, ''), 10) || 0;
+                    const metaText = [date, viewsNum > 0 ? ('👁 ' + viewsNum.toLocaleString('en-US')) : ''].filter(Boolean).join(' • ');
+                    if (metaText) {
                         const dateLabel = document.createElement('div');
                         dateLabel.className = 'video-card-meta';
-                        dateLabel.textContent = date;
+                        dateLabel.textContent = metaText;
                         body.appendChild(dateLabel);
                     }
 

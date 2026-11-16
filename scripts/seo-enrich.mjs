@@ -27,7 +27,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite';
 const DAILY_REQUEST_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '450', 10);
-const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '8', 10), 1), 10);
+const BATCH_SIZE = Math.min(Math.max(parseInt(process.env.GEMINI_BATCH_SIZE || '10', 10), 1), 10);
 const REQUEST_DELAY_MS = parseInt(process.env.GEMINI_RATE_LIMIT_DELAY_MS || '4500', 10);
 const MAX_RUNTIME_MS = parseInt(process.env.MAX_RUNTIME_MS || '720000', 10); // 12 minutes max
 
@@ -69,28 +69,39 @@ function scoreVideoPriority(video) {
 
   // Favor clean ASCII/English titles & high-demand US/EU search patterns
   if (title && !/[^\x00-\x7F]/.test(title)) score += 25;
-  if (/[A-Z]{2,5}-?\d{3,5}/i.test(title)) score += 20; // JAV code (e.g. SONE-335, VRTM-469)
-  if (/\b(milf|blonde|latina|ebony|amateur|pov|onlyfans|fansly|4k|anal|lesbian|threesome|creampie|european|homemade|blowjob|big tits|big ass)\b/i.test(combined)) {
-    score += 20;
+  if (/[A-Z]{2,5}-?\d{3,5}/i.test(title) && title.length >= 16) score += 20;
+  if (/\b(milf|blonde|latina|ebony|amateur|pov|onlyfans|fansly|4k|anal|lesbian|threesome|creampie|european|british|german|french|spanish|italian|czech|russian|stepmom|stepsis|massage|casting|squirt|deepthroat|bbw|college|petite|homemade|blowjob|big tits|big ass)\b/i.test(combined)) {
+    score += 25;
   }
+  if (video.thumbnail && video.thumbnail.includes('_360')) score += 10;
   if (video.keywords) score += 10;
 
-  // Penalize low-search-value spam/numeric stubs
-  if (title.length < 8 || /^\d+$/.test(title) || /[a-z]+\d{4,}$/i.test(title)) score -= 35;
+  // Strongly penalize spam stubs & non-US/EU regional terms so Gemini quota maximizes US/EU discovery
+  if (title.length < 12 || /^\d+$/.test(title) || /[a-z]+\d{4,}$/i.test(title)) score -= 45;
+  if (/\b(indo|bokep|mertua|mantu|ngewe|memek|kontol|colmek|tamil|hindi)\b/i.test(combined)) score -= 40;
   return score;
 }
 
 /**
  * Validates generated content against SEO quality gate rules.
  */
-function validateEnrichment(original, enriched) {
+function validateEnrichment(original, enriched, seenTitles) {
   if (!enriched || typeof enriched !== 'object') {
     return { valid: false, reason: 'Enrichment payload is not an object' };
   }
 
   const title = String(enriched.seo_title || '').trim();
-  if (!title || title.length < 15 || title.length > 65) {
-    return { valid: false, reason: `Invalid title length (${title.length} chars, must be 15-65)` };
+  if (!title || title.length < 28 || title.length > 65) {
+    return { valid: false, reason: `Invalid title length (${title.length} chars, must be 28-65)` };
+  }
+
+  const bareTitle = title.replace(/\s*\|\s*(LustHub|lusthub\.my\.id)$/i, '').trim();
+  if (/^[A-Z0-9\-_*]{3,14}$/i.test(bareTitle.replace(/\s+/g, ''))) {
+    return { valid: false, reason: 'Rejected bare code-only seo_title without descriptive context' };
+  }
+
+  if (seenTitles && seenTitles.has(title.toLowerCase())) {
+    return { valid: false, reason: `Duplicate seo_title collided with existing page: "${title}"` };
   }
 
   const desc = String(enriched.meta_description || '').trim();
@@ -100,8 +111,8 @@ function validateEnrichment(original, enriched) {
 
   const summary = String(enriched.summary || '').trim();
   const sentences = summary.split(/[.!?]+/).filter(s => s.trim().length > 10);
-  if (sentences.length < 2 || sentences.length > 4) {
-    return { valid: false, reason: `Summary sentence count (${sentences.length}) out of range (2-4 sentences required)` };
+  if (summary.length < 140 || sentences.length < 2 || sentences.length > 5) {
+    return { valid: false, reason: `Summary too short or invalid sentence count (${summary.length} chars, ${sentences.length} sentences)` };
   }
 
   if (summary.includes('verified amateur releases and zero mandatory signups needed')) {
@@ -149,11 +160,11 @@ async function saveQuotaState(state) {
 }
 
 function generateMockEnrichment(video) {
-  const cleanTitle = (cleanSourceTitle(video.title) || 'HD Adult Video').slice(0, 38).trim();
+  const cleanTitle = (cleanSourceTitle(video.title) || 'HD Adult Video').slice(0, 36).trim();
   const durMin = video.duration ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}` : '5:00';
   return {
     id: video.id,
-    seo_title: `${cleanTitle} Full HD | LustHub`.slice(0, 60),
+    seo_title: `${cleanTitle} Full HD Stream | LustHub`.slice(0, 62),
     meta_description: `Stream ${cleanTitle} free in 1080p HD on lusthub.my.id. Instant mobile playback with fast edge loading and zero account signup.`,
     summary: `Watch ${cleanTitle} in high-definition streaming with clear playback across desktop and mobile browsers on lusthub.my.id. This release runs ${durMin} and highlights natural scene chemistry without forced software downloads.`,
     highlights: [
@@ -186,11 +197,11 @@ Generate rich, unique, search-friendly US/EU English metadata for the following 
 
 STRICT RULES:
 1. Use ONLY facts present in each video's metadata (title, duration_sec, keywords). NEVER invent performer names, studios, or unverified claims.
-2. Clean the title by removing random 4-character trailing uploader hashes (e.g., O9xf, Dt3r, Aac1, 74ma, Iktb, T0iq). Preserve real JAV codes (like SONE-335) and performer names.
+2. Clean the title by removing random 4-character trailing uploader hashes (e.g., O9xf, Dt3r, Aac1, 74ma, Iktb, T0iq). Preserve real JAV codes (like SONE-335) and performer names. If input is only a bare code (e.g. "MIDA-857"), include descriptive genre/category wording from tags so "seo_title" is NOT a bare code.
 3. Translate any non-English or gibberish title context accurately into natural US/EU English while keeping recognizable keywords/performers/JAV codes intact.
-4. "seo_title" MUST be 42 to 60 characters total, MUST end on a complete word (NEVER truncate mid-word!), and end with " | LustHub".
+4. "seo_title" MUST be 32 to 62 characters total, MUST be unique across this batch, MUST end on a complete word (NEVER truncate mid-word!), and end with " | LustHub".
 5. "meta_description" MUST be strictly 120 to 155 characters total, natural persuasive US/EU English, complete sentence.
-6. "summary": 2 to 3 clear natural sentences describing the scene and viewing experience without repeating the input title verbatim.
+6. "summary": 2 to 4 clear informative sentences (at least 150 characters) describing the setting, genre, and viewing experience without repeating the input title verbatim.
 7. "tags": 4 to 6 clean lowercase English category/topic keywords matching US/EU search habits (e.g. milf, blonde, amateur, pov, onlyfans, anal, jav).
 8. "faq": 2 natural Q&As matching how users search on Google/Bing/Perplexity.
 9. OUTPUT FORMAT: Respond strictly with a JSON array matching the exact order of input videos:
@@ -304,6 +315,12 @@ async function main() {
     if (!db.videos) db.videos = {};
   } catch {}
 
+  const seenTitles = new Set(
+    Object.values(db.videos)
+      .filter(v => v && v.status === 'enriched' && v.model !== 'mock-enricher' && v.seo_title)
+      .map(v => String(v.seo_title).trim().toLowerCase())
+  );
+
   const queue = [...sitemapState.videos]
     .filter(v => {
       const existing = db.videos[v.id];
@@ -347,9 +364,10 @@ async function main() {
       results.forEach((item, idx) => {
         const orig = batch.find(b => b.id === item.id) || batch[idx] || batch[0];
         const hash = computeSourceHash(orig);
-        const validation = validateEnrichment(orig, item);
+        const validation = validateEnrichment(orig, item, seenTitles);
 
         if (validation.valid) {
+          seenTitles.add(String(item.seo_title).trim().toLowerCase());
           db.videos[orig.id] = {
             video_id: orig.id,
             title: cleanSourceTitle(orig.title) || orig.title || item.seo_title,

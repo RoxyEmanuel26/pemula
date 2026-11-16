@@ -3,17 +3,18 @@
 > Fast, mobile-first 18+ NSFW streaming gallery and curated viral video platform optimized for instant HD playback across North America, Europe, and global devices without mandatory accounts or app downloads.
 
 ## Overview
-lusthub.my.id provides high-definition streaming of trending adult videos, creator leaks, JAV code releases, and curated international categories. The platform combines edge-rendered HTML, global CDN caching, and Schema.org metadata for rapid discovery across traditional and AI search engines.
+lusthub.my.id provides high-definition streaming of trending adult videos, creator leaks, JAV code releases, European & US amateur showcases, and 60 curated international categories. The platform combines edge-rendered HTML, global CDN caching, and Schema.org metadata (`VideoObject`, `CollectionPage`, `ItemList`, `FAQPage`) for rapid discovery across traditional and AI search engines.
 
 ## Sitemap, Feed & Technical Endpoints
 - Master Sitemap Index: https://www.lusthub.my.id/sitemap_index.xml
-- Category Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_categories.xml
-- Video Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_videos_001.xml
+- Category Sitemap (60 Hubs): https://www.lusthub.my.id/sitemaps/sitemap_categories.xml
+- Video Sitemap 001: https://www.lusthub.my.id/sitemaps/sitemap_videos_001.xml
+- Video Sitemap 002: https://www.lusthub.my.id/sitemaps/sitemap_videos_002.xml
 - Static Pages Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_pages.xml
 - RSS Video Feed: https://www.lusthub.my.id/feed.xml
 - Robots Policy: https://www.lusthub.my.id/robots.txt
 
-## US & EU Featured Categories
+## US, UK & European Featured Categories (37 Core Hubs)
 - [MILF](https://www.lusthub.my.id/c/milf): Experienced women, stepmoms, and cougars in full 1080p HD.
 - [Blonde](https://www.lusthub.my.id/c/blonde): American, British, and European blonde performers and amateurs.
 - [Latina](https://www.lusthub.my.id/c/latina): Curvy Latina creators, couples, and passionate studio releases.
@@ -22,6 +23,22 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 - [POV](https://www.lusthub.my.id/c/pov): Immersive first-person POV scenes filmed in 1080p and 4K.
 - [OnlyFans](https://www.lusthub.my.id/c/onlyfans): Trending OnlyFans and Fansly creator leaks and solo showcases.
 - [European](https://www.lusthub.my.id/c/european): French, German, Czech, Spanish, UK, and Dutch adult cinema.
+- [British](https://www.lusthub.my.id/c/british): Authentic UK amateurs, London creators, and British glamour stars.
+- [German](https://www.lusthub.my.id/c/german): German (Deutsch) adult cinema, Berlin amateur couples, and Munich castings.
+- [French](https://www.lusthub.my.id/c/french): French (Française) sensual classics, Paris amateurs, and romantic cinema.
+- [Spanish](https://www.lusthub.my.id/c/spanish): Passionate Spanish (Española) performers, Madrid amateurs, and Mediterranean scenes.
+- [Italian](https://www.lusthub.my.id/c/italian): Sensual Italian (Italiana) mature beauties, Rome couples, and classic EU erotica.
+- [Czech](https://www.lusthub.my.id/c/czech): Famous Czech casting sessions, Prague amateur pickups, and EU studio favorites.
+- [Russian](https://www.lusthub.my.id/c/russian): Stunning Eastern European and Slavic models in sharp HD streams.
+- [Petite](https://www.lusthub.my.id/c/petite): Petite natural performers and slender amateur creators in full HD.
+- [Stepmom](https://www.lusthub.my.id/c/stepmom): Trending stepmom roleplay stories and mature MILF scenarios.
+- [Stepsis](https://www.lusthub.my.id/c/stepsis): Popular stepsis fantasy storylines and dramatic studio roleplays.
+- [Massage](https://www.lusthub.my.id/c/massage): Oiled erotic body rubdowns transitioning into intense intimacy.
+- [Casting](https://www.lusthub.my.id/c/casting): Behind-the-scenes audition tapes and European model castings.
+- [Squirt](https://www.lusthub.my.id/c/squirt): Explosive intense orgasm and squirting compilation scenes.
+- [Deepthroat](https://www.lusthub.my.id/c/deepthroat): Intense POV throat-play and skilled oral technique videos.
+- [BBW](https://www.lusthub.my.id/c/bbw): Curvy plus-size performers and confident full-figured beauties.
+- [College](https://www.lusthub.my.id/c/college): Legal 18+ university dorm amateur parties and campus couples.
 - [Big Tits](https://www.lusthub.my.id/c/big-tits): Natural busty performers and glamour models in high definition.
 - [Big Ass](https://www.lusthub.my.id/c/big-ass): Curvy PAWG creators and top-rated doggystyle scenes.
 - [Anal](https://www.lusthub.my.id/c/anal): Hardcore anal and double penetration scenes from US and EU studios.
@@ -36,7 +53,7 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 - [Cosplay](https://www.lusthub.my.id/c/cosplay): Anime, gaming, maid, and costume fantasy scenes.
 - [Public](https://www.lusthub.my.id/c/public): Daring exhibitionism, flashing, and car encounters.
 
-## Asian, Viral & Regional Categories
+## Asian, Viral & Regional Categories (23 Hubs)
 - [Asian](https://www.lusthub.my.id/c/asian): East and Southeast Asian models, amateur releases, and studio HD.
 - [Japanese](https://www.lusthub.my.id/c/japanese): Uncensored JAV releases, Tokyo idols, and full JAV codes.
 - [Korean](https://www.lusthub.my.id/c/korean): Korean BJ webcam broadcasts and sensual dance recordings.

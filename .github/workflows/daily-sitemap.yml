@@ -2,8 +2,8 @@ name: Daily SEO sitemap refresh
 
 on:
   schedule:
-    # 11:15 UTC = 18:15 WIB (Avoids top-of-hour GitHub Actions queue congestion)
-    - cron: "15 11 * * *"
+    # Runs twice daily (05:15 & 17:15 UTC) to accelerate US/EU & JAV enrichment within quota
+    - cron: "15 5,17 * * *"
   workflow_dispatch:
 
 permissions:
@@ -36,8 +36,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           GEMINI_FALLBACK_MODEL: gemini-3.1-flash-lite
-          GEMINI_BATCH_SIZE: 8
-        run: node scripts/seo-enrich.mjs --limit 400
+          GEMINI_BATCH_SIZE: 10
+        run: node scripts/seo-enrich.mjs --limit 750
 
       - name: Rebuild static SSR homepage categories, top videos, and schema
         run: node scripts/build-home-ssr.mjs

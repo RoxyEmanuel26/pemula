@@ -12,7 +12,7 @@ import { BASE_URL } from '../api/schema-helper.js';
 const ROOT = process.cwd();
 const KEY_FILENAME = '1b69cc1059c94dbcb3e9a18b36d3ed85.txt';
 const DRY_RUN = process.argv.includes('--dry-run') || process.argv.includes('--mock');
-const MAX_VIDEO_URLS = 400;
+const MAX_VIDEO_URLS = 1500;
 
 async function extractLocs(xmlPath) {
   try {

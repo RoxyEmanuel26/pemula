@@ -105,11 +105,23 @@ const KATEGORI_LIST = [
     { label: '🌸 Asian', query: 'asian', order: 'most-popular', icon: '🌸' },
     { label: '💑 Couple', query: 'couple', order: 'most-popular', icon: '💑' },
     { label: '🏖️ Outdoor', query: 'outdoor', order: 'most-popular', icon: '🏖️' },
+    { label: '🇬🇧 British', query: 'british', order: 'most-popular', icon: '🇬🇧' },
+    { label: '🇩🇪 German', query: 'german', order: 'most-popular', icon: '🇩🇪' },
+    { label: '🇫🇷 French', query: 'french', order: 'most-popular', icon: '🇫🇷' },
+    { label: '🇪🇸 Spanish', query: 'spanish', order: 'most-popular', icon: '🇪🇸' },
+    { label: '🇮🇹 Italian', query: 'italian', order: 'most-popular', icon: '🇮🇹' },
+    { label: '🇨🇿 Czech', query: 'czech', order: 'most-popular', icon: '🇨🇿' },
+    { label: '🏠 Stepmom', query: 'stepmom', order: 'most-popular', icon: '🏠' },
+    { label: '💆 Massage', query: 'massage', order: 'most-popular', icon: '💆' },
+    { label: '🎥 Casting', query: 'casting', order: 'most-popular', icon: '🎥' },
+    { label: '💦 Squirt', query: 'squirt', order: 'most-popular', icon: '💦' },
     { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' }
 ];
 
 const CURATED_HUB_SLUGS = new Set([
     'milf', 'blonde', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
+    'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'petite',
+    'stepmom', 'stepsis', 'massage', 'casting', 'squirt', 'deepthroat', 'bbw', 'college',
     'big-tits', 'big-ass', 'anal', 'blowjob', 'lesbian', 'threesome', 'creampie',
     'interracial', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public',
     'asian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade',
@@ -2267,14 +2279,28 @@ window.addEventListener('resize', function () {
                 thumbs: []
             };
         });
-        // Silently sync live API pagination & fresh results without wiping SSR grid
+        // Hydrate pagination & preview thumbs without wiping/shifting already-painted SSR cards (Zero CLS)
         fetchFromAPI('all', 1, 'top-weekly').then(function (apiResponse) {
-            if (!apiResponse || !apiResponse.videos || !apiResponse.videos.length) return;
-            if (currentTab !== 'popular' || currentPage !== 1 || isSearchActive || currentSortOrder !== 'top-weekly') return;
-            currentDisplayCards = filterRemovedVideos(apiResponse.videos.map(mapAPIVideoToCard));
+            if (!apiResponse || currentTab !== 'popular' || currentPage !== 1 || isSearchActive || currentSortOrder !== 'top-weekly') return;
             totalPagesFromAPI = apiResponse.total_pages || 1;
-            renderCardsToGrid(currentDisplayCards);
             renderPagination(totalPagesFromAPI);
+            if (Array.isArray(apiResponse.videos)) {
+                var thumbsById = {};
+                apiResponse.videos.forEach(function (v) {
+                    if (v && v.id && Array.isArray(v.thumbs) && v.thumbs.length > 1) {
+                        thumbsById[v.id] = v.thumbs.map(function (t) { return t.src; }).filter(Boolean);
+                    }
+                });
+                ssrNodes.forEach(function (node) {
+                    var vid = node.dataset.videoId;
+                    var wrapper = node.querySelector('.card-img-wrapper');
+                    if (vid && wrapper && thumbsById[vid]) {
+                        wrapper.setAttribute('data-thumbs', JSON.stringify(thumbsById[vid]));
+                        var imgEl = wrapper.querySelector('img');
+                        if (imgEl) wrapper.setAttribute('data-default-thumb', imgEl.src);
+                    }
+                });
+            }
         }).catch(function () { /* Keep SSR cards visible silently if client API fails */ });
     } else {
         loadAndRender();

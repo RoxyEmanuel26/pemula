@@ -33,8 +33,8 @@ const STATIC_PAGES = [
   ['/privacy', 'privacy.html'], ['/terms', 'terms.html'],
 ];
 
-// High-demand US/EU queries polled alongside latest releases so catalog stays aligned with real search volume
-const US_EU_SEED_QUERIES = US_EU_CATEGORIES.slice(0, 8);
+// High-demand US & European queries polled alongside latest releases so catalog tracks Tier-1 search volume
+const US_EU_SEED_QUERIES = US_EU_CATEGORIES.slice(0, 22);
 
 function envNumber(name, fallback, min, max) {
   const value = Number.parseInt(process.env[name] || String(fallback), 10);
@@ -174,13 +174,15 @@ async function fetchCatalogVideos(knownIds, stateExists) {
     }
   }
 
-  // 3. Curated US/EU niche queries (picks 3 rotating hubs per run to spread API load cleanly)
-  const dayOffset = Math.floor(Date.now() / 86400000);
-  for (let i = 0; i < 3; i += 1) {
-    const slug = US_EU_SEED_QUERIES[(dayOffset + i) % US_EU_SEED_QUERIES.length];
+  // 3. Curated US & EU country/niche queries (polls 6 rotating hubs per run across top-monthly / most-popular)
+  const dayOffset = Math.floor(Date.now() / 43200000);
+  const seedLimit = Math.min(6, US_EU_SEED_QUERIES.length);
+  for (let i = 0; i < seedLimit; i += 1) {
+    const slug = US_EU_SEED_QUERIES[(dayOffset * seedLimit + i) % US_EU_SEED_QUERIES.length];
+    const order = i % 2 === 0 ? 'top-monthly' : 'most-popular';
     await sleep(FETCH_DELAY_MS);
     try {
-      const seeded = await fetchSearchFeed(slug.replace(/-/g, ' '), 'top-monthly', 1, knownIds, false);
+      const seeded = await fetchSearchFeed(slug.replace(/-/g, ' '), order, 1, knownIds, false);
       for (const v of seeded) {
         if (!merged.has(v.id)) merged.set(v.id, v);
       }
@@ -247,16 +249,23 @@ function buildCategoriesSitemap() {
 function buildVideoSitemap(videos, enrichedMap) {
   return urlset(videos.map((video) => {
     const e = enrichedMap[video.id];
-    const title = e?.seo_title ? e.seo_title.replace(/\s*\|\s*(LustHub|lusthub\.my\.id)$/i, '').trim() : video.title;
+    const rawTitle = e?.seo_title ? e.seo_title.replace(/\s*\|\s*(LustHub|lusthub\.my\.id)$/i, '').trim() : video.title;
+    const title = String(rawTitle || video.title).slice(0, 100);
     const desc = e?.meta_description || video.description;
     const thumb = normalizeUrl(e?.thumbnail && e.thumbnail.includes('_360') ? e.thumbnail : video.thumbnail);
     const duration = video.duration ? `\n      <video:duration>${video.duration}</video:duration>` : '';
-    return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/v/${video.id}-${video.slug}`)}</loc>\n    <lastmod>${video.published.slice(0, 10)}</lastmod>\n    <video:video>\n      <video:thumbnail_loc>${xmlEscape(thumb)}</video:thumbnail_loc>\n      <video:title>${xmlEscape(title)}</video:title>\n      <video:description>${xmlEscape(desc)}</video:description>\n      <video:player_loc>${xmlEscape(video.player)}</video:player_loc>${duration}\n      <video:publication_date>${video.published}</video:publication_date>\n      <video:family_friendly>no</video:family_friendly>\n    </video:video>\n  </url>`;
+    const tagList = Array.isArray(e?.tags)
+      ? e.tags.map(t => String(t || '').trim()).filter(t => t && t.length <= 32).slice(0, 5)
+      : [];
+    const tagsXml = tagList.map(t => `\n      <video:tag>${xmlEscape(t)}</video:tag>`).join('');
+    return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/v/${video.id}-${video.slug}`)}</loc>\n    <lastmod>${video.published.slice(0, 10)}</lastmod>\n    <video:video>\n      <video:thumbnail_loc>${xmlEscape(thumb)}</video:thumbnail_loc>\n      <video:title>${xmlEscape(title)}</video:title>\n      <video:description>${xmlEscape(desc)}</video:description>\n      <video:player_loc>${xmlEscape(video.player)}</video:player_loc>${duration}\n      <video:publication_date>${video.published}</video:publication_date>\n      <video:family_friendly>no</video:family_friendly>${tagsXml}\n    </video:video>\n  </url>`;
   }), true);
 }
 
 function buildRssFeed(videos, enrichedMap) {
-  const latestItems = videos.slice(0, 50).map((video) => {
+  const cleanFeedVideos = videos.filter((v) => !/[^\x00-\x7F]/.test(v.title) && v.title.length >= 14);
+  const feedSource = cleanFeedVideos.length >= 25 ? cleanFeedVideos : videos;
+  const latestItems = feedSource.slice(0, 50).map((video) => {
     const e = enrichedMap[video.id];
     const link = `${BASE_URL}/v/${video.id}-${video.slug}`;
     const title = e?.seo_title || video.title;

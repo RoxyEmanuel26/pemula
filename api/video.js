@@ -46,17 +46,20 @@ function buildVideoTitle(title, tag) {
     return `${truncated}${brand}`;
   }
 
-  const tagName = tag ? (tag.charAt(0).toUpperCase() + tag.slice(1)) : 'HD';
+  const tagName = tag
+    ? tag.split(/[\s-]+/).map(w => (['4k', 'uhd', 'hd', 'pov', 'milf', 'jav', 'bbw'].includes(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(' ')
+    : 'HD';
   const candidates = [
-    `${cleaned} - ${tagName} Full HD${brand}`,
+    `${cleaned} — ${tagName} Full HD${brand}`,
+    `${cleaned} - ${tagName} Video${brand}`,
     `Watch ${cleaned} in HD${brand}`,
     `${cleaned} Full HD${brand}`,
     `${cleaned}${brand}`,
   ];
   for (const candidate of candidates) {
-    if (candidate.length >= 42 && candidate.length <= 60) return candidate;
+    if (candidate.length >= 34 && candidate.length <= 62) return candidate;
   }
-  return `${cleaned}${brand}`.slice(0, 60);
+  return `${cleaned} - ${tagName} HD${brand}`.slice(0, 62);
 }
 
 /**
@@ -159,8 +162,11 @@ export default async function handler(req, res) {
   const decodedTitle = cleanSourceTitle(rawTitle) || decodeMojibake(rawTitle) || 'HD Adult Video';
 
   let pageTitle = buildVideoTitle(decodedTitle, primaryTag);
-  if (enrichedData?.seo_title && enrichedData.seo_title.length >= 20 && enrichedData.seo_title.length <= 65) {
-    pageTitle = enrichedData.seo_title;
+  if (enrichedData?.seo_title && enrichedData.seo_title.length >= 28 && enrichedData.seo_title.length <= 65) {
+    const barePrefix = `${decodedTitle} |`.toLowerCase();
+    if (!enrichedData.seo_title.toLowerCase().startsWith(barePrefix) || decodedTitle.length >= 26) {
+      pageTitle = enrichedData.seo_title;
+    }
   }
 
   const videoSlug = slugify(videoData?.title || enrichedData?.title || rawSlug.split('-').slice(1).join('-'), 80, videoId);
@@ -285,6 +291,10 @@ export default async function handler(req, res) {
         <div class="enriched-faq">
           ${faqItems}
         </div>
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #262626; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #999;">
+          <span>Format: <strong style="color:#ddd;">1080p HD HTML5 Stream</strong> &bull; Compliance: <strong style="color:#ddd;">18+ RTA</strong></span>
+          <a href="/c/${escapeHtml(catSlug)}" style="color: #e8a800; text-decoration: none; font-weight: 600;">Browse All ${escapeHtml(catName)} HD Videos &rarr;</a>
+        </div>
       </div>
     `;
   }
@@ -377,7 +387,7 @@ export default async function handler(req, res) {
     });
 
     scored.sort((a, b) => b.score - a.score);
-    const relatedList = scored.slice(0, 8).map(s => s.video);
+    const relatedList = scored.slice(0, 12).map(s => s.video);
 
     if (relatedList.length > 0) {
       similarCardsHtml = relatedList.map(v => {

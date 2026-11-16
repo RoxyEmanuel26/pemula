@@ -8,11 +8,13 @@ export const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://www.lusthub.my
 /** High-priority international US & EU English category slugs ordered by global demand. */
 export const US_EU_CATEGORIES = [
   'milf', 'blonde', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
+  'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'petite',
+  'stepmom', 'stepsis', 'massage', 'casting', 'squirt', 'deepthroat', 'bbw', 'college',
   'big-tits', 'big-ass', 'anal', 'blowjob', 'lesbian', 'threesome', 'creampie',
   'interracial', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public',
 ];
 
-/** Complete curated category hubs (44 total: US/EU English + Asian/Viral + Regional). */
+/** Complete curated category hubs (60 total: 37 US/EU + 23 Asian/Viral/Regional). */
 export const CURATED_CATEGORIES = [
   ...US_EU_CATEGORIES,
   'asian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade',

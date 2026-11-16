@@ -88,7 +88,7 @@ async function main() {
   console.log(`   - Date: ${quota.date}`);
   console.log(`   - Requests Used Today: ${quota.requestsToday} / ${dailyLimit} (${((quota.requestsToday / dailyLimit) * 100).toFixed(1)}%)`);
   console.log(`   - Requests Remaining Today: ${remaining}`);
-  console.log(`   - Potential Videos per Day (Batch 8): ${(dailyLimit * 8).toLocaleString('en-US')} videos/day max`);
+  console.log(`   - Potential Videos per Day (Batch 10): ${(dailyLimit * 10).toLocaleString('en-US')} videos/day max`);
   console.log('====================================================\n');
 }
 

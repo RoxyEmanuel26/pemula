@@ -13,9 +13,22 @@ import {
 
 let cachedTemplate = null;
 let cachedDescriptions = null;
+let cachedEnriched = null;
 const CATEGORY_CACHE = new Map();
 const CAT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes server-side in-memory cache
 const ALLOWED_ORDERS = new Set(['most-popular', 'top-rated', 'latest', 'longest']);
+
+async function getEnrichedCatalog() {
+  if (!cachedEnriched) {
+    try {
+      const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-videos.json'), 'utf8');
+      cachedEnriched = JSON.parse(raw);
+    } catch {
+      cachedEnriched = { videos: {} };
+    }
+  }
+  return cachedEnriched;
+}
 
 async function getCategoryDescriptions() {
   if (!cachedDescriptions) {
@@ -151,6 +164,38 @@ export default async function handler(req, res) {
 
   const descriptions = await getCategoryDescriptions();
   const isCurated = Boolean(descriptions[cleanSlug]);
+
+  // Resilient fallback: if Eporner upstream times out on a curated hub, serve curated enriched catalog matches (prevents empty Soft-404 crawls)
+  if (categoryVideos.length === 0 && isCurated) {
+    try {
+      const enrichedDb = await getEnrichedCatalog();
+      const all = Object.values(enrichedDb?.videos || {}).filter(
+        v => v.status === 'enriched' && v.model && v.model !== 'mock-enricher' && v.title && v.thumbnail
+      );
+      const qLower = queryTerm.toLowerCase();
+      const terms = qLower.split(/\s+/).filter(Boolean);
+      const matched = all.filter(v => {
+        const hay = `${v.title} ${(Array.isArray(v.tags) ? v.tags.join(' ') : '')}`.toLowerCase();
+        return hay.includes(qLower) || (terms.length > 0 && terms.every(t => hay.includes(t)));
+      });
+      const pool = matched.length >= 6 ? matched : [...matched, ...all.filter(v => !matched.includes(v))];
+      const start = (currentPage - 1) * 24;
+      const sliced = pool.slice(start, start + 24);
+      categoryVideos = sliced.map(v => ({
+        id: v.video_id,
+        title: v.title,
+        default_thumb: { src: v.thumbnail },
+        added: v.generated_at || '',
+        length_min: '',
+        views: 0,
+      }));
+      totalCount = matched.length || pool.length;
+      totalPages = Math.max(1, Math.min(100, Math.ceil(totalCount / 24)));
+    } catch {
+      // Ignore fallback read errors cleanly
+    }
+  }
+
   const hasNoindexParam = Boolean(req.query?.ref || req.query?.q);
   const isIndexable = order === 'most-popular' && !hasNoindexParam && (isCurated || categoryVideos.length >= 4);
   const robotsMeta = isIndexable
@@ -196,6 +241,12 @@ export default async function handler(req, res) {
   let faqHtml = '';
   let editorialHtml = '';
 
+  const crossLinksHtml = US_EU_CATEGORIES
+    .filter(s => s !== cleanSlug)
+    .slice(0, 14)
+    .map(s => `<a href="/c/${s}" style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(232,168,0,0.12);color:#e8a800;font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid rgba(232,168,0,0.25);">${escapeHtml(formatCategoryName(s))}</a>`)
+    .join('\n            ');
+
   if (currentPage === 1) {
     const editorial = descriptions[cleanSlug] || {
       title: `Explore Free ${categoryName} HD Videos & Leaks`,
@@ -204,12 +255,6 @@ export default async function handler(req, res) {
         `Enjoy rapid mobile and desktop streaming with zero account registration or mandatory downloads. Sort videos by Most Popular, Top Rated, Latest, or Longest.`,
       ],
     };
-
-    const crossLinksHtml = US_EU_CATEGORIES
-      .filter(s => s !== cleanSlug)
-      .slice(0, 12)
-      .map(s => `<a href="/c/${s}" style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(232,168,0,0.12);color:#e8a800;font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid rgba(232,168,0,0.25);">${escapeHtml(formatCategoryName(s))}</a>`)
-      .join('\n            ');
 
     editorialHtml = `
     <section class="category-editorial" id="categoryEditorial">
@@ -264,6 +309,10 @@ ${faqItemsHtml}
     <section class="category-editorial" id="categoryEditorial">
         <h2>${escapeHtml(categoryName)} Videos — Page ${currentPage} of ${totalPages}</h2>
         <p>Viewing page ${currentPage} of curated ${escapeHtml(categoryName)} HD videos on lusthub.my.id. <a href="/c/${escapeHtml(cleanSlug)}" style="color:#e8a800;">Return to Page 1</a> for full category highlights and FAQs.</p>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+            <span style="color:#888;font-size:0.8rem;font-weight:600;margin-right:4px;">Related Hubs:</span>
+            ${crossLinksHtml}
+        </div>
     </section>`;
   }
 
@@ -280,11 +329,19 @@ ${faqItemsHtml}
   html = html.replace(/<meta\s+id=["']pageDesc["']\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*>/i, `<meta id="pageDesc" name="description" content="${escapeHtml(metaDesc)}">`);
   html = html.replace(/<link\s+id=["']canonicalTag["']\s+rel=["']canonical["']\s+href=["'][\s\S]*?["']\s*>/i, `<link id="canonicalTag" rel="canonical" href="${canonicalUrl}">`);
 
+  const topThumb = normalizeUrl(
+    categoryVideos[0]?.default_thumb?.src ||
+    categoryVideos[0]?.thumbs?.[0]?.src ||
+    `${domain}/assets/icons/og-image.png`
+  );
+
   html = html.replace(/<meta\s+id=["']ogTitle["'][^>]*>/i, `<meta id="ogTitle" property="og:title" content="${escapeHtml(pageTitle)}">`);
   html = html.replace(/<meta\s+id=["']ogDesc["'][^>]*>/i, `<meta id="ogDesc" property="og:description" content="${escapeHtml(metaDesc)}">`);
   html = html.replace(/<meta\s+id=["']ogUrl["'][^>]*>/i, `<meta id="ogUrl" property="og:url" content="${canonicalUrl}">`);
+  html = html.replace(/<meta\s+id=["']ogImage["'][^>]*>/i, `<meta id="ogImage" property="og:image" content="${escapeHtml(topThumb)}">`);
   html = html.replace(/<meta\s+id=["']twitterTitle["'][^>]*>/i, `<meta id="twitterTitle" name="twitter:title" content="${escapeHtml(pageTitle)}">`);
   html = html.replace(/<meta\s+id=["']twitterDesc["'][^>]*>/i, `<meta id="twitterDesc" name="twitter:description" content="${escapeHtml(metaDesc)}">`);
+  html = html.replace(/<meta\s+id=["']twitterImage["'][^>]*>/i, `<meta id="twitterImage" name="twitter:image" content="${escapeHtml(topThumb)}">`);
 
   html = html.replace(
     /<h1\s+id=["']heroTitle["'][^>]*>[\s\S]*?<\/h1>/i,
@@ -329,7 +386,9 @@ ${faqItemsHtml}
       const href = `/v/${v.id}-${vSlug}`;
       const thumb = v.default_thumb?.src || (v.thumbs && v.thumbs[0]?.src) || '/assets/icons/favicon-32x32.png';
       const dur = v.length_min || '';
-      const priorityAttr = idx < 2 ? 'fetchpriority="high"' : 'loading="lazy"';
+      const viewsNum = parseInt(String(v.views || '0').replace(/\D/g, ''), 10) || 0;
+      const metaParts = [v.added ? escapeHtml(v.added.slice(0, 10)) : '', viewsNum > 0 ? `👁 ${viewsNum.toLocaleString('en-US')}` : ''].filter(Boolean).join(' • ');
+      const priorityAttr = idx < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
       return `
         <a href="${href}" class="video-card" aria-label="${title}">
           <div class="video-thumb-wrap">
@@ -338,7 +397,7 @@ ${faqItemsHtml}
           </div>
           <div class="video-card-body">
             <div class="video-card-title">${title}</div>
-            <div class="video-card-meta">${v.added ? escapeHtml(v.added.slice(0, 10)) : ''}</div>
+            <div class="video-card-meta">${metaParts}</div>
           </div>
         </a>`;
     }).join('\n');

@@ -1,27 +1,54 @@
 /**
- * Shared Schema.org JSON-LD, HTML escaping, URL normalization, and SSR helpers for lusthub.my.id.
+ * Shared Schema.org JSON-LD, HTML escaping, URL normalization, hreflang,
+ * anti-spam filtering, and SSR helpers for lusthub.my.id.
  * Used across Vercel serverless handlers and build scripts as a single source of truth.
  */
 
 export const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://www.lusthub.my.id').replace(/\/$/, '');
 
-/** High-priority international US & EU English category slugs ordered by global demand. */
+/** Supported European localized prefixes served under /{lang} and /{lang}/c/:slug. */
+export const EU_LOCALES = ['de', 'fr', 'es', 'it'];
+export const ALL_LOCALES = ['en', ...EU_LOCALES];
+
+export const LOCALE_OG_MAP = {
+  en: 'en_US',
+  de: 'de_DE',
+  fr: 'fr_FR',
+  es: 'es_ES',
+  it: 'it_IT',
+};
+
+export const LOCALE_LABELS = {
+  en: { code: 'EN', name: 'English', flag: '🇺🇸' },
+  de: { code: 'DE', name: 'Deutsch', flag: '🇩🇪' },
+  fr: { code: 'FR', name: 'Français', flag: '🇫🇷' },
+  es: { code: 'ES', name: 'Español', flag: '🇪🇸' },
+  it: { code: 'IT', name: 'Italiano', flag: '🇮🇹' },
+};
+
+/** High-priority international US & EU English category slugs ordered by global demand (48 hubs). */
 export const US_EU_CATEGORIES = [
-  'milf', 'blonde', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
+  'milf', 'blonde', 'brunette', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
   'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'petite',
   'stepmom', 'stepsis', 'massage', 'casting', 'squirt', 'deepthroat', 'bbw', 'college',
-  'big-tits', 'big-ass', 'anal', 'blowjob', 'lesbian', 'threesome', 'creampie',
-  'interracial', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public',
+  'big-tits', 'big-ass', 'pawg', 'anal', 'double-penetration', 'blowjob', 'handjob',
+  'cumshot', 'hardcore', 'lesbian', 'threesome', 'group-sex', 'creampie', 'interracial',
+  'hotwife', 'cuckold', 'pornstar', 'solo', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public',
 ];
 
-/** Complete curated category hubs (60 total: 37 US/EU + 23 Asian/Viral/Regional). */
+/** Complete curated category hubs (72 total: 48 US/EU + 24 Asian/Viral/Regional). */
 export const CURATED_CATEGORIES = [
   ...US_EU_CATEGORIES,
-  'asian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade',
+  'asian', 'indian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade',
   'indonesia', 'japanese', 'korean', 'live-cam', 'mature', 'outdoor', 'student',
   'viral', 'bokep-indo', 'mahasiswi', 'pasutri', 'rumahan', 'artis-indo',
   'pantai', 'hotel', 'tiktok-viral', 'hot-indo',
 ];
+
+const NON_JAV_PREFIXES = new Set([
+  'HD', 'SD', 'VR', 'TV', 'UK', 'US', 'EU', 'RTA', 'POV', 'MILF', 'BBW', 'PAWG', 'FPS', 'UHD',
+  'EP', 'PT', 'NO', 'VOL', 'PART', 'CH',
+]);
 
 /**
  * Collapses redundant slashes while keeping protocol prefixes intact (https://).
@@ -91,27 +118,200 @@ export function slugify(text, maxLen = 80, fallback = 'video') {
 export function cleanSourceTitle(title) {
   const decoded = decodeMojibake(title).replace(/\s+/g, ' ').trim();
   if (!decoded) return '';
-  // Remove trailing 4-char mixed-case/digit hashes only when preceded by space and containing digits+letters
   return decoded.replace(/\s+(?=[a-zA-Z]*\d)(?=\d*[a-zA-Z])[A-Za-z0-9]{4}$/, '').trim();
 }
 
 /**
- * Creates WebSite JSON-LD schema with sitewide SearchAction.
+ * Extracts a genuine JAV release code (e.g. NSPS-826, SONE-335, FC2-PPV-1234567) when present.
+ * @param {string} title
+ * @returns {string|null}
  */
-export function createWebSiteSchema() {
+export function extractJavCode(title) {
+  const raw = decodeMojibake(title);
+  if (!raw) return null;
+
+  const fc2Match = raw.match(/\bFC2[-\s]?PPV[-\s]?(\d{5,8})\b/i);
+  if (fc2Match) return `FC2-PPV-${fc2Match[1]}`;
+
+  // Handle asterisk-obfuscated JAV prefixes like A*B*P-410
+  const maskedMatch = raw.match(/\b([A-Z]\*[A-Z](?:\*[A-Z]){1,3})-(\d{3,5})\b/i);
+  if (maskedMatch) {
+    const cleanPrefix = maskedMatch[1].replace(/\*/g, '').toUpperCase();
+    if (!NON_JAV_PREFIXES.has(cleanPrefix)) {
+      return `${cleanPrefix}-${maskedMatch[2]}`;
+    }
+  }
+
+  const codeMatch = raw.match(/\b([A-Z]{2,5})-(\d{3,5})\b/i);
+  if (codeMatch) {
+    const prefix = codeMatch[1].toUpperCase();
+    if (!NON_JAV_PREFIXES.has(prefix)) {
+      return `${prefix}-${codeMatch[2]}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Detects spam, link-in-bio bait, or meaningless uploader titles that should be excluded from indexable sitemaps.
+ * @param {string} title
+ * @returns {boolean}
+ */
+export function isSpamVideoTitle(title) {
+  const cleaned = cleanSourceTitle(title).trim();
+  if (!cleaned) return true;
+  const alnum = cleaned.replace(/[^a-z0-9]/gi, '');
+  if (alnum.length < 5) return true;
+  if (/^\d+$/.test(alnum)) return true;
+  if (/\b(?:sex|porn|xxx|vid|video|clip)\d{3,}\b/i.test(cleaned)) return true;
+  if (/\b(?:link\s+in\s+bio|check\s+(?:my\s+)?bio|dm\s+(?:me\s+)?for\s+full|telegram\s+link|whatsapp\s+number|click\s+(?:the\s+)?link)\b/i.test(cleaned)) return true;
+  if (/^(?:https?:\/\/|www\.)/i.test(cleaned)) return true;
+  if (/\b(\w{2,})\b(?:\s+\1\b){3,}/i.test(cleaned)) return true;
+  return false;
+}
+
+/**
+ * Formats seconds into canonical ISO 8601 duration (e.g. 16370 -> PT4H32M50S).
+ * @param {number|string} seconds
+ * @returns {string|undefined}
+ */
+export function formatIsoDuration(seconds) {
+  const total = Math.floor(Number(seconds) || 0);
+  if (!Number.isFinite(total) || total <= 0) return undefined;
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  let out = 'PT';
+  if (hours > 0) out += `${hours}H`;
+  if (minutes > 0) out += `${minutes}M`;
+  if (secs > 0 || out === 'PT') out += `${secs}S`;
+  return out;
+}
+
+/**
+ * Formats a category slug into display title case (respecting common acronyms).
+ * @param {string} slug
+ * @returns {string}
+ */
+export function formatCategoryName(slug) {
+  if (!slug) return 'All';
+  const uppercaseWords = new Set(['fps', 'hd', 'jav', 'pov', 'bbw', 'vr', 'milf', '4k', 'uhd', 'pawg']);
+  const specialLabels = {
+    'onlyfans': 'OnlyFans',
+    'tiktok-viral': 'TikTok Viral',
+    '4k-uhd': '4K UHD',
+  };
+  if (specialLabels[slug]) return specialLabels[slug];
+  return slug
+    .split('-')
+    .map(word => uppercaseWords.has(word.toLowerCase())
+      ? word.toUpperCase()
+      : word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Builds canonical localized URL for a given language ('en'|'de'|'fr'|'es'|'it') and path suffix ('' or '/c/milf').
+ * @param {string} lang
+ * @param {string} [pathSuffix='']
+ * @returns {string}
+ */
+export function buildLocalizedUrl(lang, pathSuffix = '') {
+  const cleanSuffix = pathSuffix && pathSuffix !== '/'
+    ? (pathSuffix.startsWith('/') ? pathSuffix : `/${pathSuffix}`)
+    : '';
+  if (!lang || lang === 'en') {
+    return normalizeUrl(cleanSuffix ? `${BASE_URL}${cleanSuffix}` : `${BASE_URL}/`);
+  }
+  return normalizeUrl(`${BASE_URL}/${lang}${cleanSuffix}`);
+}
+
+/**
+ * Builds the full 6-entry symmetric hreflang cluster (en, de, fr, es, it, x-default).
+ * @param {string} [pathSuffix='']
+ * @returns {Array<{ hreflang: string, href: string }>}
+ */
+export function buildHreflangEntries(pathSuffix = '') {
+  const entries = ALL_LOCALES.map(locale => ({
+    hreflang: locale,
+    href: buildLocalizedUrl(locale, pathSuffix),
+  }));
+  entries.push({
+    hreflang: 'x-default',
+    href: buildLocalizedUrl('en', pathSuffix),
+  });
+  return entries;
+}
+
+/**
+ * Renders HTML <link rel="alternate" hreflang="..."> tags for <head>.
+ * @param {string} [pathSuffix='']
+ * @returns {string}
+ */
+export function buildHreflangHtml(pathSuffix = '') {
+  return buildHreflangEntries(pathSuffix)
+    .map(({ hreflang, href }) => `    <link rel="alternate" hreflang="${escapeHtml(hreflang)}" href="${escapeHtml(href)}">`)
+    .join('\n');
+}
+
+/**
+ * Renders Open Graph og:locale and og:locale:alternate meta tags.
+ * @param {string} activeLang
+ * @returns {string}
+ */
+export function buildOgLocaleMetaHtml(activeLang = 'en') {
+  const current = LOCALE_OG_MAP[activeLang] || 'en_US';
+  const alternates = ALL_LOCALES
+    .filter(l => l !== activeLang)
+    .map(l => `    <meta property="og:locale:alternate" content="${LOCALE_OG_MAP[l]}">`)
+    .join('\n');
+  return `    <meta property="og:locale" content="${current}">\n${alternates}`;
+}
+
+/**
+ * Renders a compact crawlable language switcher bar for homepages and category hubs.
+ * @param {string} activeLang
+ * @param {string} [pathSuffix='']
+ * @returns {string}
+ */
+export function buildLanguageSwitcherHtml(activeLang = 'en', pathSuffix = '') {
+  const links = ALL_LOCALES.map(locale => {
+    const meta = LOCALE_LABELS[locale];
+    const href = buildLocalizedUrl(locale, pathSuffix).replace(BASE_URL, '') || '/';
+    const isActive = locale === activeLang;
+    const style = isActive
+      ? 'padding:4px 9px;border-radius:6px;background:#e8a800;color:#000;font-weight:700;font-size:0.78rem;text-decoration:none;'
+      : 'padding:4px 9px;border-radius:6px;background:rgba(255,255,255,0.06);color:#ccc;font-weight:600;font-size:0.78rem;text-decoration:none;border:1px solid rgba(255,255,255,0.12);';
+    return `<a href="${escapeHtml(href)}" hreflang="${escapeHtml(locale)}" title="${escapeHtml(meta.name)}"${isActive ? ' aria-current="page"' : ''} style="${style}">${meta.code}</a>`;
+  }).join('\n                ');
+
+  return `<nav class="lang-switcher" aria-label="Language" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                ${links}
+            </nav>`;
+}
+
+/**
+ * Creates WebSite JSON-LD schema with sitewide SearchAction.
+ * @param {Object} [options]
+ */
+export function createWebSiteSchema(options = {}) {
+  const lang = options.lang || 'en';
+  const url = normalizeUrl(options.url || buildLocalizedUrl(lang, ''));
+  const searchPrefix = lang === 'en' ? '' : `/${lang}`;
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${BASE_URL}/#website`,
     'name': 'lusthub.my.id',
     'alternateName': 'LustHub',
-    'url': `${BASE_URL}/`,
-    'description': 'Fast, mobile-first 18+ NSFW streaming gallery featuring trending US, European, Asian, and amateur HD videos with instant playback.',
-    'inLanguage': 'en',
+    'url': url,
+    'description': options.description || 'Fast, mobile-first 18+ NSFW streaming gallery featuring trending US, European, Asian, and amateur HD videos with instant playback.',
+    'inLanguage': lang,
     'potentialAction': {
       '@type': 'SearchAction',
       'target': {
         '@type': 'EntryPoint',
-        'urlTemplate': `${BASE_URL}/c/{search_term_string}`,
+        'urlTemplate': `${BASE_URL}${searchPrefix}/c/{search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
@@ -119,12 +319,13 @@ export function createWebSiteSchema() {
 }
 
 /**
- * Creates Organization JSON-LD schema.
+ * Creates Organization JSON-LD schema with stable @id reference.
  */
 export function createOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': `${BASE_URL}/#organization`,
     'name': 'lusthub.my.id',
     'alternateName': 'LustHub',
     'url': `${BASE_URL}/`,
@@ -191,22 +392,25 @@ export function createVideoObjectSchema(video = {}, options = {}) {
   }
 
   const durationSec = Number(options.durationSec || video.length_sec || video.duration || 0);
-  const durationISO = durationSec > 0 ? `PT${durationSec}S` : undefined;
+  const durationISO = formatIsoDuration(durationSec);
   const rawEmbed = options.embedUrl || video.embed || video.player || undefined;
   const embedUrl = rawEmbed ? normalizeUrl(rawEmbed) : undefined;
   const viewCount = parseInt(String(options.views ?? video.views ?? '0').replace(/\D/g, ''), 10) || 0;
 
   const schema = {
     '@type': 'VideoObject',
+    '@id': `${canonicalUrl}#video`,
     'name': title,
     'description': description,
     'thumbnailUrl': [thumbUrl],
     'uploadDate': uploadISO,
     'url': canonicalUrl,
-    'inLanguage': 'en',
+    'mainEntityOfPage': { '@id': `${canonicalUrl}#webpage` },
+    'inLanguage': options.inLanguage || 'en',
     'isFamilyFriendly': false,
     'publisher': {
       '@type': 'Organization',
+      '@id': `${BASE_URL}/#organization`,
       'name': 'lusthub.my.id',
       'logo': {
         '@type': 'ImageObject',
@@ -274,4 +478,39 @@ export function createItemListSchema(name, description, items = []) {
 export function serializeSchema(schema) {
   const json = JSON.stringify(schema).replace(/</g, '\\u003c');
   return `<script type="application/ld+json">${json}</script>`;
+}
+
+/**
+ * Normalizes either a compact runtime record (data/enriched-runtime.json)
+ * or a legacy full record (data/enriched-videos.json) into a unified video shape.
+ * @param {Object|null} rec
+ * @returns {Object|null}
+ */
+export function expandRuntimeVideo(rec) {
+  if (!rec || typeof rec !== 'object') return null;
+  if (rec.video_id) {
+    if (rec.status !== 'enriched' || !rec.model || rec.model === 'mock-enricher') return null;
+    if (isSpamVideoTitle(rec.title)) return null;
+    return rec;
+  }
+  if (!rec.id) return null;
+  return {
+    video_id: rec.id,
+    title: rec.t || '',
+    slug: rec.s || rec.id,
+    thumbnail: rec.th || '',
+    seo_title: rec.st || '',
+    meta_description: rec.md || '',
+    summary: rec.sm || '',
+    highlights: Array.isArray(rec.hl) ? rec.hl : [],
+    tags: Array.isArray(rec.tg) ? rec.tg : [],
+    faq: Array.isArray(rec.fq)
+      ? rec.fq.map(pair => Array.isArray(pair) ? { question: pair[0], answer: pair[1] } : pair)
+      : [],
+    generated_at: rec.at || '',
+    views: Number(rec.vw || 0),
+    duration: Number(rec.du || 0),
+    status: 'enriched',
+    model: 'runtime',
+  };
 }

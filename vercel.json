@@ -7,10 +7,18 @@
   "outputDirectory": ".",
   "functions": {
     "api/*.js": {
-      "includeFiles": "{video.html,category.html,404.html,data/**}"
+      "includeFiles": "{index.html,video.html,category.html,404.html,data/enriched-runtime.json,data/category-descriptions.json,data/eu-locales.json}"
     }
   },
   "rewrites": [
+    { "source": "/de", "destination": "/api/locale-home?lang=de" },
+    { "source": "/fr", "destination": "/api/locale-home?lang=fr" },
+    { "source": "/es", "destination": "/api/locale-home?lang=es" },
+    { "source": "/it", "destination": "/api/locale-home?lang=it" },
+    { "source": "/de/c/:slug*", "destination": "/api/category?lang=de&slug=:slug*" },
+    { "source": "/fr/c/:slug*", "destination": "/api/category?lang=fr&slug=:slug*" },
+    { "source": "/es/c/:slug*", "destination": "/api/category?lang=es&slug=:slug*" },
+    { "source": "/it/c/:slug*", "destination": "/api/category?lang=it&slug=:slug*" },
     { "source": "/v/:slug*", "destination": "/api/video?slug=:slug*" },
     { "source": "/c/:slug*", "destination": "/api/category?slug=:slug*" }
   ],
@@ -43,6 +51,20 @@
     },
     {
       "source": "/",
+      "has": [{ "type": "query", "key": "page" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/(de|fr|es|it)",
+      "has": [{ "type": "query", "key": "q" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/(de|fr|es|it)",
       "has": [{ "type": "query", "key": "page" }],
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, follow" }

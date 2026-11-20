@@ -1,10 +1,14 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { ALL_LOCALES, CURATED_CATEGORIES } from '../api/schema-helper.js';
 
 const ROOT = process.cwd();
 const DIR = path.join(ROOT, 'sitemaps');
 const errors = [];
 const seen = new Map();
+const hreflangGraph = new Map(); // loc -> Map(hreflang -> targetHref)
+const REQUIRED_HREFLANGS = [...ALL_LOCALES, 'x-default'];
+
 const captureAll = (content, regex) => [...content.matchAll(regex)].map((match) => match[1]);
 const files = (await readdir(DIR)).filter((name) => name.endsWith('.xml')).sort();
 
@@ -17,6 +21,10 @@ for (const name of files) {
   if (bytes > 50 * 1024 * 1024) errors.push(`${name}: exceeds 50 MB`);
   if (urls.length > 50000) errors.push(`${name}: exceeds 50,000 URLs`);
   if (/<(?:priority|changefreq)>/i.test(content)) errors.push(`${name}: contains ignored priority/changefreq tags`);
+  if (content.includes('<xhtml:link') && !content.includes('xmlns:xhtml="http://www.w3.org/1999/xhtml"')) {
+    errors.push(`${name}: uses xhtml:link without xmlns:xhtml namespace`);
+  }
+
   for (const block of urls) {
     const location = block.match(/<loc>(.*?)<\/loc>/)?.[1];
     if (!location) { errors.push(`${name}: URL entry has no loc`); continue; }
@@ -24,12 +32,48 @@ for (const name of files) {
     if (/lusthub\.my\.id\/\//.test(location)) errors.push(`${name}: double-slash loc ${location}`);
     if (seen.has(location)) errors.push(`${name}: duplicate loc also in ${seen.get(location)}: ${location}`);
     else seen.set(location, name);
+
+    const altMatches = [...block.matchAll(/<xhtml:link\s+rel="alternate"\s+hreflang="([^"]+)"\s+href="([^"]+)"\s*\/>/g)];
+    if (altMatches.length > 0) {
+      const altMap = new Map();
+      for (const m of altMatches) {
+        altMap.set(m[1], m[2]);
+      }
+      for (const reqLang of REQUIRED_HREFLANGS) {
+        if (!altMap.has(reqLang)) {
+          errors.push(`${name}: ${location} missing hreflang="${reqLang}"`);
+        }
+      }
+      hreflangGraph.set(location, altMap);
+    }
+
     if (name.startsWith('sitemap_videos_')) {
       for (const tag of ['video:thumbnail_loc', 'video:title', 'video:description', 'video:player_loc']) {
         if (!block.includes(`<${tag}>`)) errors.push(`${name}: ${location} missing ${tag}`);
       }
       const lastmod = block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1];
       if (!/^\d{4}-\d{2}-\d{2}$/.test(lastmod || '')) errors.push(`${name}: ${location} has invalid lastmod`);
+    }
+  }
+}
+
+// Verify EU localized sitemap presence and complete hreflang reciprocity
+if (!files.includes('sitemap_eu_locales.xml')) {
+  errors.push('Missing sitemaps/sitemap_eu_locales.xml');
+}
+const expectedLocalizedCount = ALL_LOCALES.length * (CURATED_CATEGORIES.length + 1);
+if (hreflangGraph.size !== expectedLocalizedCount) {
+  errors.push(`Expected ${expectedLocalizedCount} hreflang-annotated URLs, found ${hreflangGraph.size}`);
+}
+for (const [srcLoc, altMap] of hreflangGraph.entries()) {
+  for (const [code, targetHref] of altMap.entries()) {
+    if (!seen.has(targetHref)) {
+      errors.push(`hreflang target ${targetHref} (from ${srcLoc} [${code}]) is missing from sitemaps`);
+      continue;
+    }
+    const backMap = hreflangGraph.get(targetHref);
+    if (!backMap || ![...backMap.values()].includes(srcLoc)) {
+      errors.push(`hreflang reciprocity broken: ${srcLoc} -> ${targetHref} does not link back`);
     }
   }
 }
@@ -58,5 +102,5 @@ if (errors.length) {
 } else {
   const sizes = await Promise.all(files.map((name) => stat(path.join(DIR, name))));
   const mb = sizes.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024;
-  console.log(`Sitemap validation passed: ${files.length} files, ${seen.size} unique URLs, ${mb.toFixed(2)} MB.`);
+  console.log(`Sitemap validation passed: ${files.length} files, ${seen.size} unique URLs (${hreflangGraph.size} verified 6-way reciprocal hreflang URLs), ${mb.toFixed(2)} MB.`);
 }

@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Fetch latest & US/EU popular videos and refresh catalog state
+      - name: Fetch latest & US/EU popular videos and refresh 3-tier catalog state
         run: node scripts/generate-sitemaps.mjs
 
       - name: Enrich top-priority US/EU videos with Gemini AI
@@ -36,32 +36,37 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           GEMINI_FALLBACK_MODEL: gemini-3.1-flash-lite
-          GEMINI_BATCH_SIZE: 10
+          GEMINI_BATCH_SIZE: 6
+          GEMINI_CONCURRENCY: 2
+          GEMINI_TIMEOUT_MS: 50000
         run: node scripts/seo-enrich.mjs --limit 750
+
+      - name: Build compact O(1) runtime index for Vercel serverless edge
+        run: node scripts/build-runtime-index.mjs
 
       - name: Rebuild static SSR homepage categories, top videos, and schema
         run: node scripts/build-home-ssr.mjs
 
-      - name: Regenerate sitemaps and RSS video feed with newly enriched videos
+      - name: Regenerate sitemaps, EU hreflang sitemap, llms.txt, and RSS video feed
         run: node scripts/generate-sitemaps.mjs --offline
 
-      - name: Validate sitemap limits, RSS feed, and video metadata
+      - name: Validate sitemap limits, hreflang reciprocity, RSS feed, and video metadata
         run: node scripts/validate-sitemaps.mjs
 
-      - name: Commit & push updated SEO catalog, sitemaps, feed, and homepage
+      - name: Commit & push updated SEO catalog, runtime index, sitemaps, feed, llms.txt, and homepage
         shell: bash
         run: |
-          if git diff --quiet -- sitemap.xml sitemap_index.xml feed.xml index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json; then
+          if git diff --quiet -- sitemap.xml sitemap_index.xml feed.xml llms.txt index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enriched-runtime.json data/enrich-quota-state.json; then
             echo "No new changes; skipping commit and Vercel deployment."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A sitemap.xml sitemap_index.xml feed.xml index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enrich-quota-state.json
-          git commit -m "chore(seo): refresh daily video sitemap, RSS feed, home SSR & enriched metadata"
+          git add -A sitemap.xml sitemap_index.xml feed.xml llms.txt index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enriched-runtime.json data/enrich-quota-state.json
+          git commit -m "chore(seo): refresh daily video sitemap, EU locales, runtime index, feed & enriched metadata"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
-      - name: Submit updated URLs to IndexNow (Bing, DuckDuckGo, Yahoo, Seznam, Yandex)
+      - name: Submit updated US & EU URLs to IndexNow (Bing, DuckDuckGo, Yahoo, Seznam, Yandex)
         run: node scripts/indexnow-submit.mjs

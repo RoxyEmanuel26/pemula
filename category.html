@@ -488,6 +488,9 @@
             const keyword = decodedSlug.replace(/-/g, ' ').trim();
             // Canonical slug always matches backend slugify rules
             const canonSlug = decodedSlug.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'viral';
+            const localeMatch = originalPath.match(/^\/(de|fr|es|it)(\/|$)/i);
+            const LOCALE_META = window.__LOCALE_META__ || null;
+            const langPrefix = (LOCALE_META && typeof LOCALE_META.langPrefix === 'string') ? LOCALE_META.langPrefix : (localeMatch ? '/' + localeMatch[1].toLowerCase() : '');
 
             if (!keyword) {
                 window.location.href = '/';
@@ -529,11 +532,12 @@
 
             // ─── Update SEO meta tags
             function updateSEO(page) {
-                const cap = TITLE_CAP(keyword);
-                const pageStr = page > 1 ? ` — Page ${page}` : '';
-                const title = `Free ${cap} HD Videos${pageStr} | LustHub`;
-                const desc = `Watch the best free ${cap} adult videos in full HD on lusthub.my.id. ${totalCount.toLocaleString('en-US')} videos available. Updated daily.`;
-                const canon = `${BASE_URL}/c/${canonSlug}${page > 1 ? '?page=' + page : ''}`;
+                const cap = (LOCALE_META && LOCALE_META.categoryName) ? LOCALE_META.categoryName : TITLE_CAP(keyword);
+                const pageStr = page > 1 ? ((LOCALE_META && LOCALE_META.pageSuffixPattern) ? LOCALE_META.pageSuffixPattern.replace('{page}', page) : ` — Page ${page}`) : '';
+                const title = (LOCALE_META && LOCALE_META.titlePattern) ? LOCALE_META.titlePattern.replace('{name}', cap).replace('{pageSuffix}', pageStr) : `Free ${cap} HD Videos${pageStr} | LustHub`;
+                const existingDesc = document.getElementById('pageDesc')?.getAttribute('content') || '';
+                const desc = (LOCALE_META && LOCALE_META.lang !== 'en' && existingDesc) ? existingDesc : `Watch the best free ${cap} adult videos in full HD on lusthub.my.id. ${totalCount.toLocaleString('en-US')} videos available. Updated daily.`;
+                const canon = `${BASE_URL}${langPrefix}/c/${canonSlug}${page > 1 ? '?page=' + page : ''}`;
 
                 document.title = title;
                 document.getElementById('pageTitle').textContent = title;
@@ -559,9 +563,11 @@
                 const heroKeyword = document.createElement('span');
                 heroKeyword.id = 'heroKeyword';
                 heroKeyword.textContent = cap;
-                heroTitle.replaceChildren(document.createTextNode('Free '), heroKeyword, document.createTextNode(' Videos' + pageStr));
-                document.getElementById('heroDesc').textContent =
-                    `Browse ${totalCount.toLocaleString('en-US')}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
+                heroTitle.replaceChildren(document.createTextNode((LOCALE_META && LOCALE_META.heroPrefix) || 'Free '), heroKeyword, document.createTextNode(((LOCALE_META && LOCALE_META.heroSuffix) || ' Videos') + pageStr));
+                if (!LOCALE_META || LOCALE_META.lang === 'en') {
+                    document.getElementById('heroDesc').textContent =
+                        `Browse ${totalCount.toLocaleString('en-US')}+ free ${cap} videos in HD quality on lusthub.my.id. Updated daily with the hottest new content.`;
+                }
                 document.getElementById('breadcrumbKeyword').textContent = cap;
 
                 // Stats
@@ -579,8 +585,8 @@
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": BASE_URL + "/" },
-                        { "@type": "ListItem", "position": 2, "name": cap + " Videos", "item": BASE_URL + "/c/" + rawSlug }
+                        { "@type": "ListItem", "position": 1, "name": (LOCALE_META && LOCALE_META.homeLabel) || "Home", "item": BASE_URL + ((LOCALE_META && LOCALE_META.homeHref) || "/") },
+                        { "@type": "ListItem", "position": 2, "name": cap + " " + ((LOCALE_META && LOCALE_META.videosWord) || "Videos"), "item": BASE_URL + langPrefix + "/c/" + canonSlug }
                     ]
                 });
                 document.head.appendChild(ld);
@@ -730,9 +736,9 @@
                 // Prev
                 const prev = document.createElement('a');
                 prev.className = 'page-btn';
-                prev.textContent = '← Prev';
+                prev.textContent = (LOCALE_META && LOCALE_META.prevLabel) || '← Prev';
                 if (current > 1) {
-                    prev.href = current === 2 ? `/c/${canonSlug}` : `/c/${canonSlug}?page=${current - 1}`;
+                    prev.href = current === 2 ? `${langPrefix}/c/${canonSlug}` : `${langPrefix}/c/${canonSlug}?page=${current - 1}`;
                     prev.addEventListener('click', (e) => { e.preventDefault(); loadPage(current - 1); });
                 } else {
                     prev.style.opacity = '0.3';
@@ -750,7 +756,7 @@
                         const btn = document.createElement('a');
                         btn.className = 'page-btn' + (p === current ? ' active' : '');
                         btn.textContent = p;
-                        btn.href = p === 1 ? `/c/${canonSlug}` : `/c/${canonSlug}?page=${p}`;
+                        btn.href = p === 1 ? `${langPrefix}/c/${canonSlug}` : `${langPrefix}/c/${canonSlug}?page=${p}`;
                         btn.addEventListener('click', (e) => { e.preventDefault(); loadPage(p); });
                         pag.appendChild(btn);
                     }
@@ -759,9 +765,9 @@
                 // Next
                 const next = document.createElement('a');
                 next.className = 'page-btn';
-                next.textContent = 'Next →';
+                next.textContent = (LOCALE_META && LOCALE_META.nextLabel) || 'Next →';
                 if (current < total) {
-                    next.href = `/c/${canonSlug}?page=${current + 1}`;
+                    next.href = `${langPrefix}/c/${canonSlug}?page=${current + 1}`;
                     next.addEventListener('click', (e) => { e.preventDefault(); loadPage(current + 1); });
                 } else {
                     next.style.opacity = '0.3';
@@ -801,7 +807,7 @@
                         renderPagination(page, totalPages);
 
                         // Update URL cleanly using canonical slug
-                        const newUrl = `/c/${canonSlug}${page > 1 ? '?page=' + page : ''}`;
+                        const newUrl = `${langPrefix}/c/${canonSlug}${page > 1 ? '?page=' + page : ''}`;
                         window.history.replaceState(null, '', newUrl);
                     })
                     .catch(err => {

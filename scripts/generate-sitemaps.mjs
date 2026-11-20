@@ -4,12 +4,15 @@ import path from 'node:path';
 import process from 'node:process';
 import {
   BASE_URL,
+  EU_LOCALES,
   CURATED_CATEGORIES,
   US_EU_CATEGORIES,
   decodeMojibake,
   slugify,
   cleanSourceTitle,
+  isSpamVideoTitle,
   normalizeUrl,
+  buildHreflangEntries,
 } from '../api/schema-helper.js';
 
 const ROOT = process.cwd();
@@ -18,14 +21,16 @@ const SITEMAP_DIR = path.join(ROOT, 'sitemaps');
 const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
 const ENRICHED_PATH = path.join(ROOT, 'data', 'enriched-videos.json');
 const FEED_PATH = path.join(ROOT, 'feed.xml');
+const LLMS_PATH = path.join(ROOT, 'llms.txt');
 const OFFLINE = process.argv.includes('--offline');
 const PER_PAGE = envNumber('SITEMAP_PER_PAGE', 1000, 1, 1000);
 const MAX_FETCH_PAGES = envNumber('SITEMAP_MAX_FETCH_PAGES', 10, 1, 50);
 const BOOTSTRAP_PAGES = envNumber('SITEMAP_BOOTSTRAP_PAGES', Math.min(10, MAX_FETCH_PAGES), 1, MAX_FETCH_PAGES);
 const MAX_RECORDS = envNumber('SITEMAP_MAX_VIDEOS', 20000, 1000, 45000);
+const PROTECTED_US_EU_POOL_MAX = envNumber('SITEMAP_US_EU_POOL', 8000, 1000, 15000);
 const CHUNK_SIZE = envNumber('SITEMAP_CHUNK_SIZE', 1000, 100, 45000);
 const FETCH_DELAY_MS = envNumber('SITEMAP_FETCH_DELAY_MS', 350, 0, 5000);
-const USER_AGENT = 'lusthub-sitemap-bot/9.0 (+https://www.lusthub.my.id/robots.txt)';
+const USER_AGENT = 'lusthub-sitemap-bot/10.0 (+https://www.lusthub.my.id/robots.txt)';
 
 const STATIC_PAGES = [
   ['/', 'index.html'], ['/about', 'about.html'], ['/howto', 'howto.html'],
@@ -33,8 +38,15 @@ const STATIC_PAGES = [
   ['/privacy', 'privacy.html'], ['/terms', 'terms.html'],
 ];
 
-// High-demand US & European queries polled alongside latest releases so catalog tracks Tier-1 search volume
-const US_EU_SEED_QUERIES = US_EU_CATEGORIES.slice(0, 22);
+// Dedicated European country & creator hubs seeded every rotation so EU inventory stays deep
+const EU_COUNTRY_SEED_QUERIES = [
+  'european', 'german', 'french', 'spanish', 'italian', 'british', 'czech', 'russian', 'onlyfans', '4k-uhd',
+];
+// High-demand US/EU core niche hubs
+const US_EU_NICHE_SEED_QUERIES = US_EU_CATEGORIES.filter(s => !EU_COUNTRY_SEED_QUERIES.includes(s));
+
+const EU_GEO_REGEX = /\b(european|euro|british|uk|london|german|deutsch|berlin|munich|french|francaise|paris|spanish|espanol|madrid|barcelona|italian|italiana|rome|czech|prague|russian|slavic|dutch|swedish|polish|austrian|swiss)\b/i;
+const US_EU_DEMAND_REGEX = /\b(milf|blonde|brunette|latina|ebony|amateur|pov|onlyfans|fansly|4k|anal|lesbian|threesome|group sex|creampie|stepmom|stepsis|massage|casting|squirt|deepthroat|bbw|college|petite|big tits|big ass|pawg|hotwife|cuckold|pornstar|hardcore|cumshot|double penetration|handjob|solo|lingerie|redhead|cosplay|jav)\b/i;
 
 function envNumber(name, fallback, min, max) {
   const value = Number.parseInt(process.env[name] || String(fallback), 10);
@@ -101,6 +113,40 @@ function normalizeVideo(video) {
   if (rate) normalized.rate = rate;
   if (keywords) normalized.keywords = keywords;
   return normalized;
+}
+
+/**
+ * Scores non-enriched catalog videos for Tier-2 protected US & European retention.
+ * Prevents high-view US/EU/European seed videos from being evicted by random 0-view uploads.
+ */
+function scoreUsEuRetention(video) {
+  const title = cleanSourceTitle(video.title || '');
+  if (isSpamVideoTitle(title)) return -999;
+  const combined = `${title} ${video.keywords || ''}`;
+  const views = Number(video.views) || 0;
+  let score = Math.log10(views + 1) * 24;
+
+  const isEuGeo = EU_GEO_REGEX.test(combined);
+  const isUsEuDemand = US_EU_DEMAND_REGEX.test(combined);
+
+  if (isEuGeo) score += 45;
+  if (isUsEuDemand) score += 25;
+  if (title && !/[^\x00-\x7F]/.test(title)) score += 15;
+  if (video.thumbnail && video.thumbnail.includes('_360')) score += 10;
+  if (video.keywords) score += 8;
+  if (/\b(indo|bokep|mertua|mantu|ngewe|memek|kontol|colmek|ngentot|tamil|hindi)\b/i.test(combined)) score -= 45;
+  return score;
+}
+
+function isUsEuProtectedCandidate(video) {
+  const title = cleanSourceTitle(video.title || '');
+  if (isSpamVideoTitle(title)) return false;
+  const combined = `${title} ${video.keywords || ''}`;
+  const views = Number(video.views) || 0;
+  if (EU_GEO_REGEX.test(combined)) return true;
+  if (views >= 3000 && US_EU_DEMAND_REGEX.test(combined)) return true;
+  if (views >= 20000 && !/[^\x00-\x7F]/.test(title)) return true;
+  return false;
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -174,11 +220,18 @@ async function fetchCatalogVideos(knownIds, stateExists) {
     }
   }
 
-  // 3. Curated US & EU country/niche queries (polls 6 rotating hubs per run across top-monthly / most-popular)
-  const dayOffset = Math.floor(Date.now() / 43200000);
-  const seedLimit = Math.min(6, US_EU_SEED_QUERIES.length);
-  for (let i = 0; i < seedLimit; i += 1) {
-    const slug = US_EU_SEED_QUERIES[(dayOffset * seedLimit + i) % US_EU_SEED_QUERIES.length];
+  // 3. Dedicated EU country + creator hubs (5 rotating per run) + US/EU high-demand niches (5 rotating per run)
+  const runSlot = Math.floor(Date.now() / 43200000);
+  const selectedQueries = [];
+  for (let i = 0; i < 5; i += 1) {
+    selectedQueries.push(EU_COUNTRY_SEED_QUERIES[(runSlot * 5 + i) % EU_COUNTRY_SEED_QUERIES.length]);
+  }
+  for (let i = 0; i < 5; i += 1) {
+    selectedQueries.push(US_EU_NICHE_SEED_QUERIES[(runSlot * 5 + i) % US_EU_NICHE_SEED_QUERIES.length]);
+  }
+
+  for (let i = 0; i < selectedQueries.length; i += 1) {
+    const slug = selectedQueries[i];
     const order = i % 2 === 0 ? 'top-monthly' : 'most-popular';
     await sleep(FETCH_DELAY_MS);
     try {
@@ -227,23 +280,68 @@ async function fileLastModified(file) {
   } catch { return null; }
 }
 
-function urlset(rows, video = false) {
-  const videoNamespace = video ? ' xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"' : '';
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${videoNamespace}>\n${rows.join('\n')}\n</urlset>\n`;
+function urlset(rows, options = {}) {
+  const { video = false, xhtml = false } = typeof options === 'boolean' ? { video: options } : options;
+  const ns = [
+    'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+    video ? 'xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"' : '',
+    xhtml ? 'xmlns:xhtml="http://www.w3.org/1999/xhtml"' : '',
+  ].filter(Boolean).join(' ');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset ${ns}>\n${rows.join('\n')}\n</urlset>\n`;
+}
+
+function renderXhtmlAlternates(pathSuffix = '') {
+  return buildHreflangEntries(pathSuffix)
+    .map(({ hreflang, href }) => `    <xhtml:link rel="alternate" hreflang="${xmlEscape(hreflang)}" href="${xmlEscape(href)}" />`)
+    .join('\n');
 }
 
 function buildPagesSitemap() {
   return urlset(STATIC_PAGES.map(([urlPath, file]) => {
     const lastmod = gitLastModified(file);
-    return ['  <url>', `    <loc>${xmlEscape(`${BASE_URL}${urlPath}`)}</loc>`,
-      lastmod ? `    <lastmod>${lastmod}</lastmod>` : null, '  </url>'].filter(Boolean).join('\n');
-  }));
+    const alternates = urlPath === '/' ? renderXhtmlAlternates('') : null;
+    return [
+      '  <url>',
+      `    <loc>${xmlEscape(`${BASE_URL}${urlPath}`)}</loc>`,
+      lastmod ? `    <lastmod>${lastmod}</lastmod>` : null,
+      alternates,
+      '  </url>',
+    ].filter(Boolean).join('\n');
+  }), { xhtml: true });
 }
 
-function buildCategoriesSitemap() {
-  const catLastMod = gitLastModified('data/category-descriptions.json') || gitLastModified('category.html') || new Date().toISOString().slice(0, 10);
-  return urlset(CURATED_CATEGORIES.map((category) =>
-    `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n  </url>`));
+function buildCategoriesSitemap(catLastMod) {
+  return urlset(CURATED_CATEGORIES.map((category) => {
+    const alternates = renderXhtmlAlternates(`/c/${category}`);
+    return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n${alternates}\n  </url>`;
+  }), { xhtml: true });
+}
+
+/**
+ * Generates sitemaps/sitemap_eu_locales.xml containing all localized European
+ * homepages (/de, /fr, /es, /it) + localized curated hubs (/{lang}/c/:slug)
+ * with complete reciprocal xhtml:link hreflang clusters and zero duplicate <loc>.
+ */
+function buildEuLocalesSitemap(homeLastMod, catLastMod) {
+  const rows = [];
+  const homeAlternates = renderXhtmlAlternates('');
+
+  for (const lang of EU_LOCALES) {
+    rows.push(
+      `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/${lang}`)}</loc>\n    <lastmod>${homeLastMod}</lastmod>\n${homeAlternates}\n  </url>`
+    );
+  }
+
+  for (const lang of EU_LOCALES) {
+    for (const category of CURATED_CATEGORIES) {
+      const alternates = renderXhtmlAlternates(`/c/${category}`);
+      rows.push(
+        `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/${lang}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n${alternates}\n  </url>`
+      );
+    }
+  }
+
+  return urlset(rows, { xhtml: true });
 }
 
 function buildVideoSitemap(videos, enrichedMap) {
@@ -259,11 +357,11 @@ function buildVideoSitemap(videos, enrichedMap) {
       : [];
     const tagsXml = tagList.map(t => `\n      <video:tag>${xmlEscape(t)}</video:tag>`).join('');
     return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/v/${video.id}-${video.slug}`)}</loc>\n    <lastmod>${video.published.slice(0, 10)}</lastmod>\n    <video:video>\n      <video:thumbnail_loc>${xmlEscape(thumb)}</video:thumbnail_loc>\n      <video:title>${xmlEscape(title)}</video:title>\n      <video:description>${xmlEscape(desc)}</video:description>\n      <video:player_loc>${xmlEscape(video.player)}</video:player_loc>${duration}\n      <video:publication_date>${video.published}</video:publication_date>\n      <video:family_friendly>no</video:family_friendly>${tagsXml}\n    </video:video>\n  </url>`;
-  }), true);
+  }), { video: true });
 }
 
 function buildRssFeed(videos, enrichedMap) {
-  const cleanFeedVideos = videos.filter((v) => !/[^\x00-\x7F]/.test(v.title) && v.title.length >= 14);
+  const cleanFeedVideos = videos.filter((v) => !isSpamVideoTitle(v.title) && !/[^\x00-\x7F]/.test(v.title) && v.title.length >= 14);
   const feedSource = cleanFeedVideos.length >= 25 ? cleanFeedVideos : videos;
   const latestItems = feedSource.slice(0, 50).map((video) => {
     const e = enrichedMap[video.id];
@@ -304,6 +402,33 @@ function buildIndex(entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</sitemapindex>\n`;
 }
 
+async function syncLlmsTxt(videoSitemapFiles) {
+  try {
+    const content = await readFile(LLMS_PATH, 'utf8');
+    const startMarker = '<!-- AUTO:SITEMAPS:START -->';
+    const endMarker = '<!-- AUTO:SITEMAPS:END -->';
+    const sIdx = content.indexOf(startMarker);
+    const eIdx = content.indexOf(endMarker);
+    if (sIdx === -1 || eIdx === -1 || eIdx <= sIdx) return false;
+
+    const euCount = EU_LOCALES.length * (CURATED_CATEGORIES.length + 1);
+    const lines = [
+      `- Master Sitemap Index: ${BASE_URL}/sitemap_index.xml`,
+      `- Category Sitemap (${CURATED_CATEGORIES.length} EN Hubs): ${BASE_URL}/sitemaps/sitemap_categories.xml`,
+      `- European Localized Sitemap (${euCount} DE/FR/ES/IT Hubs): ${BASE_URL}/sitemaps/sitemap_eu_locales.xml`,
+      ...videoSitemapFiles.map((f, idx) => `- Video Sitemap ${String(idx + 1).padStart(3, '0')}: ${BASE_URL}/sitemaps/${f}`),
+      `- Static Pages Sitemap: ${BASE_URL}/sitemaps/sitemap_pages.xml`,
+      `- RSS Video Feed: ${BASE_URL}/feed.xml`,
+      `- Robots Policy: ${BASE_URL}/robots.txt`,
+    ];
+
+    const updated = `${content.slice(0, sIdx + startMarker.length)}\n${lines.join('\n')}\n${content.slice(eIdx)}`;
+    return writeIfChanged(LLMS_PATH, updated);
+  } catch {
+    return false;
+  }
+}
+
 async function writeIfChanged(file, content) {
   let previous = null;
   try { previous = await readFile(file, 'utf8'); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
@@ -333,7 +458,7 @@ async function main() {
   const latest = OFFLINE ? [] : await fetchCatalogVideos(knownIds, state.videos.length > 0);
   const removedIds = OFFLINE ? new Set() : await fetchRemovedIds();
 
-  // Load genuine AI-enriched videos FIRST so they are pinned and never evicted by the rolling 20k cap
+  // Load genuine non-spam AI-enriched videos FIRST so they are pinned and never evicted
   const enrichedIds = new Set();
   let enrichedMap = {};
   try {
@@ -342,7 +467,7 @@ async function main() {
     if (enrichedJson.videos) {
       enrichedMap = enrichedJson.videos;
       for (const [id, v] of Object.entries(enrichedJson.videos)) {
-        if (v.status === 'enriched' && v.model && v.model !== 'mock-enricher') {
+        if (v.status === 'enriched' && v.model && v.model !== 'mock-enricher' && !isSpamVideoTitle(v.title)) {
           enrichedIds.add(id);
         }
       }
@@ -380,37 +505,61 @@ async function main() {
     }
   }
 
-  // Pin all AI-enriched videos first (newest first), then fill remainder with newest non-enriched catalog videos
+  // 3-Tier Retention (prevents high-demand US/EU/European seed videos from being evicted by 0-view uploads):
+  // Tier 1: Pinned genuine AI-enriched videos
+  // Tier 2: Protected US/EU high-demand & European geo pool (up to 8,000 slots sorted by demand score + views)
+  // Tier 3: Fresh rolling uploads by publish date up to MAX_RECORDS (20,000)
   const allMerged = [...merged.values()];
   const pinnedEnriched = allMerged
     .filter((v) => enrichedIds.has(v.id))
     .sort((a, b) => b.published.localeCompare(a.published) || a.id.localeCompare(b.id));
-  const otherVideos = allMerged
-    .filter((v) => !enrichedIds.has(v.id))
-    .sort((a, b) => b.published.localeCompare(a.published) || a.id.localeCompare(b.id));
-  const videos = [...pinnedEnriched, ...otherVideos].slice(0, MAX_RECORDS);
+
+  const nonEnriched = allMerged.filter((v) => !enrichedIds.has(v.id));
+  const remainingBudget = Math.max(0, MAX_RECORDS - pinnedEnriched.length);
+  const tier2Cap = Math.min(PROTECTED_US_EU_POOL_MAX, remainingBudget);
+
+  const protectedPool = nonEnriched
+    .filter(isUsEuProtectedCandidate)
+    .sort((a, b) => scoreUsEuRetention(b) - scoreUsEuRetention(a) || b.published.localeCompare(a.published))
+    .slice(0, tier2Cap);
+  const protectedIds = new Set(protectedPool.map(v => v.id));
+
+  const freshTail = nonEnriched
+    .filter((v) => !protectedIds.has(v.id))
+    .sort((a, b) => b.published.localeCompare(a.published) || a.id.localeCompare(b.id))
+    .slice(0, Math.max(0, remainingBudget - protectedPool.length));
+
+  const videos = [...pinnedEnriched, ...protectedPool, ...freshTail].slice(0, MAX_RECORDS);
   if (!videos.length) throw new Error('No valid videos available; refusing to replace a good sitemap with an empty one.');
   if (recoveredCount > 0) console.log(`Recovered ${recoveredCount} AI-enriched video(s) into sitemap pool.`);
 
   const changed = [];
   const indexEntries = [];
-  const pagesLastMod = await fileLastModified('index.html') || new Date().toISOString().slice(0, 10);
-  const catLastMod = await fileLastModified('data/category-descriptions.json') || await fileLastModified('category.html') || new Date().toISOString().slice(0, 10);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const pagesLastMod = await fileLastModified('index.html') || todayStr;
+  const catLastMod = await fileLastModified('data/category-descriptions.json') || await fileLastModified('category.html') || todayStr;
+  const euLastMod = await fileLastModified('data/eu-locales.json') || catLastMod;
+
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_pages.xml'), buildPagesSitemap())) changed.push('sitemap_pages.xml');
-  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap())) changed.push('sitemap_categories.xml');
+  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap(catLastMod))) changed.push('sitemap_categories.xml');
+  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_eu_locales.xml'), buildEuLocalesSitemap(pagesLastMod, euLastMod))) changed.push('sitemap_eu_locales.xml');
+
   indexEntries.push({ file: 'sitemap_pages.xml', lastmod: pagesLastMod });
   indexEntries.push({ file: 'sitemap_categories.xml', lastmod: catLastMod });
+  indexEntries.push({ file: 'sitemap_eu_locales.xml', lastmod: euLastMod });
 
-  // Quality Gate: ONLY genuine AI-enriched videos (exclude mock-enricher & pending/failed thin pages)
+  // Quality Gate: ONLY genuine non-spam AI-enriched videos
   const sitemapVideos = enrichedIds.size > 0
-    ? videos.filter((v) => enrichedIds.has(v.id))
-    : videos;
+    ? videos.filter((v) => enrichedIds.has(v.id) && !isSpamVideoTitle(v.title))
+    : videos.filter((v) => !isSpamVideoTitle(v.title));
 
   const keep = new Set();
+  const videoFiles = [];
   for (let offset = 0, index = 1; offset < sitemapVideos.length; offset += CHUNK_SIZE, index += 1) {
     const chunk = sitemapVideos.slice(offset, offset + CHUNK_SIZE);
     const file = `sitemap_videos_${String(index).padStart(3, '0')}.xml`;
     keep.add(file);
+    videoFiles.push(file);
     if (await writeIfChanged(path.join(SITEMAP_DIR, file), buildVideoSitemap(chunk, enrichedMap))) changed.push(file);
     indexEntries.push({ file, lastmod: chunk[0]?.published.slice(0, 10) || null });
   }
@@ -421,11 +570,12 @@ async function main() {
   if (await writeIfChanged(path.join(ROOT, 'sitemap.xml'), indexXml)) changed.push('sitemap.xml');
   if (await writeIfChanged(path.join(ROOT, 'sitemap_index.xml'), indexXml)) changed.push('sitemap_index.xml');
   if (await writeIfChanged(FEED_PATH, buildRssFeed(sitemapVideos, enrichedMap))) changed.push('feed.xml');
+  if (await syncLlmsTxt(videoFiles)) changed.push('llms.txt');
 
   const newCount = latest.filter((video) => !knownIds.has(video.id)).length;
   const removedCount = state.videos.filter((video) => removedIds.has(video.id)).length;
-  console.log(`Sitemap refresh complete: ${videos.length} rolling videos (${sitemapVideos.length} genuine AI-enriched in sitemap), ${newCount} new, ${removedCount} removed.`);
-  console.log(`Generated ${keep.size} video sitemap files; deleted ${removedFiles} obsolete files.`);
+  console.log(`Sitemap refresh complete: ${videos.length} rolling videos (Tier1 pinned=${pinnedEnriched.length}, Tier2 US/EU protected=${protectedPool.length}, Tier3 fresh=${freshTail.length} | ${sitemapVideos.length} genuine AI-enriched in sitemap), ${newCount} new, ${removedCount} removed.`);
+  console.log(`Generated ${keep.size} video sitemap files + sitemap_eu_locales.xml (${EU_LOCALES.length * (CURATED_CATEGORIES.length + 1)} EU URLs); deleted ${removedFiles} obsolete files.`);
   console.log(changed.length ? `Changed: ${changed.join(', ')}` : 'No content changes; no deployment is needed.');
 }
 

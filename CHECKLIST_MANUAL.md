@@ -1,80 +1,74 @@
 # Checklist Manual Pemilik Website (lusthub.my.id)
 
-Panduan langkah demi langkah untuk pengaturan di luar kode sumber (Cloudflare, Google Search Console, Bing/Yandex Webmaster, dan Analitik) agar sitemap terbaca 100% sukses dan trafik **US & EU** mencapai potensi puncaknya.
+Panduan langkah demi langkah untuk pengaturan di luar kode sumber (Cloudflare, Google Search Console, Bing/Yandex Webmaster, dan Analitik) agar sitemap terbaca 100% sukses dan trafik **US & Eropa (UK, DE, FR, ES, IT)** mencapai potensi puncaknya.
 
 ---
 
-## 1. Pengaturan Cloudflare *(Wajib agar Sitemap Tidak Terblokir & Edge < 50ms)*
+## 1. Pengaturan Cloudflare *(Agar Rute Eropa `/de`, `/fr`, `/es`, `/it` Juga Edge `< 40ms`)*
 
-### A. Perbaikan Akar Masalah Sitemap Tidak Bisa Diambil Google
-> [!CAUTION]
-> **Penyebab paling umum "Tidak dapat mengambil peta situs" di paket Cloudflare Free:**
-> Pada **Cloudflare Free Plan**, aturan WAF Custom Rule `Allow Known Bots (cf.client.bot -> Skip)` **TIDAK bisa melewati `Bot Fight Mode`**, karena *Bot Fight Mode* berjalan di *pipeline* terpisah di luar Ruleset Engine! Hal ini sering menjatuhkan/menantang fetcher latar belakang Sitemap Google walaupun `Test Live URL` berhasil.
+### A. Perluasan 1-Menit Cache Rule untuk 292 Halaman Eropa Baru
+Di [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub.my.id`** → **`Caching > Cache Rules`**:
+1. Edit rule **`Cache SSR Video, Category & Feed`** Anda.
+2. Tambahkan 4 baris `OR` (atau klik *Edit expression*) agar seluruh portal Eropa (`/de`, `/fr`, `/es`, `/it` beserta 72 kategori per bahasa) ikut ter-cache di server edge Frankfurt, Paris, Madrid, Milan, dan London:
+   ```text
+   (starts_with(http.request.uri.path, "/v/")) or
+   (starts_with(http.request.uri.path, "/c/")) or
+   (http.request.uri.path eq "/de") or (starts_with(http.request.uri.path, "/de/c/")) or
+   (http.request.uri.path eq "/fr") or (starts_with(http.request.uri.path, "/fr/c/")) or
+   (http.request.uri.path eq "/es") or (starts_with(http.request.uri.path, "/es/c/")) or
+   (http.request.uri.path eq "/it") or (starts_with(http.request.uri.path, "/it/c/")) or
+   (http.request.uri.path eq "/feed.xml") or
+   (http.request.uri.path eq "/llms.txt")
+   ```
+3. Pastikan **Cache eligibility = `Eligible for cache`** dan **Edge TTL = `Use cache-control header if present, bypass cache if not`**, lalu klik **Save / Deploy**.
+4. Buka **`Caching > Configuration`** → klik **`Purge Everything`** satu kali setelah deploy.
 
-Lakukan 4 langkah ini di [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub.my.id`**:
-1. **Matikan `Bot Fight Mode` (`Security > Bots` atau `Security > Settings`):**
-   * Set **`Bot Fight Mode`** ke posisi **OFF**. *(Tetap pertahankan WAF Custom Rule Anda `Allow Known Bots` dan proteksi lain di Ruleset Engine)*.
-2. **Periksa `AI Crawl Control` (di menu kiri Dashboard Cloudflare):**
-   * Pastikan crawler mesin pencari (`Googlebot`, `GoogleOther`, `Bingbot`, `Applebot`, `DuckDuckBot`, `OAI-SearchBot`) berada pada status **Allow** untuk tujuan pencarian/pengindeksan.
-   * Buka juga **`Security > Events`** dan filter path `sitemap` untuk memastikan tidak ada lagi action `Block` atau `Managed Challenge` yang menyentuh IP Google.
-3. **Aktifkan URL Normalization ke Origin (`Rules > Settings` → `URL Normalization`):**
-   * Pastikan **`Normalize incoming URLs` = ON** dan aktifkan **`Normalize URLs to origin` = ON**.
-   * Ini menghilangkan redirect `HTTP 308` pada URL ber-slash ganda (`https://www.lusthub.my.id//sitemap_index.xml`) sehingga langsung melayani `200 OK` sebelum mencapai Vercel.
-4. **Pastikan Cache Rule & Purge Everything:**
-   * Di **`Caching > Cache Rules`**, pastikan rule `Cache SSR Video, Category & Feed` sudah berstatus **Active / Deployed** dengan `URI Path` dimulai `/v/`, `/c/`, atau equals `/feed.xml`, `/llms.txt`, dan **Edge TTL = `Use cache-control header if present, bypass cache if not`**.
-   * Di **`Speed > Optimization > Content Optimization`**, pastikan **`Cloudflare Fonts` = OFF** dan **`Rocket Loader` = OFF**.
-   * Terakhir, buka **`Caching > Configuration`** → klik **`Purge Everything`** satu kali setelah deploy terbaru.
+### B. Checklist Pengaturan Cloudflare yang Wajib Tetap Aktif
+1. **`Security > Bots`:** Pastikan **`Bot Fight Mode` = OFF** (tetap pertahankan WAF Custom Rule `Allow Known Bots`).
+2. **`Rules > Settings` → `URL Normalization`:** Pastikan **`Normalize incoming URLs` = ON** dan **`Normalize URLs to origin` = ON** *(sudah terverifikasi aktif di live: `//sitemap_index.xml` merespons `200 OK` dalam `39ms`)*.
+3. **`Speed > Optimization > Content Optimization`:** Pastikan **`Cloudflare Fonts` = OFF** dan **`Rocket Loader` = OFF**.
 
 ---
 
-## 2. Google Search Console (GSC) — Reset Sitemap & Validasi
+## 2. Google Search Console (GSC) — Sitemap & Pengindeksan US + Eropa
 
 1. Buka [Google Search Console](https://search.google.com/search-console) pada properti **`https://www.lusthub.my.id/`**.
-2. **Reset Sitemap Lama yang Macet Sejak `5 Nov 2026`:**
-   * Masuk ke menu **Peta Situs (Sitemaps)**.
-   * Klik baris `/sitemap.xml` → klik ikon titik tiga `⋮` di kanan atas → pilih **Hapus peta situs**.
-   * Klik baris `/sitemap_index.xml` → klik ikon titik tiga `⋮` → pilih **Hapus peta situs**.
-3. **Uji Kesiapan Live Googlebot Sebelum Kirim:**
-   * Tempel URL **`https://www.lusthub.my.id/sitemap_index.xml`** pada bilah **Periksa semua URL** di atas → klik **UJI URL AKTIF (Live Test)**. Pastikan hasil menampilkan `Pengambilan halaman: Berhasil` (`200 OK`).
-4. **Kirim Ulang 1 Master Index (atau Sub-Sitemap Langsung):**
-   * Pada kotak *Tambahkan peta situs baru* (`https://www.lusthub.my.id/`), ketik **hanya** `sitemap_index.xml` *(jangan ketik `/` di depan dan jangan kirim `sitemap.xml` secara bersamaan)* lalu klik **KIRIM**.
-   * **Jalur Cepat (Opsional/Anti-Macet):** Jika master index masih berstatus menunggu antrean, Anda juga boleh mengirimkan file anak `<urlset>` secara langsung:
-     * `sitemaps/sitemap_videos_001.xml` *(1.000 video AI)*
-     * `sitemaps/sitemap_videos_002.xml` *(sisa video AI)*
-     * `sitemaps/sitemap_categories.xml` *(44 kategori US/EU & global)*
-     * `sitemaps/sitemap_pages.xml` *(7 halaman inti & compliance)*
-5. **Validasi `Diblokir oleh robots.txt` (8 URL `/?q=...`):**
-   * Setelah `Purge Everything` di Cloudflare, buka **Pengindeksan halaman → Diblokir oleh robots.txt** → klik **`VALIDASI PERBAIKAN`**. Kini 8 URL lama tersebut terbaca `X-Robots-Tag: noindex, follow` dan tidak ada link `?q=` baru yang dibuat di HTML.
-6. **Inspeksi URL Prioritas (Request Indexing):** Uji & ajukan indeks untuk `/`, `/c/milf`, `/c/blonde`, `/c/pov`, `/c/onlyfans`, `/c/european`, `/c/amateur`, serta uji 1 halaman video ter-enrich di [Google Rich Results Test](https://search.google.com/test/rich-results).
+2. **Pastikan Master Sitemap Aktif:**
+   * Di menu **Peta Situs (Sitemaps)**, kirimkan **`sitemap_index.xml`** (tanpa `/` di depan).
+   * Master index ini otomatis menautkan:
+     * `sitemaps/sitemap_pages.xml` *(7 halaman inti + 6 arah `hreflang` untuk `/`)*
+     * `sitemaps/sitemap_categories.xml` *(72 hub US/EU & global berbahasa Inggris + `hreflang`)*
+     * `sitemaps/sitemap_eu_locales.xml` *(**292 halaman lokal Eropa**: `/de`, `/fr`, `/es`, `/it` + 72 hub per bahasa dengan `hreflang` resiprokal)*
+     * `sitemaps/sitemap_videos_001.xml`, `002.xml`, `003.xml`, dst. *(video AI-enriched non-spam)*
+   * **Percepat Pengindeksan Eropa (Opsional):** Anda dapat langsung mengirim `sitemaps/sitemap_eu_locales.xml` secara eksplisit di kolom Peta Situs agar Googlebot Eropa langsung memprioritaskan 292 halaman DE/FR/ES/IT.
+3. **Inspeksi URL Prioritas (Request Indexing):**
+   * Uji & ajukan indeks untuk: `/de`, `/fr`, `/es`, `/it`, `/c/brunette`, `/c/hardcore`, `/c/pornstar`, `/de/c/milf`, `/fr/c/blonde`, `/es/c/latina`, `/it/c/amateur`.
+4. **Validasi `Diblokir oleh robots.txt`:**
+   * Jika masih ada antrean validasi untuk URL `/?q=...` lama, klik **`VALIDASI PERBAIKAN`**.
 
 ---
 
-## 3. Bing Webmaster Tools & Yandex Webmaster *(Sumber Trafik Raksasa US & EU!)*
+## 3. Bing Webmaster Tools & Yandex Webmaster *(Sumber Trafik Raksasa US & Eropa!)*
 
-Untuk ceruk hiburan dewasa di Amerika Serikat & Eropa, **Bing, DuckDuckGo, Yahoo, Seznam (EU), dan Yandex** sering menyumbang trafik jauh lebih besar daripada Google karena filter SafeSearch Google jauh lebih ketat.
+Untuk kategori 18+ di Amerika Serikat dan Eropa, **Bing, DuckDuckGo, Yahoo, Seznam (Ceko/Eropa Tengah), dan Yandex** sering menyumbang porsi trafik organik sangat besar karena kebijakan filter SafeSearch Google jauh lebih ketat.
 
-**Kabar Baik:** Key **IndexNow (`1b69cc1059c94dbcb3e9a18b36d3ed85.txt`)** sudah diotomasi ke dalam pipeline harian (`scripts/indexnow-submit.mjs`) sehingga setiap pembaruan langsung ditembakkan ke Bing, DuckDuckGo, Yahoo, Yandex, dan Seznam.
+**Otomatisasi Aktif:** Key **IndexNow (`1b69cc1059c94dbcb3e9a18b36d3ed85.txt`)** kini memprioritaskan seluruh **292 URL Eropa** + 72 hub Inggris + video AI terbaru secara otomatis pada setiap siklus CI (`scripts/indexnow-submit.mjs`).
 
-Langkah verifikasi akun:
-1. **Bing Webmaster Tools:**
-   * Buka [Bing Webmaster Tools](https://www.bing.com/webmasters) → pilih **Import from Google Search Console** (otomatis terverifikasi dalam 10 detik!).
-   * Buka menu **Sitemaps** → kirimkan `https://www.lusthub.my.id/sitemap_index.xml` dan `https://www.lusthub.my.id/feed.xml`.
-   * Pantau tab **IndexNow** di dashboard Bing untuk melihat log URL masuk harian.
-2. **Yandex Webmaster:**
-   * Buka [Yandex Webmaster](https://webmaster.yandex.com/) → tag `<meta name="yandex-verification" content="a25cbe2b4f64ad3a" />` sudah terpasang di semua halaman HTML!
-   * Verifikasi situs dan kirimkan `https://www.lusthub.my.id/sitemap_index.xml`.
+Langkah cepat:
+1. **Bing Webmaster Tools:** Buka [bing.com/webmasters](https://www.bing.com/webmasters) → **Import from Google Search Console** → kirim `https://www.lusthub.my.id/sitemap_index.xml` dan `https://www.lusthub.my.id/feed.xml`.
+2. **Yandex Webmaster:** Buka [webmaster.yandex.com](https://webmaster.yandex.com/) *(verifikasi meta `a25cbe2b4f64ad3a` sudah terpasang)* → kirim `https://www.lusthub.my.id/sitemap_index.xml`.
 
 ---
 
-## 4. Pemasangan Analitik Pengunjung (GA4 / Yandex Metrica)
+## 4. Analitik Pengunjung (GA4 / Yandex Metrica)
 
-Cloudflare Web Analytics (RUM) sudah aktif di dashboard Anda. Jika ingin melacak detail konversi video di Google Analytics 4 atau Yandex Metrica:
-1. Buat properti **Google Analytics 4 (GA4)** di [analytics.google.com](https://analytics.google.com) → salin Measurement ID (`G-XXXXXXXXXX`).
-2. Masukkan ID tersebut ke variabel `window.GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';` di template HTML terkait.
+Cloudflare Web Analytics (RUM) sudah aktif. Jika ingin memantau metrik detail per negara (US/DE/FR/ES/IT/UK) di Google Analytics 4:
+1. Buat properti GA4 di [analytics.google.com](https://analytics.google.com) → salin Measurement ID (`G-XXXXXXXXXX`).
+2. Isi variabel `window.GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';` di template HTML terkait.
 
 ---
 
-## 5. Catatan Strategis Jangka Menengah (Domain `.my.id` vs gTLD `.com` / `.tv` / `.cc`)
+## 5. Catatan Strategis Jangka Menengah (ccTLD `.my.id` vs Global gTLD `.com` / `.tv` / `.cc`)
 
-Website Anda kini menggunakan server `iad1` (US East), bebas sinyal `geo.region="ID"`, punya 44 kategori hub US/EU, serta IndexNow otomatis. Namun, jika kelak Anda ingin menghilangkan bias bawaan ccTLD `.my.id` di algoritma **Google Search US/EU** secara 100%:
-* Pertimbangkan mendaftarkan domain netral global (seperti `.com`, `.tv`, `.cc`, `.me`, atau `.xyz`), arahkan `SITEMAP_BASE_URL` dan `BASE_URL` di [`api/schema-helper.js`](file:///e:/00%20projek%20rumah/antigravity/website%20tuyul/api/schema-helper.js) ke domain baru, lalu pasang Redirect `301` dari `lusthub.my.id` ke domain baru di Cloudflare. Seluruh fondasi SEO ini sudah siap migrasi dengan mulus!
+Saat ini fondasi teknis Anda sudah 100% setara situs internasional kelas atas: server `iad1` (US East), 72 hub US/EU, 292 halaman lokal Eropa (`DE/FR/ES/IT`) dengan `hreflang` resiprokal sempurna, dan IndexNow otomatis. Satu-satunya batas alami di Google Search US/EU tinggal ekstensi ccTLD `.my.id` (kode negara Indonesia).
+* Jika ke depan ingin menembus batas ccTLD tersebut, cukup daftarkan gTLD netral (`.com`, `.tv`, `.cc`, `.me`, atau `.xyz`), ubah `BASE_URL` di [`api/schema-helper.js`](file:///e:/00%20projek%20rumah/antigravity/website%20tuyul/api/schema-helper.js), dan pasang Redirect `301` di Cloudflare. Seluruh arsitektur multi-bahasa dan sitemap ini langsung berpindah tanpa kehilangan satu pun peringkat.

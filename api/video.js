@@ -8,6 +8,10 @@ import {
   decodeMojibake,
   slugify,
   cleanSourceTitle,
+  isSpamVideoTitle,
+  formatCategoryName,
+  expandRuntimeVideo,
+  createOrganizationSchema,
   createVideoObjectSchema,
   createBreadcrumbSchema,
 } from './schema-helper.js';
@@ -22,10 +26,15 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server-side in-memory cache
 async function getEnrichedDatabase() {
   if (!cachedEnriched) {
     try {
-      const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-videos.json'), 'utf8');
+      const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-runtime.json'), 'utf8');
       cachedEnriched = JSON.parse(raw);
     } catch {
-      cachedEnriched = { videos: {} };
+      try {
+        const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-videos.json'), 'utf8');
+        cachedEnriched = JSON.parse(raw);
+      } catch {
+        cachedEnriched = { videos: {}, byTag: {}, featured: [] };
+      }
     }
   }
   return cachedEnriched;
@@ -35,7 +44,7 @@ async function getEnrichedDatabase() {
  * Builds a concise word-boundary-safe SEO title (target 45-60 chars).
  */
 function buildVideoTitle(title, tag) {
-  const brand = ' | LustHub'; // Compact brand suffix preserves room for keywords
+  const brand = ' | LustHub';
   const maxTitlePart = 60 - brand.length;
   const cleaned = cleanSourceTitle(title) || String(title || '').trim();
 
@@ -46,9 +55,7 @@ function buildVideoTitle(title, tag) {
     return `${truncated}${brand}`;
   }
 
-  const tagName = tag
-    ? tag.split(/[\s-]+/).map(w => (['4k', 'uhd', 'hd', 'pov', 'milf', 'jav', 'bbw'].includes(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(' ')
-    : 'HD';
+  const tagName = tag ? formatCategoryName(slugify(tag, 40, 'hd')) : 'HD';
   const candidates = [
     `${cleaned} — ${tagName} Full HD${brand}`,
     `${cleaned} - ${tagName} Video${brand}`,
@@ -68,6 +75,66 @@ function buildVideoTitle(title, tag) {
 function formatViews(val) {
   const num = parseInt(String(val || '0').replace(/\D/g, ''), 10) || 0;
   return num.toLocaleString('en-US');
+}
+
+/**
+ * O(1) tag-bucket lookup for 12 related genuine AI-enriched videos (avoids O(N log N) catalog scans).
+ */
+function getRelatedVideos(enrichedDb, currentVideoId, candidateTags) {
+  const videosMap = enrichedDb?.videos || {};
+  const byTag = enrichedDb?.byTag;
+  const featured = Array.isArray(enrichedDb?.featured) ? enrichedDb.featured : [];
+
+  if (byTag && typeof byTag === 'object') {
+    const scoreById = new Map();
+    const tagSlugs = [...new Set(candidateTags.map(t => slugify(t, 40, '')).filter(Boolean))];
+
+    for (const tSlug of tagSlugs) {
+      const bucket = byTag[tSlug];
+      if (!Array.isArray(bucket)) continue;
+      for (let i = 0; i < bucket.length; i++) {
+        const vid = bucket[i];
+        if (vid === currentVideoId) continue;
+        scoreById.set(vid, (scoreById.get(vid) || 0) + 10 + (i < 12 ? 1 : 0));
+      }
+    }
+
+    const pickedIds = [...scoreById.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([vid]) => vid);
+
+    const pickedSet = new Set(pickedIds);
+    if (pickedIds.length < 12) {
+      for (const fid of featured) {
+        if (fid === currentVideoId || pickedSet.has(fid)) continue;
+        pickedIds.push(fid);
+        pickedSet.add(fid);
+        if (pickedIds.length >= 12) break;
+      }
+    }
+
+    return pickedIds
+      .map(vid => expandRuntimeVideo(videosMap[vid]))
+      .filter(v => v && v.title && v.slug);
+  }
+
+  // Fallback for legacy unindexed database
+  const allEnriched = Object.values(videosMap)
+    .map(expandRuntimeVideo)
+    .filter(v => v && v.video_id !== currentVideoId && v.title && v.slug);
+  const currentTags = candidateTags.map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
+  const scored = allEnriched.map(v => {
+    let score = 0;
+    if (Array.isArray(v.tags)) {
+      for (const t of v.tags) {
+        if (currentTags.includes(String(t).toLowerCase())) score++;
+      }
+    }
+    return { video: v, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 12).map(s => s.video);
 }
 
 export default async function handler(req, res) {
@@ -140,12 +207,9 @@ export default async function handler(req, res) {
       : (Array.isArray(videoData.keywords) ? videoData.keywords.map(k => decodeMojibake(k).trim()).filter(Boolean) : []))
     : [];
 
-  // Load Enriched Content from background Gemini pipeline
+  // Load Enriched Content from compact runtime store (or fallback DB)
   const enrichedDb = await getEnrichedDatabase();
-  const rawEnriched = enrichedDb.videos?.[videoId];
-  const enrichedData = (rawEnriched?.status === 'enriched' && rawEnriched?.model !== 'mock-enricher')
-    ? rawEnriched
-    : null;
+  const enrichedData = expandRuntimeVideo(enrichedDb.videos?.[videoId]);
 
   // Match best primary curated category (for breadcrumbs & clean category linking)
   const allCandidateTags = [...(enrichedData?.tags || []), ...rawKeywords];
@@ -175,7 +239,7 @@ export default async function handler(req, res) {
   const catSlug = CURATED_SET.has(slugify(primaryTag, 40, ''))
     ? slugify(primaryTag, 40, 'viral')
     : 'viral';
-  const catName = catSlug.split('-').map(w => (w === '4k' || w === 'uhd' || w === 'hd' || w === 'pov' || w === 'milf') ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const catName = formatCategoryName(catSlug);
 
   let metaDesc = `Watch ${decodedTitle} free in full HD on lusthub.my.id. Instant mobile-ready streaming with fast cloud loading and zero account signup.`;
   if (metaDesc.length > 155) {
@@ -185,9 +249,10 @@ export default async function handler(req, res) {
     metaDesc = enrichedData.meta_description;
   }
 
-  // Quality Gate: Only genuine AI-enriched videos without tracking/search params are indexable
+  // Quality Gate: Only genuine non-spam AI-enriched videos without tracking/search params are indexable
   const hasNoindexParam = Boolean(req.query?.ref || req.query?.q || req.query?.order);
-  const isIndexable = Boolean(enrichedData) && !hasNoindexParam;
+  const isSpam = isSpamVideoTitle(rawTitle);
+  const isIndexable = Boolean(enrichedData) && !isSpam && !hasNoindexParam;
   const robotsValue = isIndexable
     ? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
     : 'noindex, follow';
@@ -202,6 +267,21 @@ export default async function handler(req, res) {
 
   const embedUrl = normalizeUrl(videoData?.embed || `https://www.eporner.com/embed/${videoId}/`);
 
+  const orgSchema = createOrganizationSchema();
+  delete orgSchema['@context'];
+
+  const webPageSchema = {
+    '@type': 'WebPage',
+    '@id': `${canonicalUrl}#webpage`,
+    'url': canonicalUrl,
+    'name': pageTitle,
+    'description': metaDesc,
+    'inLanguage': 'en',
+    'isPartOf': { '@id': `${domain}/#website` },
+    'primaryImageOfPage': { '@type': 'ImageObject', 'url': thumbUrl },
+    'mainEntity': { '@id': `${canonicalUrl}#video` },
+  };
+
   const videoObject = createVideoObjectSchema(videoData || {}, {
     canonicalUrl,
     title: decodedTitle,
@@ -209,9 +289,9 @@ export default async function handler(req, res) {
     thumbnailUrl: thumbUrl,
     embedUrl,
     keywords: enrichedData?.tags || rawKeywords.slice(0, 6),
-    durationSec: videoData?.length_sec,
-    uploadDate: videoData?.added,
-    views: videoData?.views,
+    durationSec: videoData?.length_sec || enrichedData?.duration,
+    uploadDate: videoData?.added || enrichedData?.generated_at,
+    views: videoData?.views ?? enrichedData?.views,
   });
 
   const breadcrumbList = createBreadcrumbSchema([
@@ -219,8 +299,9 @@ export default async function handler(req, res) {
     { name: `${catName} Videos`, url: `/c/${catSlug}` },
     { name: decodedTitle, url: canonicalUrl },
   ]);
+  delete breadcrumbList['@context'];
 
-  const graphItems = [videoObject, breadcrumbList];
+  const graphItems = [orgSchema, webPageSchema, videoObject, breadcrumbList];
   if (enrichedData && Array.isArray(enrichedData.faq) && enrichedData.faq.length > 0) {
     graphItems.push({
       '@type': 'FAQPage',
@@ -241,7 +322,7 @@ export default async function handler(req, res) {
   };
   const schemaScript = `<script id="jsonLdScript" type="application/ld+json">${JSON.stringify(graphSchema).replace(/</g, '\\u003c')}</script>`;
 
-  // Build SSR clickable topic tag pills (curated hubs pass clean authority; non-curated search fallback uses rel="nofollow")
+  // Build SSR clickable topic tag pills (curated hubs pass clean authority; non-curated search uses button)
   const uniqueTags = [];
   const seenTagSlugs = new Set();
   for (const tag of allCandidateTags) {
@@ -368,33 +449,15 @@ export default async function handler(req, res) {
     html = html.replace(/(<main[^>]*id=["']videoContainer["'][^>]*>)/i, `$1\n${visibleSeoMarkup}`);
   }
 
-  // Inject SSR Similar Videos Mesh (genuine AI-enriched videos only)
+  // Inject SSR Similar Videos Mesh via O(1) tag buckets
+  const relatedList = getRelatedVideos(enrichedDb, videoId, allCandidateTags);
   let similarCardsHtml = '';
-  if (enrichedDb?.videos) {
-    const allEnriched = Object.values(enrichedDb.videos).filter(
-      v => v.video_id !== videoId && v.status === 'enriched' && v.model !== 'mock-enricher' && v.title && v.slug
-    );
-
-    const currentTags = allCandidateTags.map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
-    const scored = allEnriched.map(v => {
-      let score = 0;
-      if (Array.isArray(v.tags)) {
-        for (const t of v.tags) {
-          if (currentTags.includes(String(t).toLowerCase())) score++;
-        }
-      }
-      return { video: v, score };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-    const relatedList = scored.slice(0, 12).map(s => s.video);
-
-    if (relatedList.length > 0) {
-      similarCardsHtml = relatedList.map(v => {
-        const title = escapeHtml(cleanSourceTitle(v.title) || decodeMojibake(v.title || 'Untitled'));
-        const href = `/v/${v.video_id}-${v.slug}`;
-        const thumb = v.thumbnail || '/assets/icons/favicon-32x32.png';
-        return `
+  if (relatedList.length > 0) {
+    similarCardsHtml = relatedList.map(v => {
+      const title = escapeHtml(cleanSourceTitle(v.title) || decodeMojibake(v.title || 'Untitled'));
+      const href = `/v/${v.video_id}-${v.slug}`;
+      const thumb = v.thumbnail || '/assets/icons/favicon-32x32.png';
+      return `
         <a href="${href}" class="card" style="text-decoration: none;" aria-label="${title}">
           <div class="card-img-wrapper">
             <img src="${escapeHtml(thumb)}" alt="${title}" class="card-img loaded" loading="lazy" width="320" height="180" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
@@ -403,8 +466,7 @@ export default async function handler(req, res) {
             <div class="card-title">${title}</div>
           </div>
         </a>`;
-      }).join('\n');
-    }
+    }).join('\n');
   }
 
   if (similarCardsHtml) {

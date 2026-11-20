@@ -1,22 +1,34 @@
 # lusthub.my.id
 
-> Fast, mobile-first 18+ NSFW streaming gallery and curated viral video platform optimized for instant HD playback across North America, Europe, and global devices without mandatory accounts or app downloads.
+> Fast, mobile-first 18+ NSFW streaming gallery and curated viral video platform optimized for instant HD playback across North America, Europe (EN, DE, FR, ES, IT), and global devices without mandatory accounts or app downloads.
 
 ## Overview
-lusthub.my.id provides high-definition streaming of trending adult videos, creator leaks, JAV code releases, European & US amateur showcases, and 60 curated international categories. The platform combines edge-rendered HTML, global CDN caching, and Schema.org metadata (`VideoObject`, `CollectionPage`, `ItemList`, `FAQPage`) for rapid discovery across traditional and AI search engines.
+lusthub.my.id provides high-definition streaming of trending adult videos, creator leaks, JAV code releases, European & US amateur showcases, and 72 curated international categories across 5 localized portals (`/` English, `/de` Deutsch, `/fr` Français, `/es` Español, `/it` Italiano). The platform combines edge-rendered HTML, global CDN caching, bidirectional `hreflang`, and Schema.org metadata (`VideoObject`, `CollectionPage`, `ItemList`, `FAQPage`, `WebPage`) for rapid discovery across traditional and AI search engines.
 
 ## Sitemap, Feed & Technical Endpoints
+<!-- AUTO:SITEMAPS:START -->
 - Master Sitemap Index: https://www.lusthub.my.id/sitemap_index.xml
-- Category Sitemap (60 Hubs): https://www.lusthub.my.id/sitemaps/sitemap_categories.xml
+- Category Sitemap (72 EN Hubs): https://www.lusthub.my.id/sitemaps/sitemap_categories.xml
+- European Localized Sitemap (292 DE/FR/ES/IT Hubs): https://www.lusthub.my.id/sitemaps/sitemap_eu_locales.xml
 - Video Sitemap 001: https://www.lusthub.my.id/sitemaps/sitemap_videos_001.xml
 - Video Sitemap 002: https://www.lusthub.my.id/sitemaps/sitemap_videos_002.xml
+- Video Sitemap 003: https://www.lusthub.my.id/sitemaps/sitemap_videos_003.xml
 - Static Pages Sitemap: https://www.lusthub.my.id/sitemaps/sitemap_pages.xml
 - RSS Video Feed: https://www.lusthub.my.id/feed.xml
 - Robots Policy: https://www.lusthub.my.id/robots.txt
+<!-- AUTO:SITEMAPS:END -->
 
-## US, UK & European Featured Categories (37 Core Hubs)
+## Multilingual European & International Portals (5 Languages)
+- [English (US / UK / Global)](https://www.lusthub.my.id/): Primary English gallery and 72 curated HD hubs (`/c/:slug`).
+- [Deutsch (DE / AT / CH)](https://www.lusthub.my.id/de): German-language portal and 72 native hubs (`/de/c/:slug`).
+- [Français (FR / BE / CH)](https://www.lusthub.my.id/fr): French-language portal and 72 native hubs (`/fr/c/:slug`).
+- [Español (ES / US Hispanic)](https://www.lusthub.my.id/es): Spanish-language portal and 72 native hubs (`/es/c/:slug`).
+- [Italiano (IT / CH)](https://www.lusthub.my.id/it): Italian-language portal and 72 native hubs (`/it/c/:slug`).
+
+## US, UK & European Featured Categories (48 Core Hubs)
 - [MILF](https://www.lusthub.my.id/c/milf): Experienced women, stepmoms, and cougars in full 1080p HD.
 - [Blonde](https://www.lusthub.my.id/c/blonde): American, British, and European blonde performers and amateurs.
+- [Brunette](https://www.lusthub.my.id/c/brunette): Dark-haired American and European stars and amateur creators.
 - [Latina](https://www.lusthub.my.id/c/latina): Curvy Latina creators, couples, and passionate studio releases.
 - [Ebony](https://www.lusthub.my.id/c/ebony): Trending Black adult stars, creators, and amateur couples.
 - [Amateur](https://www.lusthub.my.id/c/amateur): Genuine homemade adult videos and unscripted real couples.
@@ -40,21 +52,32 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 - [BBW](https://www.lusthub.my.id/c/bbw): Curvy plus-size performers and confident full-figured beauties.
 - [College](https://www.lusthub.my.id/c/college): Legal 18+ university dorm amateur parties and campus couples.
 - [Big Tits](https://www.lusthub.my.id/c/big-tits): Natural busty performers and glamour models in high definition.
-- [Big Ass](https://www.lusthub.my.id/c/big-ass): Curvy PAWG creators and top-rated doggystyle scenes.
-- [Anal](https://www.lusthub.my.id/c/anal): Hardcore anal and double penetration scenes from US and EU studios.
+- [Big Ass](https://www.lusthub.my.id/c/big-ass): Curvy creators and top-rated doggystyle scenes.
+- [PAWG](https://www.lusthub.my.id/c/pawg): Curvy American and European performers in sharp 1080p HD.
+- [Anal](https://www.lusthub.my.id/c/anal): Hardcore anal scenes from US and EU studios.
+- [Double Penetration](https://www.lusthub.my.id/c/double-penetration): Full-length hardcore DP scenes and European MFM threesomes.
 - [Blowjob](https://www.lusthub.my.id/c/blowjob): Up-close POV oral, deepthroat, and climax scenes.
+- [Handjob](https://www.lusthub.my.id/c/handjob): Oiled teasing, POV edging, and amateur couple handjob clips.
+- [Cumshot](https://www.lusthub.my.id/c/cumshot): Facials, POV finishes, and high-definition climax compilations.
+- [Hardcore](https://www.lusthub.my.id/c/hardcore): Intense full-length US and European hardcore studio action.
 - [Lesbian](https://www.lusthub.my.id/c/lesbian): Sensual girl-on-girl encounters and real couple intimacy.
-- [Threesome](https://www.lusthub.my.id/c/threesome): FFM trios, swinging couples, and group scenes.
+- [Threesome](https://www.lusthub.my.id/c/threesome): FFM trios, swinging couples, and shared fantasies.
+- [Group Sex](https://www.lusthub.my.id/c/group-sex): European swinger house parties and multi-performer orgies.
 - [Creampie](https://www.lusthub.my.id/c/creampie): Authentic amateur and uncensored internal finish scenes.
 - [Interracial](https://www.lusthub.my.id/c/interracial): Cross-cultural couples and top-rated studio pairings.
+- [Hotwife](https://www.lusthub.my.id/c/hotwife): Consenting married couples and authentic sharing adventures.
+- [Cuckold](https://www.lusthub.my.id/c/cuckold): Real couple sharing stories and US/EU roleplay productions.
+- [Pornstar](https://www.lusthub.my.id/c/pornstar): Famous American, UK, and European adult stars in HD.
+- [Solo](https://www.lusthub.my.id/c/solo): Intimate female solo masturbation, toy play, and creator clips.
 - [Lingerie](https://www.lusthub.my.id/c/lingerie): Glamour lace, stockings, heels, and teasing performances.
 - [Redhead](https://www.lusthub.my.id/c/redhead): Natural ginger beauties and freckled amateur creators.
 - [4K UHD](https://www.lusthub.my.id/c/4k-uhd): Crystal-clear 4K Ultra HD and 60fps adult streams.
 - [Cosplay](https://www.lusthub.my.id/c/cosplay): Anime, gaming, maid, and costume fantasy scenes.
 - [Public](https://www.lusthub.my.id/c/public): Daring exhibitionism, flashing, and car encounters.
 
-## Asian, Viral & Regional Categories (23 Hubs)
+## Asian, Viral & Regional Categories (24 Hubs)
 - [Asian](https://www.lusthub.my.id/c/asian): East and Southeast Asian models, amateur releases, and studio HD.
+- [Indian](https://www.lusthub.my.id/c/indian): Authentic Indian and desi couple amateur HD clips.
 - [Japanese](https://www.lusthub.my.id/c/japanese): Uncensored JAV releases, Tokyo idols, and full JAV codes.
 - [Korean](https://www.lusthub.my.id/c/korean): Korean BJ webcam broadcasts and sensual dance recordings.
 - [Viral](https://www.lusthub.my.id/c/viral): High-velocity viral clips and breaking social leaks.

@@ -1,22 +1,26 @@
 #!/usr/bin/env node
 /**
  * scripts/build-home-ssr.mjs
- * Statically pre-renders curated US/EU category links, top 24 clean English
- * US/EU AI-enriched video cards, complete 60-hub internal linking directory,
+ * Statically pre-renders bidirectional hreflang + og:locale:alternate,
+ * language switcher bar, curated US/EU category links, top 24 clean English
+ * US/EU AI-enriched video cards, complete 72-hub internal linking directory,
  * and Homepage ItemList + FAQPage schema directly into index.html.
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
-  BASE_URL,
-  US_EU_CATEGORIES,
   CURATED_CATEGORIES,
   escapeHtml,
   decodeMojibake,
   cleanSourceTitle,
+  isSpamVideoTitle,
   slugify,
   normalizeUrl,
+  formatCategoryName,
+  buildHreflangHtml,
+  buildOgLocaleMetaHtml,
+  buildLanguageSwitcherHtml,
   createItemListSchema,
 } from '../api/schema-helper.js';
 
@@ -26,15 +30,16 @@ const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
 const ENRICHED_PATH = path.join(ROOT, 'data', 'enriched-videos.json');
 
 const HOME_FEATURED_CATEGORIES = [
-  'milf', 'blonde', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
+  'milf', 'blonde', 'brunette', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
   'british', 'german', 'french', 'spanish', 'italian', 'czech', 'stepmom', 'massage',
-  'big-tits', 'anal', '4k-uhd', 'japanese',
+  'big-tits', 'big-ass', 'anal', 'hardcore', '4k-uhd', 'pornstar', 'japanese',
 ];
 
 const CATEGORY_LABELS = {
   'milf': 'MILF',
   'pov': 'POV',
   'bbw': 'BBW',
+  'pawg': 'PAWG',
   'onlyfans': 'OnlyFans',
   '4k-uhd': '4K UHD',
   'big-tits': 'Big Tits',
@@ -45,45 +50,47 @@ const CATEGORY_LABELS = {
   'bokep-indo': 'Bokep Indo',
   'artis-indo': 'Artis Indo',
   'hot-indo': 'Hot Indo',
+  'double-penetration': 'Double Penetration',
+  'group-sex': 'Group Sex',
 };
 
 const DIRECTORY_GROUPS = [
   {
     title: 'US & European Favorites',
-    slugs: ['milf', 'blonde', 'latina', 'ebony', 'european', 'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'redhead', 'petite', 'bbw'],
+    slugs: ['milf', 'blonde', 'brunette', 'latina', 'ebony', 'european', 'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'redhead', 'petite', 'bbw', 'pawg'],
   },
   {
     title: 'Popular Niches & Fantasies',
-    slugs: ['stepmom', 'stepsis', 'amateur', 'pov', 'massage', 'casting', 'squirt', 'deepthroat', 'big-tits', 'big-ass', 'anal', 'blowjob', 'lesbian', 'threesome', 'creampie', 'interracial'],
+    slugs: ['stepmom', 'stepsis', 'amateur', 'pov', 'massage', 'casting', 'squirt', 'deepthroat', 'big-tits', 'big-ass', 'anal', 'double-penetration', 'blowjob', 'handjob', 'cumshot', 'hardcore', 'lesbian', 'threesome', 'group-sex', 'creampie', 'interracial'],
   },
   {
     title: 'Creators, 4K & Lifestyle',
-    slugs: ['onlyfans', '4k-uhd', 'homemade', 'lingerie', 'cosplay', 'public', 'college', 'live-cam', 'couple', 'mature', 'outdoor', 'celebrity', 'dance', 'hotel'],
+    slugs: ['onlyfans', 'pornstar', 'hotwife', 'cuckold', 'solo', '4k-uhd', 'homemade', 'lingerie', 'cosplay', 'public', 'college', 'live-cam', 'couple', 'mature', 'outdoor', 'celebrity', 'dance', 'hotel'],
   },
   {
     title: 'Asian, JAV & Regional Hubs',
-    slugs: ['japanese', 'asian', 'korean', 'viral', 'tiktok-viral', 'hijab', 'indonesia', 'bokep-indo', 'mahasiswi', 'pasutri', 'rumahan', 'artis-indo', 'pantai', 'hot-indo'],
+    slugs: ['japanese', 'asian', 'indian', 'korean', 'viral', 'tiktok-viral', 'hijab', 'student', 'indonesia', 'bokep-indo', 'mahasiswi', 'pasutri', 'rumahan', 'artis-indo', 'pantai', 'hot-indo'],
   },
 ];
 
 const HOME_FAQS = [
   {
     question: 'Can I stream 1080p HD & 4K adult videos free across the US and Europe?',
-    answer: 'Yes. All 60+ curated categories and AI-enriched HD watch pages stream completely free across the United States, United Kingdom, Europe, and worldwide without subscriptions or signup walls.',
+    answer: 'Yes. All 72 curated categories and AI-enriched HD watch pages stream completely free across the United States, United Kingdom, Germany, France, Spain, Italy, and worldwide without subscriptions or signup walls.',
   },
   {
-    question: 'Does lusthub.my.id require an app download or account registration?',
-    answer: 'No account creation or software install is required. Videos play immediately inside Chrome, Safari, Firefox, and Edge on desktop and mobile devices.',
+    question: 'Does lusthub.my.id support European languages and instant mobile playback?',
+    answer: 'Yes. Dedicated localized portals in English (/), Deutsch (/de), Français (/fr), Español (/es), and Italiano (/it) load immediately inside Chrome, Safari, Firefox, and Edge without app downloads.',
   },
   {
     question: 'Is lusthub.my.id RTA compliant and updated with new US/EU & JAV releases?',
-    answer: 'Yes. Every route carries the 18+ RTA-5042-1996-1400-1577-RTA label alongside automated daily catalog updates covering US, European, creator, and JAV releases.',
+    answer: 'Yes. Every route carries the 18+ RTA-5042-1996-1400-1577-RTA label alongside automated twice-daily catalog updates covering US, European, creator, and JAV releases.',
   },
 ];
 
 function formatCategoryLabel(slug) {
   if (CATEGORY_LABELS[slug]) return CATEGORY_LABELS[slug];
-  return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return formatCategoryName(slug);
 }
 
 function formatDurationBadge(sec) {
@@ -97,10 +104,9 @@ function formatDurationBadge(sec) {
 function isCleanUsEuHomeCandidate(video, enriched) {
   const title = cleanSourceTitle(video.title || enriched?.title || '');
   if (!title || title.length < 16) return false;
+  if (isSpamVideoTitle(title)) return false;
   if (/[^\x00-\x7F]/.test(title)) return false;
   if (/^[a-z0-9\-_*]{3,14}$/i.test(title.replace(/\s+/g, ''))) return false;
-  if (/\bsex\d+\b/i.test(title) || /^\d+$/.test(title)) return false;
-  // Keep regional/non-English titles in their dedicated hubs so the US/EU homepage showcases English titles
   if (/\b(indo|bokep|mertua|mantu|ngewe|memek|kontol|colmek|ngentot|jilbab|pasutri|mahasiswi|tante|abg|rumahan|pantai|tamil|bhabhi|desis?|mallu|hindi)\b/i.test(title)) {
     return false;
   }
@@ -112,8 +118,8 @@ function isCleanUsEuHomeCandidate(video, enriched) {
 function scoreHomeVideo(video, enriched) {
   const title = cleanSourceTitle(video.title || enriched?.title || '');
   const combined = `${title} ${(enriched?.tags || []).join(' ')} ${video.keywords || ''}`;
-  let score = Math.log10((Number(video.views) || 0) + 1) * 16;
-  if (/\b(milf|blonde|latina|ebony|amateur|pov|onlyfans|fansly|4k|anal|lesbian|threesome|creampie|european|british|german|french|stepmom|massage|casting|squirt)\b/i.test(combined)) {
+  let score = Math.log10((Number(video.views) || 0) + 1) * 18;
+  if (/\b(milf|blonde|brunette|latina|ebony|amateur|pov|onlyfans|fansly|4k|anal|lesbian|threesome|creampie|european|british|german|french|spanish|italian|czech|stepmom|massage|casting|squirt|pawg|hardcore|pornstar)\b/i.test(combined)) {
     score += 24;
   }
   if (video.thumbnail && video.thumbnail.includes('_360')) score += 14;
@@ -153,7 +159,6 @@ function buildDirectoryHtml() {
                     </div>`;
   }).join('\n');
 
-  // Catch-all safety pill strip if future categories are added outside static group buckets
   const remainingSlugs = CURATED_CATEGORIES.filter((s) => !renderedSet.has(s));
   const extraHtml = remainingSlugs.length > 0
     ? `                    <div class="home-dir-group">
@@ -190,14 +195,13 @@ async function main() {
 
   const stateMap = new Map(state.videos.map(v => [v.id, v]));
   const enrichedVideos = Object.values(enrichedDb.videos || {}).filter(
-    e => e.status === 'enriched' && e.model && e.model !== 'mock-enricher' && stateMap.has(e.video_id)
+    e => e.status === 'enriched' && e.model && e.model !== 'mock-enricher' && !isSpamVideoTitle(e.title) && stateMap.has(e.video_id)
   );
 
-  let filtered = enrichedVideos
-    .map(e => {
-      const s = stateMap.get(e.video_id);
-      return { state: s, enriched: e, isClean: isCleanUsEuHomeCandidate(s, e), score: scoreHomeVideo(s, e) };
-    });
+  const filtered = enrichedVideos.map(e => {
+    const s = stateMap.get(e.video_id);
+    return { state: s, enriched: e, isClean: isCleanUsEuHomeCandidate(s, e), score: scoreHomeVideo(s, e) };
+  });
 
   const cleanUsEu = filtered.filter(x => x.isClean);
   const pool = cleanUsEu.length >= 24 ? cleanUsEu : filtered;
@@ -259,10 +263,14 @@ async function main() {
     })),
   };
 
+  const hreflangBlock = `${buildOgLocaleMetaHtml('en')}\n${buildHreflangHtml('')}`;
+  const langSwitcherHtml = buildLanguageSwitcherHtml('en', '');
   const schemaHtml = `    <script id="homeItemListSchema" type="application/ld+json">${JSON.stringify(itemListSchema).replace(/</g, '\\u003c')}</script>\n    <script id="homeFaqSchema" type="application/ld+json">${JSON.stringify(faqSchema).replace(/</g, '\\u003c')}</script>`;
   const directoryHtml = buildDirectoryHtml();
 
-  let updated = replaceBetweenMarkers(indexHtml, 'HOME_CATEGORIES', categoryPillsHtml);
+  let updated = replaceBetweenMarkers(indexHtml, 'HOME_HREFLANG', hreflangBlock);
+  updated = replaceBetweenMarkers(updated, 'HOME_LANG_SWITCHER', langSwitcherHtml);
+  updated = replaceBetweenMarkers(updated, 'HOME_CATEGORIES', categoryPillsHtml);
   updated = replaceBetweenMarkers(updated, 'HOME_GRID', cardsHtml);
   updated = replaceBetweenMarkers(updated, 'HOME_DIRECTORY', directoryHtml);
   updated = replaceBetweenMarkers(updated, 'HOME_SCHEMA', schemaHtml);

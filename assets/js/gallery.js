@@ -115,20 +115,20 @@ const KATEGORI_LIST = [
     { label: '💆 Massage', query: 'massage', order: 'most-popular', icon: '💆' },
     { label: '🎥 Casting', query: 'casting', order: 'most-popular', icon: '🎥' },
     { label: '💦 Squirt', query: 'squirt', order: 'most-popular', icon: '💦' },
+    { label: '🤎 Brunette', query: 'brunette', order: 'most-popular', icon: '🤎' },
+    { label: '⚡ Hardcore', query: 'hardcore', order: 'most-popular', icon: '⚡' },
+    { label: '⭐ Pornstar', query: 'pornstar', order: 'most-popular', icon: '⭐' },
+    { label: '🍑 PAWG', query: 'pawg', order: 'most-popular', icon: '🍑' },
+    { label: '💍 Hotwife', query: 'hotwife', order: 'most-popular', icon: '💍' },
     { label: '📱 Viral', query: 'viral', order: 'latest', icon: '📱' }
 ];
 
-const CURATED_HUB_SLUGS = new Set([
-    'milf', 'blonde', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european',
-    'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'petite',
-    'stepmom', 'stepsis', 'massage', 'casting', 'squirt', 'deepthroat', 'bbw', 'college',
-    'big-tits', 'big-ass', 'anal', 'blowjob', 'lesbian', 'threesome', 'creampie',
-    'interracial', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public',
-    'asian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade',
-    'indonesia', 'japanese', 'korean', 'live-cam', 'mature', 'outdoor', 'student',
-    'viral', 'bokep-indo', 'mahasiswi', 'pasutri', 'rumahan', 'artis-indo',
-    'pantai', 'hotel', 'tiktok-viral', 'hot-indo'
-]);
+const CURATED_HUB_SLUGS = new Set(['milf', 'blonde', 'brunette', 'latina', 'ebony', 'amateur', 'pov', 'onlyfans', 'european', 'british', 'german', 'french', 'spanish', 'italian', 'czech', 'russian', 'petite', 'stepmom', 'stepsis', 'massage', 'casting', 'squirt', 'deepthroat', 'bbw', 'college', 'big-tits', 'big-ass', 'pawg', 'anal', 'double-penetration', 'blowjob', 'handjob', 'cumshot', 'hardcore', 'lesbian', 'threesome', 'group-sex', 'creampie', 'interracial', 'hotwife', 'cuckold', 'pornstar', 'solo', 'lingerie', 'redhead', '4k-uhd', 'cosplay', 'public', 'asian', 'indian', 'celebrity', 'couple', 'dance', 'hijab', 'homemade', 'indonesia', 'japanese', 'korean', 'live-cam', 'mature', 'outdoor', 'student', 'viral', 'bokep-indo', 'mahasiswi', 'pasutri', 'rumahan', 'artis-indo', 'pantai', 'hotel', 'tiktok-viral', 'hot-indo']);
+
+function getLocalePrefix() {
+    var m = window.location.pathname.match(/^\/(de|fr|es|it)(\/|$)/i);
+    return m ? '/' + m[1].toLowerCase() : '';
+}
 
 function toCategorySlug(tag) {
     return String(tag || '')
@@ -716,7 +716,7 @@ function renderKategoriGrid() {
     var html = '<div class="kategori-grid">';
     KATEGORI_LIST.forEach(function (kat) {
         var slug = (kat.query === 'all' ? 'viral' : kat.query).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        html += '<a href="/c/' + encodeURIComponent(slug) + '" class="kategori-card-btn" style="text-decoration:none;">' +
+        html += '<a href="' + getLocalePrefix() + '/c/' + encodeURIComponent(slug) + '" class="kategori-card-btn" style="text-decoration:none;">' +
             '<span class="kategori-icon">' + kat.icon + '</span>' +
             '<span class="kategori-label">' + escapeHTML(kat.label) + '</span>' +
             '</a>';
@@ -841,7 +841,7 @@ function createCardElement(card, idx) {
             if (tagSlug && CURATED_HUB_SLUGS.has(tagSlug)) {
                 var tagLink = document.createElement('a');
                 tagLink.className = 'card-tag';
-                tagLink.href = '/c/' + tagSlug;
+                tagLink.href = getLocalePrefix() + '/c/' + tagSlug;
                 tagLink.textContent = tag;
                 tagLink.addEventListener('click', function(e) {
                     e.stopPropagation();

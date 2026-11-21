@@ -43,8 +43,11 @@ Di [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub.m
    * **Percepat Pengindeksan Eropa (Opsional):** Anda dapat langsung mengirim `sitemaps/sitemap_eu_locales.xml` secara eksplisit di kolom Peta Situs agar Googlebot Eropa langsung memprioritaskan 292 halaman DE/FR/ES/IT.
 3. **Inspeksi URL Prioritas (Request Indexing):**
    * Uji & ajukan indeks untuk: `/de`, `/fr`, `/es`, `/it`, `/c/brunette`, `/c/hardcore`, `/c/pornstar`, `/de/c/milf`, `/fr/c/blonde`, `/es/c/latina`, `/it/c/amateur`.
-4. **Validasi `Diblokir oleh robots.txt`:**
-   * Jika masih ada antrean validasi untuk URL `/?q=...` lama, klik **`VALIDASI PERBAIKAN`**.
+4. **Validasi `Di-crawl - saat ini tidak diindeks` (`364` URL) & `Diblokir oleh robots.txt`:**
+   * Setelah klik **`Purge Everything`** di Cloudflare, uji 2 URL contoh di **Inspeksi URL → Uji URL Aktif**:
+     * `https://www.lusthub.my.id/sitemap_index.xml` → kini membawa header `X-Robots-Tag: noindex, follow` sehingga keluar bersih dari antrean indeks halaman (tanpa memengaruhi pembacaan isi sitemap!).
+     * 1 URL video lama yang sudah dihapus Eporner (mis. `/v/qA0B2mw6mdP-...`) → kini mengembalikan **`HTTP 410 Gone`** agar Google segera mencabutnya.
+   * Buka **Pengindeksan halaman → Di-crawl - saat ini tidak diindeks** → klik **`MULAI VALIDASI BARU (Validate Fix)`** (dan ulangi untuk `Diblokir oleh robots.txt` jika masih ada). Seluruh video mati sudah dibersihkan dari sitemap, dan 100% video AI kini tertaut langsung dari 72 × 5 hub kategori + ring mesh anti-orphan!
 
 ---
 

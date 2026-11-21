@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   BASE_URL,
   CURATED_CATEGORIES,
+  US_EU_CATEGORIES,
   normalizeUrl,
   escapeHtml,
   decodeMojibake,
@@ -19,6 +20,8 @@ import {
 let cachedTemplate = null;
 let cached404 = null;
 let cachedEnriched = null;
+let cachedCategoryDescs = null;
+let cachedOrderedIndex = null;
 const CURATED_SET = new Set(CURATED_CATEGORIES);
 const VIDEO_CACHE = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server-side in-memory cache
@@ -33,11 +36,26 @@ async function getEnrichedDatabase() {
         const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-videos.json'), 'utf8');
         cachedEnriched = JSON.parse(raw);
       } catch {
-        cachedEnriched = { videos: {}, byTag: {}, featured: [] };
+        cachedEnriched = { videos: {}, byTag: {}, featured: [], orderedIds: [] };
       }
+    }
+    if (Array.isArray(cachedEnriched.orderedIds)) {
+      cachedOrderedIndex = new Map(cachedEnriched.orderedIds.map((id, i) => [id, i]));
     }
   }
   return cachedEnriched;
+}
+
+async function getCategoryDescriptions() {
+  if (!cachedCategoryDescs) {
+    try {
+      const raw = await readFile(path.join(process.cwd(), 'data', 'category-descriptions.json'), 'utf8');
+      cachedCategoryDescs = JSON.parse(raw);
+    } catch {
+      cachedCategoryDescs = {};
+    }
+  }
+  return cachedCategoryDescs;
 }
 
 /**
@@ -78,63 +96,98 @@ function formatViews(val) {
 }
 
 /**
- * O(1) tag-bucket lookup for 12 related genuine AI-enriched videos (avoids O(N log N) catalog scans).
+ * Formats duration seconds into human-readable runtime (e.g. "4h 32m 50s" or "14m 46s").
  */
-function getRelatedVideos(enrichedDb, currentVideoId, candidateTags) {
-  const videosMap = enrichedDb?.videos || {};
-  const byTag = enrichedDb?.byTag;
-  const featured = Array.isArray(enrichedDb?.featured) ? enrichedDb.featured : [];
+function formatHumanDuration(sec) {
+  const total = Math.floor(Number(sec) || 0);
+  if (!Number.isFinite(total) || total <= 0) return '';
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const parts = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`);
+  return parts.join(' ');
+}
 
-  if (byTag && typeof byTag === 'object') {
+/**
+ * Strongly-connected ring mesh + O(1) topical tag-bucket lookup for 12 related AI-enriched videos:
+ * - 4 deterministic global ring neighbors (guarantees 100% reachability & 0% orphaned enriched videos!)
+ * - 4 cyclic same-category ring siblings (distributes topical authority across the entire category!)
+ * - 4 top multi-tag similarity picks (maximizes relevance & user CTR)
+ */
+export function getRelatedVideos(enrichedDb, currentVideoId, candidateTags, primaryCatSlug) {
+  const videosMap = enrichedDb?.videos || {};
+  const byTag = enrichedDb?.byTag || {};
+  const featured = Array.isArray(enrichedDb?.featured) ? enrichedDb.featured : [];
+  const orderedIds = Array.isArray(enrichedDb?.orderedIds) ? enrichedDb.orderedIds : [];
+
+  const pickedIds = [];
+  const pickedSet = new Set([currentVideoId]);
+  const addId = (id) => {
+    if (!id || pickedSet.has(id) || !videosMap[id]) return false;
+    pickedSet.add(id);
+    pickedIds.push(id);
+    return true;
+  };
+
+  // 1. Strongly-connected global ring neighbors (step +1, +2, +3, -1 => in-degree >= 4 for EVERY node!)
+  if (orderedIds.length > 4) {
+    const pos = cachedOrderedIndex?.has(currentVideoId)
+      ? cachedOrderedIndex.get(currentVideoId)
+      : orderedIds.indexOf(currentVideoId);
+    if (pos !== -1) {
+      const n = orderedIds.length;
+      for (const offset of [1, 2, 3, n - 1]) {
+        addId(orderedIds[(pos + offset) % n]);
+      }
+    }
+  }
+
+  // 2. Cyclic topical siblings inside primary curated category bucket (up to 4)
+  const primaryBucket = Array.isArray(byTag[primaryCatSlug]) ? byTag[primaryCatSlug] : [];
+  if (primaryBucket.length > 1) {
+    const tPos = primaryBucket.indexOf(currentVideoId);
+    const startIdx = tPos >= 0 ? tPos + 1 : 0;
+    let addedTopical = 0;
+    for (let step = 0; step < primaryBucket.length && addedTopical < 4 && pickedIds.length < 12; step++) {
+      if (addId(primaryBucket[(startIdx + step) % primaryBucket.length])) {
+        addedTopical++;
+      }
+    }
+  }
+
+  // 3. Top multi-tag overlap candidates from O(1) buckets
+  if (pickedIds.length < 12 && byTag && typeof byTag === 'object') {
     const scoreById = new Map();
     const tagSlugs = [...new Set(candidateTags.map(t => slugify(t, 40, '')).filter(Boolean))];
-
     for (const tSlug of tagSlugs) {
       const bucket = byTag[tSlug];
       if (!Array.isArray(bucket)) continue;
       for (let i = 0; i < bucket.length; i++) {
         const vid = bucket[i];
-        if (vid === currentVideoId) continue;
+        if (pickedSet.has(vid)) continue;
         scoreById.set(vid, (scoreById.get(vid) || 0) + 10 + (i < 12 ? 1 : 0));
       }
     }
-
-    const pickedIds = [...scoreById.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12)
-      .map(([vid]) => vid);
-
-    const pickedSet = new Set(pickedIds);
-    if (pickedIds.length < 12) {
-      for (const fid of featured) {
-        if (fid === currentVideoId || pickedSet.has(fid)) continue;
-        pickedIds.push(fid);
-        pickedSet.add(fid);
-        if (pickedIds.length >= 12) break;
-      }
+    const ranked = [...scoreById.entries()].sort((a, b) => b[1] - a[1]);
+    for (const [vid] of ranked) {
+      if (pickedIds.length >= 12) break;
+      addId(vid);
     }
-
-    return pickedIds
-      .map(vid => expandRuntimeVideo(videosMap[vid]))
-      .filter(v => v && v.title && v.slug);
   }
 
-  // Fallback for legacy unindexed database
-  const allEnriched = Object.values(videosMap)
-    .map(expandRuntimeVideo)
-    .filter(v => v && v.video_id !== currentVideoId && v.title && v.slug);
-  const currentTags = candidateTags.map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
-  const scored = allEnriched.map(v => {
-    let score = 0;
-    if (Array.isArray(v.tags)) {
-      for (const t of v.tags) {
-        if (currentTags.includes(String(t).toLowerCase())) score++;
-      }
-    }
-    return { video: v, score };
-  });
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 12).map(s => s.video);
+  // 4. Pad from featured pool if fewer than 12
+  for (const fid of featured) {
+    if (pickedIds.length >= 12) break;
+    addId(fid);
+  }
+
+  return pickedIds
+    .slice(0, 12)
+    .map(vid => expandRuntimeVideo(videosMap[vid]))
+    .filter(v => v && v.title && v.slug);
 }
 
 export default async function handler(req, res) {
@@ -144,6 +197,7 @@ export default async function handler(req, res) {
   if (!rawSlug) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('X-Robots-Tag', 'noindex, follow');
     if (!cached404) {
       cached404 = await readFile(path.join(process.cwd(), '404.html'), 'utf8');
     }
@@ -182,7 +236,7 @@ export default async function handler(req, res) {
         } else if ((Array.isArray(json) && json.length === 0) || (json && json.error)) {
           videoNotFound = true;
         }
-      } else if (apiRes.status === 404) {
+      } else if (apiRes.status === 404 || apiRes.status === 410) {
         videoNotFound = true;
       }
     } catch {
@@ -190,10 +244,12 @@ export default async function handler(req, res) {
     }
   }
 
+  // Return HTTP 410 Gone for confirmed upstream deletions so Google drops dead URLs rapidly instead of keeping them in GSC
   if (videoNotFound || (!videoData && (!videoId || videoId.length < 5))) {
-    res.statusCode = 404;
+    res.statusCode = videoNotFound ? 410 : 404;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    res.setHeader('X-Robots-Tag', 'noindex, follow');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
     if (!cached404) {
       cached404 = await readFile(path.join(process.cwd(), '404.html'), 'utf8');
     }
@@ -207,8 +263,11 @@ export default async function handler(req, res) {
       : (Array.isArray(videoData.keywords) ? videoData.keywords.map(k => decodeMojibake(k).trim()).filter(Boolean) : []))
     : [];
 
-  // Load Enriched Content from compact runtime store (or fallback DB)
-  const enrichedDb = await getEnrichedDatabase();
+  // Load Enriched Content & Category Descriptions in parallel
+  const [enrichedDb, categoryDescs] = await Promise.all([
+    getEnrichedDatabase(),
+    getCategoryDescriptions(),
+  ]);
   const enrichedData = expandRuntimeVideo(enrichedDb.videos?.[videoId]);
 
   // Match best primary curated category (for breadcrumbs & clean category linking)
@@ -266,6 +325,9 @@ export default async function handler(req, res) {
   );
 
   const embedUrl = normalizeUrl(videoData?.embed || `https://www.eporner.com/embed/${videoId}/`);
+  const durationSec = Number(videoData?.length_sec || enrichedData?.duration || 0);
+  const viewCountRaw = videoData?.views ?? enrichedData?.views ?? 0;
+  const uploadDateRaw = videoData?.added || enrichedData?.generated_at || '';
 
   const orgSchema = createOrganizationSchema();
   delete orgSchema['@context'];
@@ -289,9 +351,9 @@ export default async function handler(req, res) {
     thumbnailUrl: thumbUrl,
     embedUrl,
     keywords: enrichedData?.tags || rawKeywords.slice(0, 6),
-    durationSec: videoData?.length_sec || enrichedData?.duration,
-    uploadDate: videoData?.added || enrichedData?.generated_at,
-    views: videoData?.views ?? enrichedData?.views,
+    durationSec,
+    uploadDate: uploadDateRaw,
+    views: viewCountRaw,
   });
 
   const breadcrumbList = createBreadcrumbSchema([
@@ -358,22 +420,61 @@ export default async function handler(req, res) {
         </div>
       `).join('');
 
+    const humanDur = formatHumanDuration(durationSec);
+    const formattedViews = formatViews(viewCountRaw);
+    const publishedDay = uploadDateRaw ? String(uploadDateRaw).slice(0, 10) : '';
+    const catEditorialPara = categoryDescs?.[catSlug]?.paragraphs?.[0] || '';
+    const siblingHubsHtml = US_EU_CATEGORIES
+      .filter(s => s !== catSlug)
+      .slice(0, 6)
+      .map(s => `<a href="/c/${escapeHtml(s)}" style="color:#e8a800;text-decoration:none;font-size:0.84rem;background:rgba(232,168,0,0.1);padding:3px 9px;border-radius:999px;border:1px solid rgba(232,168,0,0.22);">${escapeHtml(formatCategoryName(s))}</a>`)
+      .join('\n            ');
+
+    const specItems = [
+      `<div><span style="color:#888;">Category:</span> <a href="/c/${escapeHtml(catSlug)}" style="color:#e8a800;text-decoration:none;font-weight:600;">${escapeHtml(catName)}</a></div>`,
+      humanDur ? `<div><span style="color:#888;">Runtime:</span> <strong style="color:#ddd;">${escapeHtml(humanDur)}</strong></div>` : '',
+      Number(viewCountRaw) > 0 ? `<div><span style="color:#888;">Views:</span> <strong style="color:#ddd;">${escapeHtml(formattedViews)}</strong></div>` : '',
+      videoData?.rate ? `<div><span style="color:#888;">Rating:</span> <strong style="color:#ddd;">${escapeHtml(String(videoData.rate))}</strong></div>` : '',
+      publishedDay ? `<div><span style="color:#888;">Published:</span> <strong style="color:#ddd;">${escapeHtml(publishedDay)}</strong></div>` : '',
+      `<div><span style="color:#888;">Playback:</span> <strong style="color:#ddd;">1080p HD HTML5 &bull; 18+ RTA</strong></div>`,
+    ].filter(Boolean).join('\n          ');
+
+    const summaryParagraphs = String(enrichedData.summary || '')
+      .split(/\n+/)
+      .map(p => p.trim())
+      .filter(Boolean)
+      .map(p => `<p style="color: #ccc; font-size: 0.95rem; line-height: 1.65; margin-bottom: 14px;">${escapeHtml(p)}</p>`)
+      .join('\n        ');
+
     enrichedHtml = `
       <div class="video-enriched-block" style="margin-top: 25px; background: #141414; padding: 22px; border-radius: 12px; border: 1px solid #222;">
         <h2 style="font-size: 1.15rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Video Overview</h2>
-        <p style="color: #ccc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 18px;">${escapeHtml(enrichedData.summary || '')}</p>
+        ${summaryParagraphs}
+
+        <h3 style="font-size: 1.05rem; color: #fff; margin: 16px 0 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Scene Details &amp; Specifications</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:#1a1a1a;padding:14px 16px;border-radius:8px;border:1px solid #262626;margin-bottom:18px;font-size:0.88rem;">
+          ${specItems}
+        </div>
         
-        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Key Highlights</h3>
+        <h3 style="font-size: 1.05rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Key Highlights</h3>
         <ul class="enriched-highlights" style="list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px;">
           ${highlightsLi}
         </ul>
 
-        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Frequently Asked Questions</h3>
+        ${catEditorialPara ? `<div style="margin: 0 0 20px; padding: 14px 16px; background: #181818; border-radius: 8px; border: 1px solid #252525;">
+          <h3 style="font-size: 0.98rem; color: #fff; margin: 0 0 8px; font-weight: 700;">About ${escapeHtml(catName)} HD Collection</h3>
+          <p style="margin: 0; color: #aaa; font-size: 0.88rem; line-height: 1.6;">${escapeHtml(catEditorialPara)}</p>
+        </div>` : ''}
+
+        <h3 style="font-size: 1.05rem; color: #fff; margin-bottom: 10px; font-weight: 700; border-left: 3px solid #e8a800; padding-left: 10px;">Frequently Asked Questions</h3>
         <div class="enriched-faq">
           ${faqItems}
         </div>
-        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #262626; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #999;">
-          <span>Format: <strong style="color:#ddd;">1080p HD HTML5 Stream</strong> &bull; Compliance: <strong style="color:#ddd;">18+ RTA</strong></span>
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #262626; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #999;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+            <span style="color:#888;">More Hubs:</span>
+            ${siblingHubsHtml}
+          </div>
           <a href="/c/${escapeHtml(catSlug)}" style="color: #e8a800; text-decoration: none; font-weight: 600;">Browse All ${escapeHtml(catName)} HD Videos &rarr;</a>
         </div>
       </div>
@@ -449,8 +550,8 @@ export default async function handler(req, res) {
     html = html.replace(/(<main[^>]*id=["']videoContainer["'][^>]*>)/i, `$1\n${visibleSeoMarkup}`);
   }
 
-  // Inject SSR Similar Videos Mesh via O(1) tag buckets
-  const relatedList = getRelatedVideos(enrichedDb, videoId, allCandidateTags);
+  // Inject SSR Similar Videos Mesh via strongly-connected ring + O(1) topical buckets (0% orphan rate!)
+  const relatedList = getRelatedVideos(enrichedDb, videoId, allCandidateTags, catSlug);
   let similarCardsHtml = '';
   if (relatedList.length > 0) {
     similarCardsHtml = relatedList.map(v => {

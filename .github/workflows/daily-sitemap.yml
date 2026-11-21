@@ -41,6 +41,9 @@ jobs:
           GEMINI_TIMEOUT_MS: 50000
         run: node scripts/seo-enrich.mjs --limit 750
 
+      - name: Prune deleted/404 upstream videos from enriched sitemap pool (rolling check)
+        run: node scripts/prune-dead-videos.mjs --batch 500
+
       - name: Build compact O(1) runtime index for Vercel serverless edge
         run: node scripts/build-runtime-index.mjs
 

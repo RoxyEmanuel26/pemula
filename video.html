@@ -557,7 +557,10 @@
             const btn = e.target.closest('.video-tag-search[data-search]');
             if (!btn) return;
             const term = btn.getAttribute('data-search');
-            if (term) window.location.href = '/?q=' + encodeURIComponent(term);
+            if (term) {
+                const tagSlug = String(term).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+                if (tagSlug) window.location.href = '/c/' + tagSlug;
+            }
         });
 
         // Get video slug from query param or path

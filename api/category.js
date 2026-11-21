@@ -71,6 +71,14 @@ function interpolate(pattern, vars) {
   return String(pattern || '').replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
 }
 
+function formatDurationMin(sec) {
+  const s = Number(sec || 0);
+  if (!Number.isFinite(s) || s <= 0) return '';
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}:${String(rem).padStart(2, '0')}`;
+}
+
 function buildSsrPagination(langPrefix, slug, currentPage, totalPages, prevLabel, nextLabel) {
   if (totalPages <= 1) return '';
   const maxVisible = 7;
@@ -130,9 +138,10 @@ export default async function handler(req, res) {
     return res.end();
   }
 
-  const [descriptions, euLocales] = await Promise.all([
+  const [descriptions, euLocales, enrichedDb] = await Promise.all([
     getCategoryDescriptions(),
     lang === 'en' ? Promise.resolve({}) : getEuLocales(),
+    getEnrichedCatalog(),
   ]);
   const localeCfg = lang === 'en' ? null : (euLocales[lang] || null);
   const isCurated = Boolean(descriptions[cleanSlug]);
@@ -169,14 +178,14 @@ export default async function handler(req, res) {
     cachedTemplate = await readFile(path.join(process.cwd(), 'category.html'), 'utf8');
   }
 
-  let categoryVideos = [];
+  let liveApiVideos = [];
   let totalPages = 1;
   let totalCount = 0;
 
   const cacheKey = `${queryTerm}:p${currentPage}:${order}`;
   const cachedEntry = CATEGORY_CACHE.get(cacheKey);
   if (cachedEntry && (Date.now() - cachedEntry.ts < CAT_CACHE_TTL_MS)) {
-    categoryVideos = cachedEntry.videos;
+    liveApiVideos = cachedEntry.videos;
     totalPages = cachedEntry.totalPages;
     totalCount = cachedEntry.totalCount;
   } else {
@@ -192,10 +201,10 @@ export default async function handler(req, res) {
       if (apiRes.ok) {
         const json = await apiRes.json();
         if (json && Array.isArray(json.videos)) {
-          categoryVideos = json.videos;
+          liveApiVideos = json.videos;
           totalPages = Math.min(Number(json.total_pages) || 1, 100);
-          totalCount = Number(json.total_count) || categoryVideos.length;
-          CATEGORY_CACHE.set(cacheKey, { videos: categoryVideos, totalPages, totalCount, ts: Date.now() });
+          totalCount = Number(json.total_count) || liveApiVideos.length;
+          CATEGORY_CACHE.set(cacheKey, { videos: liveApiVideos, totalPages, totalCount, ts: Date.now() });
         }
       }
     } catch {
@@ -203,49 +212,69 @@ export default async function handler(req, res) {
     }
   }
 
-  // Resilient O(1) fallback using compact runtime tag buckets (prevents empty Soft-404 crawls)
-  if (categoryVideos.length === 0 && isCurated) {
-    try {
-      const enrichedDb = await getEnrichedCatalog();
-      const videosMap = enrichedDb?.videos || {};
-      const byTag = enrichedDb?.byTag || {};
-      const featured = Array.isArray(enrichedDb?.featured) ? enrichedDb.featured : [];
+  // Hybrid Enriched-First Grid (eliminates 99% orphaned sitemap videos & crawl budget waste on noindex links):
+  // - On Page 1 of curated hubs, lead with up to 16 verified alive AI-enriched videos matching this hub (dofollow)
+  // - Deduplicate & pad remaining slots up to 24 with live Eporner results (marked rel="nofollow" when un-enriched)
+  const videosMap = enrichedDb?.videos || {};
+  const byTag = enrichedDb?.byTag || {};
+  const featured = Array.isArray(enrichedDb?.featured) ? enrichedDb.featured : [];
 
-      const candidateIds = [];
-      const seenIds = new Set();
-      const directBucket = byTag[cleanSlug] || [];
-      for (const id of directBucket) {
-        if (!seenIds.has(id)) {
-          seenIds.add(id);
-          candidateIds.push(id);
-        }
-      }
-      if (candidateIds.length < 24) {
-        for (const id of featured) {
-          if (!seenIds.has(id)) {
-            seenIds.add(id);
-            candidateIds.push(id);
-          }
-          if (candidateIds.length >= 48) break;
-        }
-      }
+  const isEnrichedId = (id) => Boolean(expandRuntimeVideo(videosMap[id]));
 
-      const pool = candidateIds.map(id => expandRuntimeVideo(videosMap[id])).filter(Boolean);
-      const start = (currentPage - 1) * 24;
-      const sliced = pool.slice(start, start + 24);
-      categoryVideos = sliced.map(v => ({
+  let categoryVideos = [];
+  const seenVideoIds = new Set();
+
+  if (isCurated && currentPage === 1 && order === 'most-popular') {
+    const directIds = Array.isArray(byTag[cleanSlug]) ? byTag[cleanSlug] : [];
+    const enrichedPicks = directIds
+      .slice(0, 16)
+      .map(id => expandRuntimeVideo(videosMap[id]))
+      .filter(v => v && v.title && v.thumbnail);
+
+    for (const v of enrichedPicks) {
+      seenVideoIds.add(v.video_id);
+      categoryVideos.push({
         id: v.video_id,
+        slug: v.slug,
         title: v.title,
         default_thumb: { src: v.thumbnail },
         added: v.generated_at || '',
-        length_min: v.duration ? `${Math.floor(v.duration / 60)}:${String(v.duration % 60).padStart(2, '0')}` : '',
+        length_min: formatDurationMin(v.duration),
         views: v.views || 0,
-      }));
-      totalCount = directBucket.length || pool.length;
-      totalPages = Math.max(1, Math.min(100, Math.ceil(totalCount / 24)));
-    } catch {
-      // Ignore fallback read errors cleanly
+        _isEnriched: true,
+      });
     }
+  }
+
+  for (const v of liveApiVideos) {
+    if (categoryVideos.length >= 24) break;
+    if (!v || !v.id || seenVideoIds.has(v.id)) continue;
+    seenVideoIds.add(v.id);
+    categoryVideos.push({
+      ...v,
+      _isEnriched: isEnrichedId(v.id),
+    });
+  }
+
+  // Resilient O(1) fallback if upstream Eporner returned 0 results on a curated hub (prevents Soft-404 crawls)
+  if (categoryVideos.length === 0 && isCurated) {
+    const fallbackIds = [...new Set([...(byTag[cleanSlug] || []), ...featured])];
+    const start = (currentPage - 1) * 24;
+    const sliced = fallbackIds.slice(start, start + 24)
+      .map(id => expandRuntimeVideo(videosMap[id]))
+      .filter(Boolean);
+    categoryVideos = sliced.map(v => ({
+      id: v.video_id,
+      slug: v.slug,
+      title: v.title,
+      default_thumb: { src: v.thumbnail },
+      added: v.generated_at || '',
+      length_min: formatDurationMin(v.duration),
+      views: v.views || 0,
+      _isEnriched: true,
+    }));
+    totalCount = Math.max(totalCount, fallbackIds.length);
+    totalPages = Math.max(1, Math.min(100, Math.ceil(totalCount / 24)));
   }
 
   const hasNoindexParam = Boolean(req.query?.ref || req.query?.q);
@@ -277,9 +306,12 @@ export default async function handler(req, res) {
     'inLanguage': lang,
   };
 
-  const schemaItems = categoryVideos.slice(0, 24).map(v => {
+  // Prefer verified indexable AI-enriched items in ItemList JSON-LD so structured data matches sitemaps
+  const enrichedForSchema = categoryVideos.filter(v => v._isEnriched);
+  const schemaPool = enrichedForSchema.length >= 6 ? enrichedForSchema : categoryVideos;
+  const schemaItems = schemaPool.slice(0, 24).map(v => {
     const title = decodeMojibake(v.title || 'Untitled');
-    const vSlug = slugify(title, 80, v.id);
+    const vSlug = v.slug || slugify(title, 80, v.id);
     return {
       title,
       url: `/v/${v.id}-${vSlug}`,
@@ -511,15 +543,16 @@ ${faqItemsHtml}
   if (categoryVideos.length > 0) {
     const cardsHtml = categoryVideos.map((v, idx) => {
       const title = escapeHtml(decodeMojibake(v.title || 'Untitled'));
-      const vSlug = slugify(v.title, 80, v.id);
+      const vSlug = v.slug || slugify(v.title, 80, v.id);
       const href = `/v/${v.id}-${vSlug}`;
       const thumb = v.default_thumb?.src || (v.thumbs && v.thumbs[0]?.src) || '/assets/icons/favicon-32x32.png';
       const dur = v.length_min || '';
       const viewsNum = parseInt(String(v.views || '0').replace(/\D/g, ''), 10) || 0;
       const metaParts = [v.added ? escapeHtml(v.added.slice(0, 10)) : '', viewsNum > 0 ? `👁 ${viewsNum.toLocaleString('en-US')}` : ''].filter(Boolean).join(' • ');
       const priorityAttr = idx < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
+      const relAttr = v._isEnriched ? '' : ' rel="nofollow"';
       return `
-        <a href="${href}" class="video-card" aria-label="${title}">
+        <a href="${href}"${relAttr} class="video-card" aria-label="${title}">
           <div class="video-thumb-wrap">
             <img src="${escapeHtml(thumb)}" alt="${title}" ${priorityAttr} width="320" height="180" decoding="async" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
             ${dur ? `<span class="video-duration">${escapeHtml(dur)}</span>` : ''}

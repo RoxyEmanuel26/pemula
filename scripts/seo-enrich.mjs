@@ -17,6 +17,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  US_EU_CATEGORIES,
   cleanSourceTitle,
   extractJavCode,
   isSpamVideoTitle,
@@ -209,9 +210,26 @@ export function normalizeEnrichmentItem(original, rawItem, seenTitles) {
 }
 
 /**
+ * Computes US/EU curated categories that currently have fewer than 24 alive enriched videos
+ * so Gemini prioritizes filling deficit hubs (e.g. czech, 4k-uhd, italian, german, french, spanish).
+ */
+function buildDeficitHubMatchers(dbVideos) {
+  const counts = new Map(US_EU_CATEGORIES.map(s => [s, 0]));
+  const matchers = US_EU_CATEGORIES.map(s => [s, new RegExp(`\\b${s.replace(/-/g, '\\s+')}\\b`, 'i')]);
+  for (const v of Object.values(dbVideos || {})) {
+    if (!v || v.status !== 'enriched' || !v.model || v.model === 'mock-enricher') continue;
+    const hay = `${v.title || ''} ${(Array.isArray(v.tags) ? v.tags.join(' ') : '')}`;
+    for (const [slug, re] of matchers) {
+      if (re.test(hay)) counts.set(slug, (counts.get(slug) || 0) + 1);
+    }
+  }
+  return matchers.filter(([slug]) => (counts.get(slug) || 0) < 24);
+}
+
+/**
  * Scores a catalog video for enrichment queue prioritization targeting US/EU search demand.
  */
-function scoreVideoPriority(video) {
+function scoreVideoPriority(video, deficitMatchers = []) {
   const title = cleanSourceTitle(video.title || '');
   if (isSpamVideoTitle(title)) return -999;
 
@@ -227,6 +245,13 @@ function scoreVideoPriority(video) {
   // Extra boost for European languages/countries so EU localized hubs have deep inventory
   if (/\b(european|british|german|deutsch|french|francaise|spanish|espanol|italian|italiana|czech|prague|berlin|paris|london|madrid|rome)\b/i.test(combined)) {
     score += 14;
+  }
+  // Deficit-hub boost (+45) so underrepresented US/EU curated hubs quickly reach 24+ AI videos
+  for (const [, re] of deficitMatchers) {
+    if (re.test(combined)) {
+      score += 45;
+      break;
+    }
   }
   if (video.thumbnail && video.thumbnail.includes('_360')) score += 10;
   if (video.keywords) score += 10;
@@ -265,7 +290,7 @@ export function validateEnrichment(original, enriched, seenTitles) {
 
   const summary = String(enriched.summary || '').trim();
   const sentences = summary.split(/[.!?]+/).filter(s => s.trim().length > 10);
-  if (summary.length < 140 || sentences.length < 2 || sentences.length > 5) {
+  if (summary.length < 140 || sentences.length < 2 || sentences.length > 7) {
     return { valid: false, reason: `Summary too short or invalid sentence count (${summary.length} chars, ${sentences.length} sentences)` };
   }
 
@@ -367,21 +392,23 @@ STRICT RULES:
 3. Translate any non-English or gibberish title context accurately into natural US/EU English while keeping recognizable keywords/performers/JAV codes intact.
 4. "seo_title" MUST be 32 to 62 characters total, MUST be unique across this batch, MUST end on a complete word (NEVER truncate mid-word!), and MUST end with " | LustHub".
 5. "meta_description" MUST be strictly 125 to 152 characters total, natural persuasive US/EU English, complete sentence.
-6. "summary": 2 to 4 clear informative sentences (at least 160 characters) describing the setting, genre, and viewing experience without repeating the input title verbatim.
-7. "tags": 4 to 6 clean lowercase English category/topic keywords matching US/EU search habits (e.g. milf, blonde, brunette, amateur, pov, onlyfans, anal, hardcore, jav).
-8. "faq": 2 natural Q&As matching how users search on Google/Bing/Perplexity.
-9. OUTPUT FORMAT: Respond strictly with a JSON array matching the exact order of input videos:
+6. "summary": 4 to 6 rich, unique informative sentences split into 2 concise paragraphs separated by "\n\n" (280 to 520 characters total) describing the scene premise, visual style, pacing, and mobile/HD viewing experience without repeating the input title verbatim.
+7. "highlights": 4 specific, non-generic bullet highlights tied to the video's genre, runtime, and presentation.
+8. "tags": 4 to 6 clean lowercase English category/topic keywords matching US/EU search habits (e.g. milf, blonde, brunette, amateur, pov, onlyfans, anal, hardcore, jav).
+9. "faq": 3 natural search-intent Q&As matching how users search on Google/Bing/Perplexity.
+10. OUTPUT FORMAT: Respond strictly with a JSON array matching the exact order of input videos:
 [
   {
     "id": "video_id",
     "seo_title": "Complete Title Here | LustHub",
     "meta_description": "125-152 char natural description.",
-    "summary": "2-3 sentences totaling at least 160 characters.",
-    "highlights": ["Point 1", "Point 2", "Point 3"],
+    "summary": "Paragraph 1 (2-3 sentences).\n\nParagraph 2 (2-3 sentences), totaling 280-520 characters.",
+    "highlights": ["Point 1", "Point 2", "Point 3", "Point 4"],
     "tags": ["tag1", "tag2", "tag3", "tag4"],
     "faq": [
       { "question": "Question 1?", "answer": "Answer 1." },
-      { "question": "Question 2?", "answer": "Answer 2." }
+      { "question": "Question 2?", "answer": "Answer 2." },
+      { "question": "Question 3?", "answer": "Answer 3." }
     ]
   }
 ]
@@ -490,6 +517,9 @@ async function main() {
       .map(v => String(v.seo_title).trim().toLowerCase())
   );
 
+  const deficitMatchers = buildDeficitHubMatchers(db.videos);
+  console.log(`US/EU hubs under 24 AI videos receiving priority boost: ${deficitMatchers.length} (${deficitMatchers.map(([s]) => s).slice(0, 12).join(', ')})`);
+
   const queue = [...sitemapState.videos]
     .filter(v => {
       if (isSpamVideoTitle(v.title)) return false;
@@ -503,7 +533,7 @@ async function main() {
       return false;
     })
     .sort((a, b) => {
-      const diff = scoreVideoPriority(b) - scoreVideoPriority(a);
+      const diff = scoreVideoPriority(b, deficitMatchers) - scoreVideoPriority(a, deficitMatchers);
       if (Math.abs(diff) > 0.01) return diff;
       return (b.published || b.added || '').localeCompare(a.published || a.added || '');
     })

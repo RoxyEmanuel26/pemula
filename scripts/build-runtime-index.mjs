@@ -2,9 +2,10 @@
 /**
  * scripts/build-runtime-index.mjs
  * Compiles a compact, minified runtime index (data/enriched-runtime.json)
- * containing ONLY genuine non-spam AI-enriched videos plus pre-built O(1)
- * tag lookup buckets (`byTag`) and ranked US/EU `featured` IDs.
- * Keeps Vercel serverless bundles small and slashes cold-start & TTFB latency.
+ * containing ONLY genuine alive non-spam AI-enriched videos plus:
+ * - Pre-built O(1) tag & curated-hub lookup buckets (`byTag`) matching both tags AND titles
+ * - Ranked US/EU `featured` IDs
+ * - Deterministic `orderedIds` ring array guaranteeing 0% orphaned videos across /v/ internal linking
  */
 
 import { readFile, stat, writeFile } from 'node:fs/promises';
@@ -12,17 +13,47 @@ import path from 'node:path';
 import {
   CURATED_CATEGORIES,
   cleanSourceTitle,
+  extractJavCode,
   isSpamVideoTitle,
   normalizeUrl,
   slugify,
 } from '../api/schema-helper.js';
 
 const CURATED_SET = new Set(CURATED_CATEGORIES);
-
 const ROOT = process.cwd();
 const ENRICHED_PATH = path.join(ROOT, 'data', 'enriched-videos.json');
 const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
 const RUNTIME_PATH = path.join(ROOT, 'data', 'enriched-runtime.json');
+
+/** Extra title/tag synonym matchers so every US & EU curated hub maps rich alive AI videos. */
+const HUB_SYNONYM_REGEX = {
+  '4k-uhd': /\b(4k|uhd|2160p|ultra\s*hd)\b/i,
+  'big-tits': /\b(big\s*tits|busty|huge\s*tits|big\s*boobs|giant\s*tits|titty)\b/i,
+  'big-ass': /\b(big\s*ass|pawg|thick\s*ass|huge\s*ass|phat\s*ass|booty)\b/i,
+  'double-penetration': /\b(double\s*penetration|\bdp\b|two\s*cocks)\b/i,
+  'group-sex': /\b(group\s*sex|orgy|gangbang|swinger|foursome)\b/i,
+  'live-cam': /\b(live\s*cam|webcam|chaturbate|camgirl|cam\s*show)\b/i,
+  'onlyfans': /\b(onlyfans|fansly|creator\s*leak)\b/i,
+  'european': /\b(european|euro|german|deutsch|french|francaise|spanish|espanol|italian|italiana|czech|prague|british|russian|dutch|polish|swedish|austrian)\b/i,
+  'german': /\b(german|deutsch|berlin|munich|hamburg)\b/i,
+  'french': /\b(french|francaise|paris|lyon)\b/i,
+  'spanish': /\b(spanish|espanol|madrid|barcelona)\b/i,
+  'italian': /\b(italian|italiana|rome|milan|italy)\b/i,
+  'british': /\b(british|london|english\s+amateur|\buk\b)\b/i,
+  'czech': /\b(czech|prague)\b/i,
+  'russian': /\b(russian|moscow|slavic)\b/i,
+  'japanese': /\b(japanese|jav|tokyo|uncensored\s+jav)\b/i,
+  'indian': /\b(indian|desi|bhabhi|hindi|tamil|mallu)\b/i,
+  'tiktok-viral': /\b(tiktok|fyp|viral\s*reel)\b/i,
+};
+
+function buildHubMatcher(slug) {
+  if (HUB_SYNONYM_REGEX[slug]) return HUB_SYNONYM_REGEX[slug];
+  const term = slug.replace(/-/g, '\\s+');
+  return new RegExp(`\\b${term}\\b`, 'i');
+}
+
+const CURATED_MATCHERS = CURATED_CATEGORIES.map(slug => [slug, buildHubMatcher(slug)]);
 
 function scoreUsEuQuality(title, tags, views, thumb, summary) {
   const combined = `${title} ${(tags || []).join(' ')}`;
@@ -104,19 +135,26 @@ async function main() {
     const qualityScore = scoreUsEuQuality(title, tags, views, thumb, compact.sm);
     scoredRows.push({ id, title, tags, score: qualityScore, at: publishedDay });
 
-    // Index every slugified tag & high-signal title keywords into O(1) buckets
+    // Index explicit slugified tags + all matching curated hubs from title/tags/JAV code
     const tagKeys = new Set();
     for (const tag of tags) {
       const tSlug = slugify(tag, 40, '');
       if (tSlug) tagKeys.add(tSlug);
     }
+    const combinedHay = `${title} ${tags.join(' ')} ${stateRec?.keywords || ''}`;
+    for (const [hubSlug, matcher] of CURATED_MATCHERS) {
+      if (matcher.test(combinedHay)) tagKeys.add(hubSlug);
+    }
+    if (extractJavCode(title)) tagKeys.add('japanese');
+
     for (const key of tagKeys) {
       if (!byTagDraft.has(key)) byTagDraft.set(key, []);
       byTagDraft.get(key).push({ id, score: qualityScore });
     }
   }
 
-  scoredRows.sort((a, b) => b.score - a.score || b.at.localeCompare(a.at));
+  scoredRows.sort((a, b) => b.score - a.score || b.at.localeCompare(a.at) || a.id.localeCompare(b.id));
+  const orderedIds = scoredRows.map(r => r.id);
   const featured = scoredRows
     .filter(r => r.score >= 25 && !/[^\x00-\x7F]/.test(r.title) && r.title.length >= 16)
     .slice(0, 160)
@@ -124,15 +162,17 @@ async function main() {
 
   const byTag = {};
   for (const [key, list] of byTagDraft.entries()) {
-    if (list.length < 2 && !CURATED_SET.has(key)) continue;
+    const isCurated = CURATED_SET.has(key);
+    if (list.length < 2 && !isCurated) continue;
     list.sort((a, b) => b.score - a.score);
-    byTag[key] = list.slice(0, 48).map(x => x.id);
+    byTag[key] = list.slice(0, isCurated ? 72 : 48).map(x => x.id);
   }
 
   const runtime = {
-    v: 2,
+    v: 3,
     at: new Date().toISOString(),
-    n: Object.keys(videos).length,
+    n: orderedIds.length,
+    orderedIds,
     featured,
     byTag,
     videos,
@@ -140,8 +180,10 @@ async function main() {
 
   await writeFile(RUNTIME_PATH, JSON.stringify(runtime), 'utf8');
   const [srcStat, outStat] = await Promise.all([stat(ENRICHED_PATH), stat(RUNTIME_PATH)]);
+  const hubsPopulated = CURATED_CATEGORIES.filter(s => (byTag[s]?.length || 0) > 0).length;
+  const hubsGe12 = CURATED_CATEGORIES.filter(s => (byTag[s]?.length || 0) >= 12).length;
   console.log(
-    `Built data/enriched-runtime.json: ${runtime.n} videos, ${Object.keys(byTag).length} O(1) tag buckets, ${featured.length} featured IDs | ${(srcStat.size / 1024 / 1024).toFixed(2)} MB -> ${(outStat.size / 1024 / 1024).toFixed(2)} MB (${Math.round((1 - outStat.size / srcStat.size) * 100)}% smaller).`
+    `Built data/enriched-runtime.json: ${runtime.n} alive videos, ${Object.keys(byTag).length} O(1) tag buckets (${hubsPopulated}/${CURATED_CATEGORIES.length} hubs populated, ${hubsGe12} with >=12 enriched), ${featured.length} featured IDs | ${(srcStat.size / 1024 / 1024).toFixed(2)} MB -> ${(outStat.size / 1024 / 1024).toFixed(2)} MB (${Math.round((1 - outStat.size / srcStat.size) * 100)}% smaller).`
   );
 }
 

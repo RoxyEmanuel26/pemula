@@ -34,12 +34,6 @@
             popunder: ['https://benchform.org/1/c47178ac0d23a0bd87322accefde9fc7'],
             socialbar: ['https://biomanos.org/14/88d720634f18389c613c9ccab28cea5f'],
             monetag: 'https://al5sm.com/tag.min.js'
-        },
-
-        // Fallbacks (Anti-Adblock)
-        fallbacks: {
-            image: 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif',
-            link: 'https://www.teraboxpage.com/myknow/lusthub.my.id1'
         }
     };
 
@@ -77,37 +71,6 @@
         iframe.loading = 'lazy';
         container.appendChild(iframe);
         kLog('Loaded banner ' + key + ' (' + width + 'x' + height + ') in #' + containerId);
-    }
-
-    function injectCustomBanner() {
-        const container = document.getElementById('adBannerCustom');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'width:100%; display:flex; justify-content:center; align-items:center;';
-
-        const link = document.createElement('a');
-        link.href = 'https://1024terabox.com/s/1tZgxhHvPTTfa2DFE2FS64A';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.cssText = 'display:block; max-width:100%; text-decoration:none; border-radius:10px; overflow:hidden; cursor:pointer; transition: transform 0.3s ease;';
-        
-        const img = document.createElement('img');
-        img.src = 'https://i.ibb.co/PvhvpsJM/ezgif-com-animated-gif-maker.gif';
-        img.alt = 'Download Terabox';
-        img.style.cssText = 'width:100%; height:auto; display:block; border-radius:10px;';
-        img.loading = 'lazy';
-
-        link.addEventListener('mouseenter', () => link.style.transform = 'translateY(-2px)');
-        link.addEventListener('mouseleave', () => link.style.transform = 'translateY(0)');
-        
-        link.appendChild(img);
-        wrapper.appendChild(link);
-        container.appendChild(wrapper);
-        
-        kLog('Custom Terabox banner injected into adBannerCustom');
     }
 
     // ==========================================
@@ -248,7 +211,6 @@
         kLog('Initializing Ad Manager...');
         initLazyAds();
         injectTelegramButton();
-        injectCustomBanner();
 
         // Load popup scripts immediately (Pure 100% mode)
         injectExternalScripts();

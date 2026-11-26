@@ -5,6 +5,8 @@ import process from 'node:process';
 import {
   BASE_URL,
   EU_LOCALES,
+  EU_LOCALIZED_CATEGORIES,
+  REGIONAL_ARCHIVE_HUBS,
   CURATED_CATEGORIES,
   US_EU_CATEGORIES,
   decodeMojibake,
@@ -320,11 +322,19 @@ function buildPagesSitemap() {
   }), { xhtml: true });
 }
 
-function buildCategoriesSitemap(catLastMod) {
-  return urlset(CURATED_CATEGORIES.map((category) => {
+function buildCategoriesSitemap(catLastMod, tagCounts = {}) {
+  const rows = [];
+  for (const category of EU_LOCALIZED_CATEGORIES) {
     const alternates = renderXhtmlAlternates(`/c/${category}`);
-    return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n${alternates}\n  </url>`;
-  }), { xhtml: true });
+    rows.push(`  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n${alternates}\n  </url>`);
+  }
+  // Only include non-empty regional archive hubs in English sitemap (0 thin/empty URLs!)
+  for (const regional of REGIONAL_ARCHIVE_HUBS) {
+    if (Number(tagCounts[regional] || 0) > 0) {
+      rows.push(`  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${regional}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n  </url>`);
+    }
+  }
+  return urlset(rows, { xhtml: true });
 }
 
 function buildCompoundSitemap(compoundHubs, lastmod) {
@@ -337,8 +347,9 @@ function buildCompoundSitemap(compoundHubs, lastmod) {
 
 /**
  * Generates sitemaps/sitemap_eu_locales.xml containing all localized European
- * homepages (/de, /fr, /es, /it, /nl, /pt, /pl) + localized curated hubs (/{lang}/c/:slug)
- * with complete reciprocal xhtml:link hreflang clusters and zero duplicate <loc>.
+ * homepages (/de, /fr, /es, /it, /nl, /pt, /pl) + localized international hubs (/{lang}/c/:slug)
+ * strictly for EU_LOCALIZED_CATEGORIES (64 international hubs, 0 regional Indonesian slang hubs)
+ * with complete 9-way reciprocal xhtml:link hreflang clusters and zero duplicate <loc>.
  */
 function buildEuLocalesSitemap(homeLastMod, catLastMod) {
   const rows = [];
@@ -351,7 +362,7 @@ function buildEuLocalesSitemap(homeLastMod, catLastMod) {
   }
 
   for (const lang of EU_LOCALES) {
-    for (const category of CURATED_CATEGORIES) {
+    for (const category of EU_LOCALIZED_CATEGORIES) {
       const alternates = renderXhtmlAlternates(`/c/${category}`);
       rows.push(
         `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/${lang}/c/${category}`)}</loc>\n    <lastmod>${catLastMod}</lastmod>\n${alternates}\n  </url>`
@@ -369,7 +380,8 @@ function buildVideoSitemap(videos, enrichedMap) {
     const title = String(rawTitle || video.title).slice(0, 100);
     const desc = e?.meta_description || video.description;
     const thumb = normalizeUrl(e?.thumbnail && e.thumbnail.includes('_360') ? e.thumbnail : video.thumbnail);
-    const duration = video.duration ? `\n      <video:duration>${video.duration}</video:duration>` : '';
+    const durVal = Number(video.duration || e?.duration || 0);
+    const duration = durVal > 0 ? `\n      <video:duration>${Math.floor(durVal)}</video:duration>` : '';
     const tagList = Array.isArray(e?.tags)
       ? e.tags.map(t => String(t || '').trim()).filter(t => t && t.length <= 32).slice(0, 5)
       : [];
@@ -429,11 +441,11 @@ async function syncLlmsTxt(videoSitemapFiles, compoundCount = 0) {
     const eIdx = content.indexOf(endMarker);
     if (sIdx === -1 || eIdx === -1 || eIdx <= sIdx) return false;
 
-    const euCount = EU_LOCALES.length * (CURATED_CATEGORIES.length + 1);
+    const euCount = EU_LOCALES.length * (EU_LOCALIZED_CATEGORIES.length + 1);
     const euCodeList = EU_LOCALES.map(l => l.toUpperCase()).join('/');
     const lines = [
       `- Master Sitemap Index: ${BASE_URL}/sitemap_index.xml`,
-      `- Core Category Sitemap (${CURATED_CATEGORIES.length} EN Hubs): ${BASE_URL}/sitemaps/sitemap_categories.xml`,
+      `- Core Category Sitemap (${EU_LOCALIZED_CATEGORIES.length}+ EN Hubs): ${BASE_URL}/sitemaps/sitemap_categories.xml`,
       `- Long-Tail Compound Hub Sitemap (${compoundCount} US/EU/JAV Niches): ${BASE_URL}/sitemaps/sitemap_compound.xml`,
       `- European Localized Sitemap (${euCount} ${euCodeList} Hubs): ${BASE_URL}/sitemaps/sitemap_eu_locales.xml`,
       ...videoSitemapFiles.map((f, idx) => `- Video Sitemap ${String(idx + 1).padStart(3, '0')}: ${BASE_URL}/sitemaps/${f}`),
@@ -516,6 +528,8 @@ async function main() {
       description: e.meta_description || e.summary || `Watch ${e.title} in HD on lusthub.my.id.`,
       thumbnail: e.thumbnail,
       player: `https://www.eporner.com/embed/${id}/`,
+      duration: e.duration || 0,
+      views: e.views || 0,
       published: e.generated_at || '2026-10-28T00:00:00Z',
       keywords: Array.isArray(e.tags) ? e.tags.join(', ') : '',
     });
@@ -562,14 +576,19 @@ async function main() {
 
   let compoundHubs = [];
   let compoundLastMod = todayStr;
+  let tagCounts = {};
   try {
     const rawCompound = JSON.parse(await readFile(COMPOUND_PATH, 'utf8'));
     if (Array.isArray(rawCompound?.hubs)) compoundHubs = rawCompound.hubs;
     if (rawCompound?.generatedAt) compoundLastMod = String(rawCompound.generatedAt).slice(0, 10);
   } catch {}
+  try {
+    const runtimeIdx = JSON.parse(await readFile(path.join(ROOT, 'data', 'runtime', 'index.json'), 'utf8'));
+    if (runtimeIdx?.tagCounts) tagCounts = runtimeIdx.tagCounts;
+  } catch {}
 
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_pages.xml'), buildPagesSitemap())) changed.push('sitemap_pages.xml');
-  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap(catLastMod))) changed.push('sitemap_categories.xml');
+  if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap(catLastMod, tagCounts))) changed.push('sitemap_categories.xml');
   if (compoundHubs.length > 0) {
     if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_compound.xml'), buildCompoundSitemap(compoundHubs, compoundLastMod))) {
       changed.push('sitemap_compound.xml');
@@ -611,7 +630,7 @@ async function main() {
   const newCount = latest.filter((video) => !knownIds.has(video.id)).length;
   const removedCount = state.videos.filter((video) => removedIds.has(video.id)).length;
   console.log(`Sitemap refresh complete: ${videos.length} rolling videos (Tier1 pinned=${pinnedEnriched.length}, Tier2 US/EU protected=${protectedPool.length}, Tier3 fresh=${freshTail.length} | ${sitemapVideos.length} genuine AI-enriched in sitemap), ${newCount} new, ${removedCount} removed.`);
-  console.log(`Generated ${keep.size} video sitemap files + sitemap_compound.xml (${compoundHubs.length} compound hubs) + sitemap_eu_locales.xml (${EU_LOCALES.length * (CURATED_CATEGORIES.length + 1)} EU URLs); deleted ${removedFiles} obsolete files.`);
+  console.log(`Generated ${keep.size} video sitemap files + sitemap_compound.xml (${compoundHubs.length} compound hubs) + sitemap_eu_locales.xml (${EU_LOCALES.length * (EU_LOCALIZED_CATEGORIES.length + 1)} EU URLs); deleted ${removedFiles} obsolete files.`);
   console.log(changed.length ? `Changed: ${changed.join(', ')}` : 'No content changes; no deployment is needed.');
 }
 

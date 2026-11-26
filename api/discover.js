@@ -412,7 +412,7 @@ export default async function handler(req, res) {
     const html = await renderCollectionView({
       view: 'jav',
       pathUrl: '/jav',
-      title: 'JAV Code Index — Uncensored & English Sub Japanese HD Videos | LustHub',
+      title: 'JAV Code Index — Uncensored & Eng Sub HD Videos | LustHub',
       h1Html: 'Japanese <span>JAV</span> Code Index — Uncensored &amp; English Sub HD',
       subtitle: 'Direct index of verified Japanese JAV releases by studio code (SSIS, SONE, START, IPZZ, MIDV, JUR, FC2), English subtitles, and uncensored HD streams.',
       description: `Browse ${javIds.length}+ verified Japanese JAV releases by studio code, English subtitles, and uncensored 1080p HD streams on ${SITE_DOMAIN}.`,

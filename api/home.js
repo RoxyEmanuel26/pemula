@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { EU_LOCALES } from '../lib/schema.js';
+import { ALL_LOCALES } from '../lib/schema.js';
 import { getRuntimeIndex } from '../lib/runtime-store.js';
 import { renderHomePage } from '../lib/home-renderer.js';
 
-const SUPPORTED_SET = new Set(EU_LOCALES);
+const SUPPORTED_SET = new Set(ALL_LOCALES);
 
 let cachedLocales = null;
 let cached404 = null;
@@ -29,12 +29,15 @@ export default async function handler(req, res) {
     return res.end(cached404);
   }
 
-  const [locales, index] = await Promise.all([getLocales(), getRuntimeIndex()]);
+  const [locales, index] = await Promise.all([
+    lang === 'en' ? Promise.resolve({}) : getLocales(),
+    getRuntimeIndex(),
+  ]);
   const hasNoindexParam = Boolean(req.query?.q || req.query?.page || req.query?.ref || req.query?.order);
 
   const html = renderHomePage({
     lang,
-    localeCfg: locales[lang],
+    localeCfg: lang === 'en' ? null : locales[lang],
     index,
     hasNoindexParam,
   });

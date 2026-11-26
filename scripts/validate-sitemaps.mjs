@@ -1,6 +1,6 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { ALL_LOCALES, CURATED_CATEGORIES } from '../lib/schema.js';
+import { ALL_LOCALES, EU_LOCALIZED_CATEGORIES } from '../lib/schema.js';
 
 const ROOT = process.cwd();
 const DIR = path.join(ROOT, 'sitemaps');
@@ -51,6 +51,9 @@ for (const name of files) {
       for (const tag of ['video:thumbnail_loc', 'video:title', 'video:description', 'video:player_loc']) {
         if (!block.includes(`<${tag}>`)) errors.push(`${name}: ${location} missing ${tag}`);
       }
+      if (block.includes('<video:duration>0</video:duration>')) {
+        errors.push(`${name}: ${location} has invalid zero video:duration`);
+      }
       const lastmod = block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1];
       if (!/^\d{4}-\d{2}-\d{2}$/.test(lastmod || '')) errors.push(`${name}: ${location} has invalid lastmod`);
     }
@@ -64,7 +67,7 @@ if (!files.includes('sitemap_eu_locales.xml')) {
 if (!files.includes('sitemap_compound.xml')) {
   errors.push('Missing sitemaps/sitemap_compound.xml');
 }
-const expectedLocalizedCount = ALL_LOCALES.length * (CURATED_CATEGORIES.length + 1);
+const expectedLocalizedCount = ALL_LOCALES.length * (EU_LOCALIZED_CATEGORIES.length + 1);
 if (hreflangGraph.size !== expectedLocalizedCount) {
   errors.push(`Expected ${expectedLocalizedCount} hreflang-annotated URLs, found ${hreflangGraph.size}`);
 }

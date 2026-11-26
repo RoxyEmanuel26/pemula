@@ -147,7 +147,7 @@ function renderNotFoundPage(isGone) {
     lang: 'en',
     title: isGone ? `Video Removed (410) | LustHub` : `Page Not Found (404) | LustHub`,
     description: `This video is no longer available on ${SITE_DOMAIN}. Browse thousands of live verified 1080p HD videos.`,
-    canonicalUrl: `${BASE_URL}/`,
+    canonicalUrl: null,
     robots: 'noindex, follow',
     showHeaderAd: false,
     bodyHtml: `
@@ -257,7 +257,16 @@ export default async function handler(req, res) {
   }
 
   const videoSlug = enrichedData?.slug || slugify(videoData?.title || rawSlug.split('-').slice(1).join('-'), 80, videoId);
-  const canonicalUrl = normalizeUrl(`${domain}/v/${videoId}-${videoSlug}`);
+  const expectedSlug = `${videoId}-${videoSlug}`;
+  const canonicalUrl = normalizeUrl(`${domain}/v/${expectedSlug}`);
+
+  // Permanent 301 redirect for wrong/truncated watch slugs (eliminates duplicate /v/ URLs)
+  if ((enrichedData || videoData) && rawSlug !== expectedSlug) {
+    res.statusCode = 301;
+    res.setHeader('Location', canonicalUrl);
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    return res.end();
+  }
 
   const catSlug = CURATED_SET.has(slugify(primaryTag, 40, ''))
     ? slugify(primaryTag, 40, 'viral')

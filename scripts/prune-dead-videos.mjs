@@ -20,12 +20,13 @@ const USER_AGENT = 'lusthub-liveness-bot/1.0 (+https://www.lusthub.my.id/robots.
 
 const args = process.argv.slice(2);
 const CHECK_ALL = args.includes('--all');
+const BACKFILL_MISSING = args.includes('--backfill-missing');
 const DRY_RUN = args.includes('--dry-run');
 const batchIdx = args.indexOf('--batch');
-const BATCH_LIMIT = CHECK_ALL
+const BATCH_LIMIT = (CHECK_ALL || BACKFILL_MISSING)
   ? Number.MAX_SAFE_INTEGER
   : (batchIdx !== -1 ? Math.max(1, parseInt(args[batchIdx + 1], 10) || 500) : 500);
-const CONCURRENCY = Math.min(Math.max(parseInt(process.env.PRUNE_CONCURRENCY || '8', 10), 1), 20);
+const CONCURRENCY = Math.min(Math.max(parseInt(process.env.PRUNE_CONCURRENCY || '10', 10), 1), 20);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -80,22 +81,43 @@ async function checkVideoLiveness(videoId) {
 
 async function main() {
   const db = JSON.parse(await readFile(ENRICHED_PATH, 'utf8'));
-  const entries = Object.values(db.videos || {}).filter(
+  let stateObj = null;
+  const stateById = new Map();
+  try {
+    stateObj = JSON.parse(await readFile(STATE_PATH, 'utf8'));
+    if (Array.isArray(stateObj?.videos)) {
+      for (const v of stateObj.videos) stateById.set(v.id, v);
+    }
+  } catch {}
+
+  let entries = Object.values(db.videos || {}).filter(
     v => v && v.status === 'enriched' && v.model && v.model !== 'mock-enricher' && v.video_id
   );
 
-  // Oldest checked_at first so rolling CI batches check every single video evenly over time
-  entries.sort((a, b) => String(a.checked_at || '').localeCompare(String(b.checked_at || '')));
+  if (BACKFILL_MISSING) {
+    entries = entries.filter(v => {
+      const st = stateById.get(v.video_id);
+      const dur = Number(st?.duration || v.duration || 0);
+      const th = st?.thumbnail || v.thumbnail || '';
+      return dur <= 0 || !th.includes('_360');
+    });
+  } else {
+    // Oldest checked_at first so rolling CI batches check every single video evenly over time
+    entries.sort((a, b) => String(a.checked_at || '').localeCompare(String(b.checked_at || '')));
+  }
   const targets = entries.slice(0, BATCH_LIMIT);
 
-  console.log(`=== EPORNER LIVENESS PRUNER (${CHECK_ALL ? 'FULL AUDIT' : `ROLLING BATCH ${BATCH_LIMIT}`}) ===`);
-  console.log(`Active enriched pool: ${entries.length} | Checking: ${targets.length} | Concurrency: ${CONCURRENCY}`);
+  console.log(`=== EPORNER LIVENESS PRUNER (${BACKFILL_MISSING ? 'BACKFILL MISSING DURATION/THUMB' : (CHECK_ALL ? 'FULL AUDIT' : `ROLLING BATCH ${BATCH_LIMIT}`)}) ===`);
+  console.log(`Active enriched pool targeted: ${targets.length} | Concurrency: ${CONCURRENCY}`);
 
   let cursor = 0;
   let aliveCount = 0;
   let deadCount = 0;
   let unknownCount = 0;
+  let durationBackfilled = 0;
+  let thumbUpgraded = 0;
   const removedIds = new Set();
+  const updatedMeta = new Map();
   const nowIso = new Date().toISOString();
 
   async function worker() {
@@ -107,8 +129,23 @@ async function main() {
       if (result.state === 'alive') {
         aliveCount++;
         entry.checked_at = nowIso;
+        const metaPatch = {};
+        if (result.duration > 0) {
+          if (!entry.duration || Number(entry.duration) <= 0) durationBackfilled++;
+          entry.duration = result.duration;
+          metaPatch.duration = result.duration;
+        }
+        if (result.views > 0) {
+          entry.views = result.views;
+          metaPatch.views = result.views;
+        }
         if (result.thumb && result.thumb.includes('_360') && (!entry.thumbnail || !entry.thumbnail.includes('_360'))) {
           entry.thumbnail = result.thumb;
+          metaPatch.thumbnail = result.thumb;
+          thumbUpgraded++;
+        }
+        if (Object.keys(metaPatch).length > 0) {
+          updatedMeta.set(entry.video_id, metaPatch);
         }
       } else if (result.state === 'dead') {
         deadCount++;
@@ -121,8 +158,8 @@ async function main() {
       }
 
       const done = aliveCount + deadCount + unknownCount;
-      if (done % 500 === 0 || done === targets.length) {
-        console.log(`Progress: ${done}/${targets.length} | alive=${aliveCount} dead=${deadCount} unknown=${unknownCount}`);
+      if (done % 250 === 0 || done === targets.length) {
+        console.log(`Progress: ${done}/${targets.length} | alive=${aliveCount} dead=${deadCount} durFilled=${durationBackfilled} thumb360=${thumbUpgraded} unknown=${unknownCount}`);
       }
     }
   }
@@ -134,25 +171,33 @@ async function main() {
     db.updated_at = nowIso;
     await writeFile(ENRICHED_PATH, JSON.stringify(db, null, 2), 'utf8');
 
-    // Also strip confirmed dead IDs from data/sitemap-state.json immediately
-    if (removedIds.size > 0) {
-      try {
-        const state = JSON.parse(await readFile(STATE_PATH, 'utf8'));
-        if (Array.isArray(state.videos)) {
-          const before = state.videos.length;
-          state.videos = state.videos.filter(v => !removedIds.has(v.id));
-          if (state.videos.length !== before) {
-            await writeFile(STATE_PATH, `${JSON.stringify(state)}\n`, 'utf8');
-            console.log(`Purged ${before - state.videos.length} confirmed dead videos from data/sitemap-state.json.`);
-          }
+    // Sync dead removals AND backfilled duration/views/thumb back into data/sitemap-state.json
+    if (stateObj && Array.isArray(stateObj.videos)) {
+      let stateChanged = false;
+      if (removedIds.size > 0) {
+        const before = stateObj.videos.length;
+        stateObj.videos = stateObj.videos.filter(v => !removedIds.has(v.id));
+        if (stateObj.videos.length !== before) {
+          stateChanged = true;
+          console.log(`Purged ${before - stateObj.videos.length} confirmed dead videos from data/sitemap-state.json.`);
         }
-      } catch (err) {
-        console.warn('Could not update sitemap-state.json:', err.message);
+      }
+      if (updatedMeta.size > 0) {
+        for (const v of stateObj.videos) {
+          const patch = updatedMeta.get(v.id);
+          if (!patch) continue;
+          if (patch.duration && (!v.duration || v.duration <= 0)) { v.duration = patch.duration; stateChanged = true; }
+          if (patch.views && (!v.views || patch.views > v.views)) { v.views = patch.views; stateChanged = true; }
+          if (patch.thumbnail && (!v.thumbnail || !v.thumbnail.includes('_360'))) { v.thumbnail = patch.thumbnail; stateChanged = true; }
+        }
+      }
+      if (stateChanged) {
+        await writeFile(STATE_PATH, `${JSON.stringify(stateObj)}\n`, 'utf8');
       }
     }
   }
 
-  console.log(`Liveness audit complete: checked=${targets.length}, alive=${aliveCount}, dead_removed=${deadCount}, unknown_skipped=${unknownCount}.`);
+  console.log(`Liveness audit complete: checked=${targets.length}, alive=${aliveCount}, dead_removed=${deadCount}, dur_backfilled=${durationBackfilled}, thumb360_upgraded=${thumbUpgraded}, unknown_skipped=${unknownCount}.`);
 }
 
 main().catch((err) => {

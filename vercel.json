@@ -10,7 +10,15 @@
       "includeFiles": "{lib/**,data/runtime/**,data/category-descriptions.json,data/eu-locales.json}"
     }
   },
+  "redirects": [
+    { "source": "/video.html", "destination": "/", "permanent": true },
+    { "source": "/video", "destination": "/", "permanent": true },
+    { "source": "/category.html", "destination": "/categories", "permanent": true },
+    { "source": "/category", "destination": "/categories", "permanent": true }
+  ],
   "rewrites": [
+    { "source": "/", "has": [{ "type": "query", "key": "q" }], "destination": "/api/home?lang=en" },
+    { "source": "/", "has": [{ "type": "query", "key": "page" }], "destination": "/api/home?lang=en" },
     { "source": "/trending", "destination": "/api/discover?view=trending" },
     { "source": "/top-rated", "destination": "/api/discover?view=top-rated" },
     { "source": "/longest", "destination": "/api/discover?view=longest" },
@@ -39,7 +47,9 @@
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+        { "key": "CDN-Cache-Control", "value": "public, max-age=31536000, immutable" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     },
     {
@@ -104,7 +114,7 @@
       ]
     },
     {
-      "source": "/((?!sitemap_index\\.xml|sitemap\\.xml|sitemaps|feed\\.xml|robots\\.txt).*)",
+      "source": "/((?!assets/|sitemap_index\\.xml|sitemap\\.xml|sitemaps|feed\\.xml|robots\\.txt).*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800" },
         { "key": "CDN-Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },

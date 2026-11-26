@@ -4,6 +4,8 @@ import {
   BASE_URL,
   SITE_DOMAIN,
   EU_LOCALES,
+  EU_LOCALIZED_CATEGORIES,
+  REGIONAL_ARCHIVE_HUBS,
   US_EU_CATEGORIES,
   normalizeUrl,
   escapeHtml,
@@ -35,6 +37,8 @@ const CATEGORY_CACHE = new Map();
 const CAT_CACHE_TTL_MS = 30 * 60 * 1000;
 const ALLOWED_ORDERS = new Set(['most-popular', 'top-rated', 'latest', 'longest']);
 const EU_SET = new Set(EU_LOCALES);
+const EU_LOCALIZED_SET = new Set(EU_LOCALIZED_CATEGORIES);
+const REGIONAL_ARCHIVE_SET = new Set(REGIONAL_ARCHIVE_HUBS);
 
 async function getCategoryDescriptions() {
   if (!cachedDescriptions) {
@@ -119,6 +123,15 @@ export default async function handler(req, res) {
   // Permanent 301 redirect for non-canonical slugs (preserves locale prefix)
   if (slug && String(slug).trim() !== cleanSlug) {
     const targetUrl = normalizeUrl(`${domain}${langPrefix}/c/${cleanSlug}${currentPage > 1 ? `?page=${currentPage}` : ''}`);
+    res.statusCode = 301;
+    res.setHeader('Location', targetUrl);
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    return res.end();
+  }
+
+  // Keep 8 regional Indonesian archive hubs strictly on English /c/:slug (301 redirect off European portals)
+  if (lang !== 'en' && REGIONAL_ARCHIVE_SET.has(cleanSlug)) {
+    const targetUrl = normalizeUrl(`${domain}/c/${cleanSlug}`);
     res.statusCode = 301;
     res.setHeader('Location', targetUrl);
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
@@ -475,7 +488,7 @@ export default async function handler(req, res) {
         </nav>
 
         ${subNichePillsHtml ? `<section class="lh-subniche-bar" aria-label="Sub-Niches">
-          <span class="lh-subniche-label">${isActiveCompound ? 'Related Niches:' : `Popular ${escapeHtml(categoryName)} Niches:`}</span>
+          <span class="lh-subniche-label">${escapeHtml(isActiveCompound ? (localeCfg?.relatedNichesLabel || 'Related Niches:') : (localeCfg?.popularNichesPattern ? interpolate(localeCfg.popularNichesPattern, { name: categoryName }) : `Popular ${categoryName} Niches:`))}</span>
           <div class="lh-dir-pills">${subNichePillsHtml}</div>
         </section>` : ''}
 
@@ -494,7 +507,7 @@ export default async function handler(req, res) {
     ogType: 'website',
     ogImage: cards[0]?.thumbnail || `${domain}/assets/icons/og-image.png`,
     robots: robotsValue,
-    hreflangPath: (isIndexable && isCurated && currentPage === 1) ? `/c/${cleanSlug}` : null,
+    hreflangPath: (isIndexable && EU_LOCALIZED_SET.has(cleanSlug) && currentPage === 1) ? `/c/${cleanSlug}` : null,
     relLinksHtml: relLinks.join('\n'),
     schemas,
     activeNav: cleanSlug === 'japanese' ? 'jav' : (cleanSlug === 'viral' ? 'trending' : 'categories'),
@@ -503,7 +516,14 @@ export default async function handler(req, res) {
       trending: localeCfg.navViral || 'Viral',
       categories: localeCfg.navCategories || 'Categories',
       jav: 'JAV',
-      saved: 'Saved',
+      longest: localeCfg.navLongest || 'Full Movies',
+      saved: localeCfg.navSaved || 'Saved',
+    } : {},
+    footerConfig: localeCfg ? {
+      tagline: localeCfg.footerTagline,
+      disclaimer: localeCfg.footerDisclaimer,
+      links: localeCfg.footerLinks,
+      showRegionalArchives: false,
     } : {},
     searchPlaceholder: localeCfg?.searchPlaceholder || 'Search videos, categories, JAV codes...',
     showHeaderAd: true,

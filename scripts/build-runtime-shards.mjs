@@ -124,8 +124,8 @@ async function main() {
           .filter(([q, a]) => q && a)
           .slice(0, 4)
       : [];
-    const views = Number(stateRec?.views || 0);
-    const duration = Number(stateRec?.duration || 0);
+    const views = Number(stateRec?.views || entry.views || 0);
+    const duration = Number(stateRec?.duration || entry.duration || 0);
     const publishedDay = String(stateRec?.published || entry.generated_at || '').slice(0, 10);
 
     const fullCompact = {

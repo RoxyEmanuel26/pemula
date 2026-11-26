@@ -7,7 +7,7 @@
   "outputDirectory": ".",
   "functions": {
     "api/*.js": {
-      "includeFiles": "{index.html,video.html,category.html,404.html,lib/**,data/runtime/**,data/enriched-runtime.json,data/category-descriptions.json,data/eu-locales.json}"
+      "includeFiles": "{lib/**,data/runtime/**,data/category-descriptions.json,data/eu-locales.json}"
     }
   },
   "rewrites": [

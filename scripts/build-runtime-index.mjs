@@ -17,7 +17,7 @@ import {
   isSpamVideoTitle,
   normalizeUrl,
   slugify,
-} from '../api/schema-helper.js';
+} from '../lib/schema.js';
 
 const CURATED_SET = new Set(CURATED_CATEGORIES);
 const ROOT = process.cwd();

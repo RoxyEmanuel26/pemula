@@ -1,6 +1,7 @@
 graphify-out/
 data/sitemap-state.json
 data/enriched-videos.json
+data/enriched-runtime.json
 data/enrich-quota-state.json
 scripts/
 .github/

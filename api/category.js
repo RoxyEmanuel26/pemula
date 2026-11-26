@@ -2,46 +2,33 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   BASE_URL,
+  SITE_DOMAIN,
   EU_LOCALES,
   US_EU_CATEGORIES,
   normalizeUrl,
   escapeHtml,
   decodeMojibake,
   slugify,
+  isSpamVideoTitle,
   formatCategoryName,
-  expandRuntimeVideo,
-  buildHreflangHtml,
-  buildOgLocaleMetaHtml,
-  buildLanguageSwitcherHtml,
+  formatDurationBadge,
+  formatCompactViews,
   createBreadcrumbSchema,
   createItemListSchema,
-} from './schema-helper.js';
+} from '../lib/schema.js';
+import {
+  getRuntimeIndex,
+  getCardsByIds,
+  isEnrichedVideoId,
+} from '../lib/runtime-store.js';
+import { renderPageShell, renderVideoCard } from '../lib/ui-shell.js';
 
-let cachedTemplate = null;
 let cachedDescriptions = null;
 let cachedLocales = null;
-let cachedEnriched = null;
 const CATEGORY_CACHE = new Map();
-const CAT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes server-side in-memory cache
+const CAT_CACHE_TTL_MS = 30 * 60 * 1000;
 const ALLOWED_ORDERS = new Set(['most-popular', 'top-rated', 'latest', 'longest']);
 const EU_SET = new Set(EU_LOCALES);
-
-async function getEnrichedCatalog() {
-  if (!cachedEnriched) {
-    try {
-      const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-runtime.json'), 'utf8');
-      cachedEnriched = JSON.parse(raw);
-    } catch {
-      try {
-        const raw = await readFile(path.join(process.cwd(), 'data', 'enriched-videos.json'), 'utf8');
-        cachedEnriched = JSON.parse(raw);
-      } catch {
-        cachedEnriched = { videos: {}, byTag: {}, featured: [] };
-      }
-    }
-  }
-  return cachedEnriched;
-}
 
 async function getCategoryDescriptions() {
   if (!cachedDescriptions) {
@@ -71,15 +58,7 @@ function interpolate(pattern, vars) {
   return String(pattern || '').replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
 }
 
-function formatDurationMin(sec) {
-  const s = Number(sec || 0);
-  if (!Number.isFinite(s) || s <= 0) return '';
-  const m = Math.floor(s / 60);
-  const rem = s % 60;
-  return `${m}:${String(rem).padStart(2, '0')}`;
-}
-
-function buildSsrPagination(langPrefix, slug, currentPage, totalPages, prevLabel, nextLabel) {
+function buildPaginationHtml(langPrefix, slug, order, currentPage, totalPages, prevLabel, nextLabel) {
   if (totalPages <= 1) return '';
   const maxVisible = 7;
   let pages = [];
@@ -93,23 +72,27 @@ function buildSsrPagination(langPrefix, slug, currentPage, totalPages, prevLabel
     pages.push(totalPages);
   }
 
-  const pageHref = p => p <= 1 ? `${langPrefix}/c/${slug}` : `${langPrefix}/c/${slug}?page=${p}`;
+  const orderSuffix = order !== 'most-popular' ? `&order=${encodeURIComponent(order)}` : '';
+  const pageHref = p => {
+    if (p <= 1) return order !== 'most-popular' ? `${langPrefix}/c/${slug}?order=${encodeURIComponent(order)}` : `${langPrefix}/c/${slug}`;
+    return `${langPrefix}/c/${slug}?page=${p}${orderSuffix}`;
+  };
+
   const parts = [];
   if (currentPage > 1) {
-    parts.push(`<a class="page-btn" href="${pageHref(currentPage - 1)}" data-page="${currentPage - 1}">${escapeHtml(prevLabel)}</a>`);
+    parts.push(`<a class="lh-page-btn" href="${escapeHtml(pageHref(currentPage - 1))}">${escapeHtml(prevLabel)}</a>`);
   }
   for (const p of pages) {
     if (p === '...') {
-      parts.push('<span style="color:#555;padding:0 5px;line-height:40px">…</span>');
+      parts.push('<span style="color:var(--text-muted);padding:0 4px;">&hellip;</span>');
     } else {
-      const cls = p === currentPage ? 'page-btn active' : 'page-btn';
-      parts.push(`<a class="${cls}" href="${pageHref(p)}" data-page="${p}">${p}</a>`);
+      parts.push(`<a class="lh-page-btn${p === currentPage ? ' is-active' : ''}" href="${escapeHtml(pageHref(p))}"${p === currentPage ? ' aria-current="page"' : ''}>${p}</a>`);
     }
   }
   if (currentPage < totalPages) {
-    parts.push(`<a class="page-btn" href="${pageHref(currentPage + 1)}" data-page="${currentPage + 1}">${escapeHtml(nextLabel)}</a>`);
+    parts.push(`<a class="lh-page-btn" href="${escapeHtml(pageHref(currentPage + 1))}">${escapeHtml(nextLabel)}</a>`);
   }
-  return parts.join('\n');
+  return `<nav class="lh-pagination" aria-label="Pagination">${parts.join('')}</nav>`;
 }
 
 export default async function handler(req, res) {
@@ -121,15 +104,13 @@ export default async function handler(req, res) {
   let decodedSlug = String(slug || '').trim();
   try {
     decodedSlug = decodeURIComponent(decodedSlug);
-  } catch {
-    // Keep raw value if malformed percent-encoding
-  }
+  } catch {}
   const cleanSlug = slugify(decodedSlug, 60, 'viral');
   const currentPage = Math.max(1, Math.min(100, parseInt(String(rawPageParam || '1'), 10) || 1));
   const order = ALLOWED_ORDERS.has(String(rawOrderParam || '')) ? String(rawOrderParam) : 'most-popular';
   const domain = BASE_URL;
 
-  // Permanent 301 redirect when URL contains spaces, uppercase, or non-canonical punctuation (preserves locale prefix)
+  // Permanent 301 redirect for non-canonical slugs (preserves locale prefix)
   if (slug && String(slug).trim() !== cleanSlug) {
     const targetUrl = normalizeUrl(`${domain}${langPrefix}/c/${cleanSlug}${currentPage > 1 ? `?page=${currentPage}` : ''}`);
     res.statusCode = 301;
@@ -138,10 +119,10 @@ export default async function handler(req, res) {
     return res.end();
   }
 
-  const [descriptions, euLocales, enrichedDb] = await Promise.all([
+  const [descriptions, euLocales, index] = await Promise.all([
     getCategoryDescriptions(),
     lang === 'en' ? Promise.resolve({}) : getEuLocales(),
-    getEnrichedCatalog(),
+    getRuntimeIndex(),
   ]);
   const localeCfg = lang === 'en' ? null : (euLocales[lang] || null);
   const isCurated = Boolean(descriptions[cleanSlug]);
@@ -164,20 +145,16 @@ export default async function handler(req, res) {
       ? interpolate(localeCfg.categoryDescPagePattern, { name: categoryName, page: currentPage })
       : interpolate(localeCfg.categoryDescPattern, { name: categoryName }))
     : (currentPage > 1
-      ? `Watch page ${currentPage} of free ${categoryName} adult videos in full 1080p HD on lusthub.my.id. Fast mobile streaming with zero account signups.`
-      : `Watch the best free ${categoryName} adult videos and trending HD leaks on lusthub.my.id. Instant US & EU streaming with zero signups.`);
+      ? `Watch page ${currentPage} of free ${categoryName} adult videos in full 1080p HD on ${SITE_DOMAIN}. Fast mobile streaming with zero signups.`
+      : `Watch the best free ${categoryName} adult videos and trending 4K/HD clips on ${SITE_DOMAIN}. Instant US & EU streaming with zero signups.`);
 
-  // Google pagination best practice: self-referencing canonical per paginated URL (ignoring sort params)
   const canonicalUrl = normalizeUrl(
     currentPage > 1
       ? `${domain}${langPrefix}/c/${cleanSlug}?page=${currentPage}`
       : `${domain}${langPrefix}/c/${cleanSlug}`
   );
 
-  if (!cachedTemplate) {
-    cachedTemplate = await readFile(path.join(process.cwd(), 'category.html'), 'utf8');
-  }
-
+  // Fetch live upstream API videos (cached 30 min in memory)
   let liveApiVideos = [];
   let totalPages = 1;
   let totalCount = 0;
@@ -195,7 +172,7 @@ export default async function handler(req, res) {
       const apiUrl = `https://www.eporner.com/api/v2/video/search/?query=${encodeURIComponent(queryTerm)}&per_page=24&page=${currentPage}&order=${encodeURIComponent(order)}&thumbsize=big&gay=0&lq=1&format=json`;
       const apiRes = await fetch(apiUrl, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'lusthub-bot/2.0 (+https://www.lusthub.my.id/robots.txt)' },
+        headers: { 'User-Agent': 'lusthub-bot/3.0 (+https://www.lusthub.my.id/robots.txt)' },
       });
       clearTimeout(timeout);
       if (apiRes.ok) {
@@ -208,80 +185,82 @@ export default async function handler(req, res) {
         }
       }
     } catch {
-      // Upstream timeout or network error — gracefully degrade
+      // Upstream timeout — gracefully fallback to sharded index
     }
   }
 
-  // Hybrid Enriched-First Grid (eliminates 99% orphaned sitemap videos & crawl budget waste on noindex links):
-  // - On Page 1 of curated hubs, lead with up to 16 verified alive AI-enriched videos matching this hub (dofollow)
-  // - Deduplicate & pad remaining slots up to 24 with live Eporner results (marked rel="nofollow" when un-enriched)
-  const videosMap = enrichedDb?.videos || {};
-  const byTag = enrichedDb?.byTag || {};
-  const featured = Array.isArray(enrichedDb?.featured) ? enrichedDb.featured : [];
-
-  const isEnrichedId = (id) => Boolean(expandRuntimeVideo(videosMap[id]));
-
-  let categoryVideos = [];
-  const seenVideoIds = new Set();
+  // Hybrid Enriched-First Grid (up to 16 verified alive AI-enriched videos dofollow on Page 1;
+  // un-enriched live API cards carry rel="nofollow" to protect crawl budget!)
+  const cards = [];
+  const seenIds = new Set();
 
   if (isCurated && currentPage === 1 && order === 'most-popular') {
-    const directIds = Array.isArray(byTag[cleanSlug]) ? byTag[cleanSlug] : [];
-    const enrichedPicks = directIds
-      .slice(0, 16)
-      .map(id => expandRuntimeVideo(videosMap[id]))
-      .filter(v => v && v.title && v.thumbnail);
-
+    const directIds = (index?.byTag?.[cleanSlug] || []).slice(0, 16);
+    const enrichedPicks = await getCardsByIds(directIds);
     for (const v of enrichedPicks) {
-      seenVideoIds.add(v.video_id);
-      categoryVideos.push({
-        id: v.video_id,
-        slug: v.slug,
+      if (!v.title || !v.thumbnail || seenIds.has(v.id)) continue;
+      seenIds.add(v.id);
+      cards.push({
+        id: v.id,
         title: v.title,
-        default_thumb: { src: v.thumbnail },
-        added: v.generated_at || '',
-        length_min: formatDurationMin(v.duration),
-        views: v.views || 0,
+        slug: v.slug,
+        thumbnail: v.thumbnail,
+        duration: v.duration,
+        views: v.views,
+        date: v.date,
+        nofollow: false,
         _isEnriched: true,
       });
     }
   }
 
   for (const v of liveApiVideos) {
-    if (categoryVideos.length >= 24) break;
-    if (!v || !v.id || seenVideoIds.has(v.id)) continue;
-    seenVideoIds.add(v.id);
-    categoryVideos.push({
-      ...v,
-      _isEnriched: isEnrichedId(v.id),
+    if (cards.length >= 24) break;
+    if (!v || !v.id || seenIds.has(v.id)) continue;
+    const title = decodeMojibake(v.title || 'Untitled');
+    if (isSpamVideoTitle(title)) continue;
+    seenIds.add(v.id);
+    const enriched = await isEnrichedVideoId(v.id);
+    cards.push({
+      id: v.id,
+      title,
+      slug: slugify(title, 80, v.id),
+      thumbnail: v.default_thumb?.src || v.thumbs?.[0]?.src || '/assets/icons/favicon-32x32.png',
+      durationText: v.length_min || formatDurationBadge(v.length_sec),
+      viewsText: formatCompactViews(v.views),
+      date: (v.added || '').slice(0, 10),
+      nofollow: !enriched,
+      _isEnriched: enriched,
     });
   }
 
-  // Resilient O(1) fallback if upstream Eporner returned 0 results on a curated hub (prevents Soft-404 crawls)
-  if (categoryVideos.length === 0 && isCurated) {
-    const fallbackIds = [...new Set([...(byTag[cleanSlug] || []), ...featured])];
+  // Resilient O(1) fallback if upstream Eporner returned 0 results on a curated hub
+  if (cards.length === 0 && isCurated) {
+    const fallbackIds = [...new Set([...(index?.byTag?.[cleanSlug] || []), ...(index?.featured || [])])];
     const start = (currentPage - 1) * 24;
-    const sliced = fallbackIds.slice(start, start + 24)
-      .map(id => expandRuntimeVideo(videosMap[id]))
-      .filter(Boolean);
-    categoryVideos = sliced.map(v => ({
-      id: v.video_id,
-      slug: v.slug,
-      title: v.title,
-      default_thumb: { src: v.thumbnail },
-      added: v.generated_at || '',
-      length_min: formatDurationMin(v.duration),
-      views: v.views || 0,
-      _isEnriched: true,
-    }));
+    const picked = await getCardsByIds(fallbackIds.slice(start, start + 24));
+    for (const v of picked) {
+      cards.push({
+        id: v.id,
+        title: v.title,
+        slug: v.slug,
+        thumbnail: v.thumbnail,
+        duration: v.duration,
+        views: v.views,
+        date: v.date,
+        nofollow: false,
+        _isEnriched: true,
+      });
+    }
     totalCount = Math.max(totalCount, fallbackIds.length);
     totalPages = Math.max(1, Math.min(100, Math.ceil(totalCount / 24)));
   }
 
   const hasNoindexParam = Boolean(req.query?.ref || req.query?.q);
-  const isIndexable = order === 'most-popular' && !hasNoindexParam && (isCurated || (lang === 'en' && categoryVideos.length >= 4));
-  const robotsMeta = isIndexable
-    ? '<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">'
-    : '<meta name="robots" content="noindex, follow">';
+  const isIndexable = currentPage === 1 && order === 'most-popular' && !hasNoindexParam && (isCurated || (lang === 'en' && cards.length >= 4));
+  const robotsValue = isIndexable
+    ? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+    : 'noindex, follow';
 
   const homeLabel = localeCfg?.homeBreadcrumb || 'Home';
   const videosWord = localeCfg?.videosWord || 'Videos';
@@ -296,7 +275,6 @@ export default async function handler(req, res) {
     breadcrumbItems.push({ name: `${pageWord} ${currentPage}`, url: canonicalUrl });
   }
   const breadcrumbSchema = createBreadcrumbSchema(breadcrumbItems);
-
   const collectionSchema = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -306,44 +284,32 @@ export default async function handler(req, res) {
     'inLanguage': lang,
   };
 
-  // Prefer verified indexable AI-enriched items in ItemList JSON-LD so structured data matches sitemaps
-  const enrichedForSchema = categoryVideos.filter(v => v._isEnriched);
-  const schemaPool = enrichedForSchema.length >= 6 ? enrichedForSchema : categoryVideos;
-  const schemaItems = schemaPool.slice(0, 24).map(v => {
-    const title = decodeMojibake(v.title || 'Untitled');
-    const vSlug = v.slug || slugify(title, 80, v.id);
-    return {
-      title,
-      url: `/v/${v.id}-${vSlug}`,
-      image: v.default_thumb?.src || (v.thumbs && v.thumbs[0]?.src) || undefined,
-    };
-  });
-
+  const enrichedForSchema = cards.filter(c => c._isEnriched);
+  const schemaPool = enrichedForSchema.length >= 6 ? enrichedForSchema : cards;
   const itemListSchema = createItemListSchema(
     `${categoryName} ${videosWord}${pageSuffix}`,
     metaDesc,
-    schemaItems
+    schemaPool.slice(0, 24).map(c => ({
+      title: c.title,
+      url: `/v/${c.id}-${c.slug}`,
+      image: c.thumbnail,
+    }))
   );
   itemListSchema.inLanguage = lang;
 
-  // Editorial & FAQ only rendered fully on Page 1 to prevent paginated duplicate boilerplate
-  let faqSchemaScript = '';
-  let faqHtml = '';
-  let editorialHtml = '';
+  const schemas = [breadcrumbSchema, collectionSchema, itemListSchema];
 
+  // Editorial & FAQ on Page 1
   const crossLinksHtml = US_EU_CATEGORIES
     .filter(s => s !== cleanSlug)
-    .slice(0, 14)
+    .slice(0, 16)
     .map(s => {
       const label = localeCfg?.categories?.[s]?.name || formatCategoryName(s);
-      return `<a href="${langPrefix}/c/${s}" style="display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(232,168,0,0.12);color:#e8a800;font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid rgba(232,168,0,0.25);">${escapeHtml(label)}</a>`;
+      return `<a href="${langPrefix}/c/${escapeHtml(s)}" class="lh-dir-pill">${escapeHtml(label)}</a>`;
     })
-    .join('\n            ');
+    .join('');
 
-  const exploreLabel = localeCfg?.exploreHubsLabel || 'Explore Hubs:';
-  const relatedLabel = localeCfg?.relatedHubsLabel || 'Related Hubs:';
-  const faqHeading = localeCfg?.faqHeading || 'Frequently Asked Questions';
-
+  let editorialSectionHtml = '';
   if (currentPage === 1) {
     let editorial;
     if (localeCfg) {
@@ -358,255 +324,152 @@ export default async function handler(req, res) {
       };
     } else {
       editorial = descriptions[cleanSlug] || {
-        title: `Explore Free ${categoryName} HD Videos & Leaks`,
+        title: `Free ${categoryName} HD Videos & Curated Archive`,
         paragraphs: [
-          `Browse our curated collection of ${categoryName} adult videos and viral leaks on lusthub.my.id. Stream verified clips and top-rated uploads daily in 1080p high definition.`,
-          `Enjoy rapid mobile and desktop streaming with zero account registration or mandatory downloads. Sort videos by Most Popular, Top Rated, Latest, or Longest.`,
+          `Browse our curated collection of ${categoryName} adult videos on ${SITE_DOMAIN}. Stream live-verified clips daily in 1080p high definition.`,
+          `Enjoy fast mobile and desktop streaming with zero account registration or mandatory software downloads.`,
         ],
       };
     }
 
-    editorialHtml = `
-    <section class="category-editorial" id="categoryEditorial">
-        <h2>${escapeHtml(editorial.title)}</h2>
-        ${editorial.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('\n        ')}
-        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
-            <span style="color:#888;font-size:0.8rem;font-weight:600;margin-right:4px;">${escapeHtml(exploreLabel)}</span>
-            ${crossLinksHtml}
-        </div>
-    </section>`;
-
     const normalizedFaq = Array.isArray(editorial.faq)
-      ? editorial.faq
-          .map(item => ({
-            question: item.question || item.q || '',
-            answer: item.answer || item.a || '',
-          }))
-          .filter(item => item.question && item.answer)
+      ? editorial.faq.map(f => ({ question: f.question || f.q || '', answer: f.answer || f.a || '' })).filter(f => f.question && f.answer)
       : [];
 
+    let faqGridHtml = '';
     if (normalizedFaq.length > 0) {
-      const faqSchema = {
+      schemas.push({
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
         'inLanguage': lang,
-        'mainEntity': normalizedFaq.map(item => ({
+        'mainEntity': normalizedFaq.map(f => ({
           '@type': 'Question',
-          'name': item.question,
-          'acceptedAnswer': {
-            '@type': 'Answer',
-            'text': item.answer,
-          },
+          'name': f.question,
+          'acceptedAnswer': { '@type': 'Answer', 'text': f.answer },
         })),
-      };
-      faqSchemaScript = `\n    <script type="application/ld+json">${JSON.stringify(faqSchema).replace(/</g, '\\u003c')}</script>`;
-
-      const faqItemsHtml = normalizedFaq.map(item => `
-        <div class="faq-item">
-            <h3 class="faq-question">${escapeHtml(item.question)}</h3>
-            <p class="faq-answer">${escapeHtml(item.answer)}</p>
-        </div>`).join('');
-
-      faqHtml = `
-    <section class="category-faq-section" id="categoryFaq">
-        <h2>${escapeHtml(faqHeading)}</h2>
-        <div class="faq-list">
-${faqItemsHtml}
-        </div>
-    </section>`;
+      });
+      faqGridHtml = `<h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-top:22px;">${escapeHtml(localeCfg?.faqHeading || 'Frequently Asked Questions')}</h3>
+          <div class="lh-faq-grid">
+            ${normalizedFaq.map(f => `<div class="lh-faq-item"><h3>${escapeHtml(f.question)}</h3><p>${escapeHtml(f.answer)}</p></div>`).join('')}
+          </div>`;
     }
+
+    editorialSectionHtml = `
+        <section class="lh-section-card">
+          <h2>${escapeHtml(editorial.title)}</h2>
+          ${editorial.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('\n          ')}
+          <div style="margin-top:16px;">
+            <span style="display:block;font-size:0.78rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">${escapeHtml(localeCfg?.exploreHubsLabel || 'Explore Related Hubs')}</span>
+            <div class="lh-dir-pills">${crossLinksHtml}</div>
+          </div>
+          ${faqGridHtml}
+        </section>`;
   } else {
-    const returnText = localeCfg?.returnPage1Text || 'Return to Page 1';
-    editorialHtml = `
-    <section class="category-editorial" id="categoryEditorial">
-        <h2>${escapeHtml(categoryName)} ${escapeHtml(videosWord)} — ${escapeHtml(pageWord)} ${currentPage} / ${totalPages}</h2>
-        <p>${escapeHtml(metaDesc)} <a href="${langPrefix}/c/${escapeHtml(cleanSlug)}" style="color:#e8a800;">${escapeHtml(returnText)}</a></p>
-        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
-            <span style="color:#888;font-size:0.8rem;font-weight:600;margin-right:4px;">${escapeHtml(relatedLabel)}</span>
-            ${crossLinksHtml}
-        </div>
-    </section>`;
+    editorialSectionHtml = `
+        <section class="lh-section-card">
+          <h2>${escapeHtml(categoryName)} ${escapeHtml(videosWord)} — ${escapeHtml(pageWord)} ${currentPage} / ${totalPages}</h2>
+          <p>${escapeHtml(metaDesc)} <a href="${langPrefix}/c/${escapeHtml(cleanSlug)}" style="color:var(--accent);font-weight:600;">${escapeHtml(localeCfg?.returnPage1Text || 'Return to Page 1')}</a></p>
+          <div class="lh-dir-pills" style="margin-top:12px;">${crossLinksHtml}</div>
+        </section>`;
   }
 
-  const schemaScript = `
-    <script type="application/ld+json">${JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c')}</script>
-    <script type="application/ld+json">${JSON.stringify(collectionSchema).replace(/</g, '\\u003c')}</script>
-    <script type="application/ld+json">${JSON.stringify(itemListSchema).replace(/</g, '\\u003c')}</script>${faqSchemaScript}
-  `;
-
-  // Emit bidirectional hreflang ONLY for Page 1 indexable curated hubs
-  const hreflangTags = (isIndexable && isCurated && currentPage === 1)
-    ? buildHreflangHtml(`/c/${cleanSlug}`)
-    : '';
-  const ogLocaleTags = buildOgLocaleMetaHtml(lang);
-
-  // Pass safe locale metadata to category.html client-side pagination/sorting script
-  const clientLocalePayload = {
-    lang,
-    langPrefix,
-    categoryName,
-    videosWord,
-    pageWord,
-    prevLabel: localeCfg?.prevLabel || '← Prev',
-    nextLabel: localeCfg?.nextLabel || 'Next →',
-    titlePattern: localeCfg?.categoryTitlePattern || 'Free {name} HD Videos{pageSuffix} | LustHub',
-    pageSuffixPattern: localeCfg?.categoryPageSuffix || ' — Page {page}',
-    heroPrefix: localeCfg?.categoryHeroPrefix || 'Free ',
-    heroSuffix: localeCfg?.categoryHeroSuffix || ' Videos',
-    homeLabel,
-    homeHref,
+  const sortLabels = localeCfg?.sortOptions || {
+    'most-popular': 'Most Popular',
+    'top-rated': 'Top Rated',
+    'latest': 'Latest',
+    'longest': 'Longest',
   };
-  const clientLocaleScript = `<script>window.__LOCALE_META__=${JSON.stringify(clientLocalePayload).replace(/</g, '\\u003c')};</script>`;
-
-  let html = cachedTemplate;
-
-  html = html.replace(/<html\s+lang=["'][^"']+["']/i, `<html lang="${lang}"`);
-  html = html.replace(/<meta\s+http-equiv=["']content-language["']\s+content=["'][^"']+["']\s*>/i, `<meta http-equiv="content-language" content="${lang}">`);
-  html = html.replace(/<meta\s+name=["']robots["']\s+content=["'][\s\S]*?["']\s*>/i, robotsMeta);
-  html = html.replace(/<title\s+id=["']pageTitle["'][^>]*>.*?<\/title>/i, `<title id="pageTitle">${escapeHtml(pageTitle)}</title>`);
-  html = html.replace(/<meta\s+id=["']pageDesc["']\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*>/i, `<meta id="pageDesc" name="description" content="${escapeHtml(metaDesc)}">`);
-  html = html.replace(/<link\s+id=["']canonicalTag["']\s+rel=["']canonical["']\s+href=["'][\s\S]*?["']\s*>/i, `<link id="canonicalTag" rel="canonical" href="${canonicalUrl}">`);
-
-  const topThumb = normalizeUrl(
-    categoryVideos[0]?.default_thumb?.src ||
-    categoryVideos[0]?.thumbs?.[0]?.src ||
-    `${domain}/assets/icons/og-image.png`
-  );
-
-  html = html.replace(/<meta\s+id=["']ogTitle["'][^>]*>/i, `<meta id="ogTitle" property="og:title" content="${escapeHtml(pageTitle)}">`);
-  html = html.replace(/<meta\s+id=["']ogDesc["'][^>]*>/i, `<meta id="ogDesc" property="og:description" content="${escapeHtml(metaDesc)}">`);
-  html = html.replace(/<meta\s+id=["']ogUrl["'][^>]*>/i, `<meta id="ogUrl" property="og:url" content="${canonicalUrl}">`);
-  html = html.replace(/<meta\s+id=["']ogImage["'][^>]*>/i, `<meta id="ogImage" property="og:image" content="${escapeHtml(topThumb)}">`);
-  html = html.replace(/<meta\s+id=["']twitterTitle["'][^>]*>/i, `<meta id="twitterTitle" name="twitter:title" content="${escapeHtml(pageTitle)}">`);
-  html = html.replace(/<meta\s+id=["']twitterDesc["'][^>]*>/i, `<meta id="twitterDesc" name="twitter:description" content="${escapeHtml(metaDesc)}">`);
-  html = html.replace(/<meta\s+id=["']twitterImage["'][^>]*>/i, `<meta id="twitterImage" name="twitter:image" content="${escapeHtml(topThumb)}">`);
-
-  // Header brand link + language switcher (when curated hub)
-  const langSwitcherHtml = isCurated ? buildLanguageSwitcherHtml(lang, `/c/${cleanSlug}`) : '';
-  html = html.replace(
-    /<div class="header-content">\s*<a href="\/" class="logo">lusthub<span>\.my\.id<\/span><\/a>\s*<\/div>/i,
-    `<div class="header-content" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">\n            <a href="${escapeHtml(homeHref)}" class="logo">lusthub<span>.my.id</span></a>\n            ${langSwitcherHtml}\n        </div>`
-  );
+  const sortOptionsHtml = ['most-popular', 'top-rated', 'latest', 'longest'].map(ord => {
+    const href = ord === 'most-popular' ? `${langPrefix}/c/${cleanSlug}` : `${langPrefix}/c/${cleanSlug}?order=${ord}`;
+    return `<option value="${escapeHtml(href)}"${order === ord ? ' selected' : ''}>${escapeHtml(sortLabels[ord])}</option>`;
+  }).join('');
 
   const heroPrefix = localeCfg?.categoryHeroPrefix || 'Free ';
   const heroSuffix = localeCfg?.categoryHeroSuffix || ' Videos';
-  html = html.replace(
-    /<h1\s+id=["']heroTitle["'][^>]*>[\s\S]*?<\/h1>/i,
-    `<h1 id="heroTitle">${escapeHtml(heroPrefix)}<span>${escapeHtml(categoryName)}</span>${escapeHtml(heroSuffix)}${escapeHtml(pageSuffix)}</h1>`
-  );
-  html = html.replace(
-    /<p\s+id=["']heroDesc["'][^>]*>[\s\S]*?<\/p>/i,
-    `<p id="heroDesc">${escapeHtml(metaDesc)}</p>`
-  );
-  html = html.replace(
-    /<nav class="category-breadcrumb" aria-label="Breadcrumb">[\s\S]*?<\/nav>/i,
-    `<nav class="category-breadcrumb" aria-label="Breadcrumb">\n                <a href="${escapeHtml(homeHref)}">${escapeHtml(homeLabel)}</a> &rsaquo; <span id="breadcrumbKeyword">${escapeHtml(categoryName)}</span>\n            </nav>`
-  );
-
-  if (localeCfg?.sortOptions) {
-    html = html.replace(
-      /<select class="sort-select" id="sortSelect" onchange="changeSort\(this\.value\)">[\s\S]*?<\/select>/i,
-      `<select class="sort-select" id="sortSelect" onchange="changeSort(this.value)">
-                <option value="most-popular"${order === 'most-popular' ? ' selected' : ''}>${escapeHtml(localeCfg.sortOptions['most-popular'])}</option>
-                <option value="top-rated"${order === 'top-rated' ? ' selected' : ''}>${escapeHtml(localeCfg.sortOptions['top-rated'])}</option>
-                <option value="latest"${order === 'latest' ? ' selected' : ''}>${escapeHtml(localeCfg.sortOptions['latest'])}</option>
-                <option value="longest"${order === 'longest' ? ' selected' : ''}>${escapeHtml(localeCfg.sortOptions['longest'])}</option>
-            </select>`
-    );
+  let cardsGridHtml;
+  if (cards.length > 0) {
+    const firstHalf = cards.slice(0, 12).map((c, idx) => renderVideoCard(c, idx)).join('\n          ');
+    const secondHalf = cards.slice(12).map((c, idx) => renderVideoCard(c, idx + 12)).join('\n          ');
+    cardsGridHtml = `<div class="lh-grid">${firstHalf}\n          <div class="lh-ad-slot-content ad-space" id="adBannerIngrid" style="grid-column:1 / -1;margin:8px 0;"></div>\n          ${secondHalf}</div>`;
+  } else {
+    cardsGridHtml = `<div class="lh-empty-box">No videos found for ${escapeHtml(categoryName)}. <a href="${escapeHtml(homeHref)}" style="color:var(--accent);">Explore Featured Videos</a></div>`;
   }
 
-  if (totalCount > 0) {
-    const totalWord = localeCfg?.totalWord || 'Total';
-    const freeHdBadge = localeCfg?.freeHdBadge || 'Free HD Streaming';
-    html = html.replace(
-      /<div class="category-stats" id="categoryStats" style="display:none">[\s\S]*?<\/div>/i,
-      `<div class="category-stats" id="categoryStats">
-            <div>${escapeHtml(totalWord)}: <span id="statTotal">${totalCount.toLocaleString('en-US')}</span> ${escapeHtml(videosWord.toLowerCase())}</div>
-            <div>${escapeHtml(pageWord)}: <span id="statPage">${currentPage} / ${totalPages}</span></div>
-            <div>${escapeHtml(freeHdBadge)}</div>
-        </div>`
-    );
-  }
-
-  html = html.replace(
-    /<section\s+class=["']category-editorial["']\s+id=["']categoryEditorial["'][^>]*>[\s\S]*?<\/section>/i,
-    editorialHtml
+  const paginationHtml = buildPaginationHtml(
+    langPrefix,
+    cleanSlug,
+    order,
+    currentPage,
+    totalPages,
+    localeCfg?.prevLabel || 'Prev',
+    localeCfg?.nextLabel || 'Next'
   );
 
-  if (faqHtml) {
-    html = html.replace(
-      /<section\s+class=["']category-faq-section["']\s+id=["']categoryFaq["'][^>]*><\/section>/i,
-      faqHtml
-    );
-  }
-
-  if (categoryVideos.length > 0) {
-    const cardsHtml = categoryVideos.map((v, idx) => {
-      const title = escapeHtml(decodeMojibake(v.title || 'Untitled'));
-      const vSlug = v.slug || slugify(v.title, 80, v.id);
-      const href = `/v/${v.id}-${vSlug}`;
-      const thumb = v.default_thumb?.src || (v.thumbs && v.thumbs[0]?.src) || '/assets/icons/favicon-32x32.png';
-      const dur = v.length_min || '';
-      const viewsNum = parseInt(String(v.views || '0').replace(/\D/g, ''), 10) || 0;
-      const metaParts = [v.added ? escapeHtml(v.added.slice(0, 10)) : '', viewsNum > 0 ? `👁 ${viewsNum.toLocaleString('en-US')}` : ''].filter(Boolean).join(' • ');
-      const priorityAttr = idx < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
-      const relAttr = v._isEnriched ? '' : ' rel="nofollow"';
-      return `
-        <a href="${href}"${relAttr} class="video-card" aria-label="${title}">
-          <div class="video-thumb-wrap">
-            <img src="${escapeHtml(thumb)}" alt="${title}" ${priorityAttr} width="320" height="180" decoding="async" style="aspect-ratio: 16/9; width: 100%; height: auto; object-fit: cover;">
-            ${dur ? `<span class="video-duration">${escapeHtml(dur)}</span>` : ''}
-          </div>
-          <div class="video-card-body">
-            <div class="video-card-title">${title}</div>
-            <div class="video-card-meta">${metaParts}</div>
-          </div>
-        </a>`;
-    }).join('\n');
-
-    html = html.replace(
-      /(<div[^>]*id=["']videoGrid["'][^>]*>)/i,
-      `$1\n${cardsHtml}`
-    );
-
-    html = html.replace(
-      '<div id="loadingState" class="loading-state">',
-      '<div id="loadingState" class="loading-state" style="display:none">'
-    );
-
-    const paginationHtml = buildSsrPagination(
-      langPrefix,
-      cleanSlug,
-      currentPage,
-      totalPages,
-      clientLocalePayload.prevLabel,
-      clientLocalePayload.nextLabel
-    );
-    if (paginationHtml) {
-      html = html.replace(
-        '<div class="pagination" id="pagination"></div>',
-        `<div class="pagination" id="pagination">\n${paginationHtml}\n</div>`
-      );
-    }
-  }
-
-  // Add rel="prev" / rel="next", og:locale, hreflang, client locale config, and JSON-LD
   const relLinks = [];
   if (currentPage > 1) {
-    const prevHref = currentPage === 2
-      ? `${domain}${langPrefix}/c/${cleanSlug}`
-      : `${domain}${langPrefix}/c/${cleanSlug}?page=${currentPage - 1}`;
-    relLinks.push(`    <link rel="prev" href="${prevHref}">`);
+    const prevHref = currentPage === 2 ? `${domain}${langPrefix}/c/${cleanSlug}` : `${domain}${langPrefix}/c/${cleanSlug}?page=${currentPage - 1}`;
+    relLinks.push(`    <link rel="prev" href="${escapeHtml(prevHref)}">`);
   }
   if (currentPage < totalPages) {
-    relLinks.push(`    <link rel="next" href="${domain}${langPrefix}/c/${cleanSlug}?page=${currentPage + 1}">`);
+    relLinks.push(`    <link rel="next" href="${escapeHtml(`${domain}${langPrefix}/c/${cleanSlug}?page=${currentPage + 1}`)}">`);
   }
 
-  const headInject = [ogLocaleTags, hreflangTags, relLinks.join('\n'), clientLocaleScript, schemaScript]
-    .filter(Boolean)
-    .join('\n');
+  const bodyHtml = `
+        <nav class="lh-breadcrumb" aria-label="Breadcrumb">
+          <a href="${escapeHtml(homeHref)}">${escapeHtml(homeLabel)}</a>
+          <span>/</span>
+          <span style="color:var(--text-secondary);">${escapeHtml(categoryName)}</span>
+        </nav>
 
-  html = html.replace('</head>', `${headInject}\n</head>`);
+        <section class="lh-hero-bar">
+          <div>
+            <h1 class="lh-page-title">${escapeHtml(heroPrefix)}<span>${escapeHtml(categoryName)}</span>${escapeHtml(heroSuffix)}${escapeHtml(pageSuffix)}</h1>
+            <p class="lh-page-subtitle">${escapeHtml(metaDesc)}</p>
+          </div>
+          <div class="lh-stats-row">
+            ${totalCount > 0 ? `<span class="lh-stat-chip">${totalCount.toLocaleString('en-US')} ${escapeHtml(videosWord.toLowerCase())}</span>` : ''}
+            <span class="lh-stat-chip">${escapeHtml(pageWord)} ${currentPage} / ${totalPages}</span>
+            <select class="lh-select" aria-label="Sort videos" onchange="if(this.value)window.location.href=this.value">
+              ${sortOptionsHtml}
+            </select>
+          </div>
+        </section>
+
+        <nav class="lh-rail-scroll" aria-label="Related Categories">
+          ${US_EU_CATEGORIES.slice(0, 18).map(s => `<a href="${langPrefix}/c/${escapeHtml(s)}" class="lh-cat-pill${s === cleanSlug ? ' is-active' : ''}">${escapeHtml(localeCfg?.categories?.[s]?.name || formatCategoryName(s))}</a>`).join('')}
+        </nav>
+
+        <section aria-label="${escapeHtml(categoryName)} Video Grid">
+          ${cardsGridHtml}
+        </section>
+
+        ${paginationHtml}
+        ${editorialSectionHtml}`;
+
+  const html = renderPageShell({
+    lang,
+    title: pageTitle,
+    description: metaDesc,
+    canonicalUrl,
+    ogType: 'website',
+    ogImage: cards[0]?.thumbnail || `${domain}/assets/icons/og-image.png`,
+    robots: robotsValue,
+    hreflangPath: (isIndexable && isCurated && currentPage === 1) ? `/c/${cleanSlug}` : null,
+    relLinksHtml: relLinks.join('\n'),
+    schemas,
+    activeNav: cleanSlug === 'japanese' ? 'jav' : (cleanSlug === 'viral' ? 'trending' : 'categories'),
+    navLabels: localeCfg ? {
+      home: localeCfg.homeBreadcrumb || 'Home',
+      trending: localeCfg.navViral || 'Viral',
+      categories: localeCfg.navCategories || 'Categories',
+      jav: 'JAV',
+      saved: 'Saved',
+    } : {},
+    searchPlaceholder: localeCfg?.searchPlaceholder || 'Search videos, categories, JAV codes...',
+    showHeaderAd: true,
+    showBottomAd: true,
+    bodyHtml,
+  });
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

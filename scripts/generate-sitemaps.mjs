@@ -13,7 +13,7 @@ import {
   isSpamVideoTitle,
   normalizeUrl,
   buildHreflangEntries,
-} from '../api/schema-helper.js';
+} from '../lib/schema.js';
 
 const ROOT = process.cwd();
 const API_BASE = 'https://www.eporner.com/api/v2/video';

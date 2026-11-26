@@ -22,7 +22,7 @@ import {
   extractJavCode,
   isSpamVideoTitle,
   slugify,
-} from '../api/schema-helper.js';
+} from '../lib/schema.js';
 
 const ROOT = process.cwd();
 const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');

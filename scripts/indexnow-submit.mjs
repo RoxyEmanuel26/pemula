@@ -7,7 +7,7 @@
 
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { BASE_URL, EU_LOCALES } from '../api/schema-helper.js';
+import { BASE_URL, EU_LOCALES } from '../lib/schema.js';
 
 const ROOT = process.cwd();
 const KEY_FILENAME = '1b69cc1059c94dbcb3e9a18b36d3ed85.txt';

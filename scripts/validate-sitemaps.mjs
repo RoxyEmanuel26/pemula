@@ -1,6 +1,6 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { ALL_LOCALES, CURATED_CATEGORIES } from '../api/schema-helper.js';
+import { ALL_LOCALES, CURATED_CATEGORIES } from '../lib/schema.js';
 
 const ROOT = process.cwd();
 const DIR = path.join(ROOT, 'sitemaps');

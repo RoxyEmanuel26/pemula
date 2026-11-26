@@ -20,6 +20,7 @@ const API_BASE = 'https://www.eporner.com/api/v2/video';
 const SITEMAP_DIR = path.join(ROOT, 'sitemaps');
 const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
 const ENRICHED_PATH = path.join(ROOT, 'data', 'enriched-videos.json');
+const COMPOUND_PATH = path.join(ROOT, 'data', 'compound-hubs.json');
 const FEED_PATH = path.join(ROOT, 'feed.xml');
 const LLMS_PATH = path.join(ROOT, 'llms.txt');
 const OFFLINE = process.argv.includes('--offline');
@@ -33,9 +34,18 @@ const FETCH_DELAY_MS = envNumber('SITEMAP_FETCH_DELAY_MS', 350, 0, 5000);
 const USER_AGENT = 'lusthub-sitemap-bot/10.0 (+https://www.lusthub.my.id/robots.txt)';
 
 const STATIC_PAGES = [
-  ['/', 'index.html'], ['/about', 'about.html'], ['/howto', 'howto.html'],
-  ['/contact', 'contact.html'], ['/dmca', 'dmca.html'],
-  ['/privacy', 'privacy.html'], ['/terms', 'terms.html'],
+  ['/', 'index.html'],
+  ['/trending', 'api/discover.js'],
+  ['/top-rated', 'api/discover.js'],
+  ['/longest', 'api/discover.js'],
+  ['/jav', 'api/discover.js'],
+  ['/categories', 'api/discover.js'],
+  ['/about', 'about.html'],
+  ['/howto', 'howto.html'],
+  ['/contact', 'contact.html'],
+  ['/dmca', 'dmca.html'],
+  ['/privacy', 'privacy.html'],
+  ['/terms', 'terms.html'],
 ];
 
 // Dedicated European country & creator hubs seeded every rotation so EU inventory stays deep
@@ -317,9 +327,17 @@ function buildCategoriesSitemap(catLastMod) {
   }), { xhtml: true });
 }
 
+function buildCompoundSitemap(compoundHubs, lastmod) {
+  const curatedSet = new Set(CURATED_CATEGORIES);
+  const validHubs = (compoundHubs || []).filter(h => h && h.slug && !curatedSet.has(h.slug));
+  return urlset(validHubs.map((hub) =>
+    `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/c/${hub.slug}`)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`
+  ));
+}
+
 /**
  * Generates sitemaps/sitemap_eu_locales.xml containing all localized European
- * homepages (/de, /fr, /es, /it) + localized curated hubs (/{lang}/c/:slug)
+ * homepages (/de, /fr, /es, /it, /nl, /pt, /pl) + localized curated hubs (/{lang}/c/:slug)
  * with complete reciprocal xhtml:link hreflang clusters and zero duplicate <loc>.
  */
 function buildEuLocalesSitemap(homeLastMod, catLastMod) {
@@ -402,7 +420,7 @@ function buildIndex(entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</sitemapindex>\n`;
 }
 
-async function syncLlmsTxt(videoSitemapFiles) {
+async function syncLlmsTxt(videoSitemapFiles, compoundCount = 0) {
   try {
     const content = await readFile(LLMS_PATH, 'utf8');
     const startMarker = '<!-- AUTO:SITEMAPS:START -->';
@@ -412,12 +430,14 @@ async function syncLlmsTxt(videoSitemapFiles) {
     if (sIdx === -1 || eIdx === -1 || eIdx <= sIdx) return false;
 
     const euCount = EU_LOCALES.length * (CURATED_CATEGORIES.length + 1);
+    const euCodeList = EU_LOCALES.map(l => l.toUpperCase()).join('/');
     const lines = [
       `- Master Sitemap Index: ${BASE_URL}/sitemap_index.xml`,
-      `- Category Sitemap (${CURATED_CATEGORIES.length} EN Hubs): ${BASE_URL}/sitemaps/sitemap_categories.xml`,
-      `- European Localized Sitemap (${euCount} DE/FR/ES/IT Hubs): ${BASE_URL}/sitemaps/sitemap_eu_locales.xml`,
+      `- Core Category Sitemap (${CURATED_CATEGORIES.length} EN Hubs): ${BASE_URL}/sitemaps/sitemap_categories.xml`,
+      `- Long-Tail Compound Hub Sitemap (${compoundCount} US/EU/JAV Niches): ${BASE_URL}/sitemaps/sitemap_compound.xml`,
+      `- European Localized Sitemap (${euCount} ${euCodeList} Hubs): ${BASE_URL}/sitemaps/sitemap_eu_locales.xml`,
       ...videoSitemapFiles.map((f, idx) => `- Video Sitemap ${String(idx + 1).padStart(3, '0')}: ${BASE_URL}/sitemaps/${f}`),
-      `- Static Pages Sitemap: ${BASE_URL}/sitemaps/sitemap_pages.xml`,
+      `- Discovery & Static Pages Sitemap (/trending, /top-rated, /longest, /jav, /categories): ${BASE_URL}/sitemaps/sitemap_pages.xml`,
       `- RSS Video Feed: ${BASE_URL}/feed.xml`,
       `- Robots Policy: ${BASE_URL}/robots.txt`,
     ];
@@ -537,15 +557,31 @@ async function main() {
   const indexEntries = [];
   const todayStr = new Date().toISOString().slice(0, 10);
   const pagesLastMod = await fileLastModified('index.html') || todayStr;
-  const catLastMod = await fileLastModified('data/category-descriptions.json') || await fileLastModified('category.html') || todayStr;
+  const catLastMod = await fileLastModified('data/category-descriptions.json') || todayStr;
   const euLastMod = await fileLastModified('data/eu-locales.json') || catLastMod;
+
+  let compoundHubs = [];
+  let compoundLastMod = todayStr;
+  try {
+    const rawCompound = JSON.parse(await readFile(COMPOUND_PATH, 'utf8'));
+    if (Array.isArray(rawCompound?.hubs)) compoundHubs = rawCompound.hubs;
+    if (rawCompound?.generatedAt) compoundLastMod = String(rawCompound.generatedAt).slice(0, 10);
+  } catch {}
 
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_pages.xml'), buildPagesSitemap())) changed.push('sitemap_pages.xml');
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_categories.xml'), buildCategoriesSitemap(catLastMod))) changed.push('sitemap_categories.xml');
+  if (compoundHubs.length > 0) {
+    if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_compound.xml'), buildCompoundSitemap(compoundHubs, compoundLastMod))) {
+      changed.push('sitemap_compound.xml');
+    }
+  }
   if (await writeIfChanged(path.join(SITEMAP_DIR, 'sitemap_eu_locales.xml'), buildEuLocalesSitemap(pagesLastMod, euLastMod))) changed.push('sitemap_eu_locales.xml');
 
   indexEntries.push({ file: 'sitemap_pages.xml', lastmod: pagesLastMod });
   indexEntries.push({ file: 'sitemap_categories.xml', lastmod: catLastMod });
+  if (compoundHubs.length > 0) {
+    indexEntries.push({ file: 'sitemap_compound.xml', lastmod: compoundLastMod });
+  }
   indexEntries.push({ file: 'sitemap_eu_locales.xml', lastmod: euLastMod });
 
   // Quality Gate: ONLY genuine non-spam AI-enriched videos
@@ -570,12 +606,12 @@ async function main() {
   if (await writeIfChanged(path.join(ROOT, 'sitemap.xml'), indexXml)) changed.push('sitemap.xml');
   if (await writeIfChanged(path.join(ROOT, 'sitemap_index.xml'), indexXml)) changed.push('sitemap_index.xml');
   if (await writeIfChanged(FEED_PATH, buildRssFeed(sitemapVideos, enrichedMap))) changed.push('feed.xml');
-  if (await syncLlmsTxt(videoFiles)) changed.push('llms.txt');
+  if (await syncLlmsTxt(videoFiles, compoundHubs.length)) changed.push('llms.txt');
 
   const newCount = latest.filter((video) => !knownIds.has(video.id)).length;
   const removedCount = state.videos.filter((video) => removedIds.has(video.id)).length;
   console.log(`Sitemap refresh complete: ${videos.length} rolling videos (Tier1 pinned=${pinnedEnriched.length}, Tier2 US/EU protected=${protectedPool.length}, Tier3 fresh=${freshTail.length} | ${sitemapVideos.length} genuine AI-enriched in sitemap), ${newCount} new, ${removedCount} removed.`);
-  console.log(`Generated ${keep.size} video sitemap files + sitemap_eu_locales.xml (${EU_LOCALES.length * (CURATED_CATEGORIES.length + 1)} EU URLs); deleted ${removedFiles} obsolete files.`);
+  console.log(`Generated ${keep.size} video sitemap files + sitemap_compound.xml (${compoundHubs.length} compound hubs) + sitemap_eu_locales.xml (${EU_LOCALES.length * (CURATED_CATEGORIES.length + 1)} EU URLs); deleted ${removedFiles} obsolete files.`);
   console.log(changed.length ? `Changed: ${changed.join(', ')}` : 'No content changes; no deployment is needed.');
 }
 

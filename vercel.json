@@ -22,10 +22,16 @@
     { "source": "/fr", "destination": "/api/home?lang=fr" },
     { "source": "/es", "destination": "/api/home?lang=es" },
     { "source": "/it", "destination": "/api/home?lang=it" },
+    { "source": "/nl", "destination": "/api/home?lang=nl" },
+    { "source": "/pt", "destination": "/api/home?lang=pt" },
+    { "source": "/pl", "destination": "/api/home?lang=pl" },
     { "source": "/de/c/:slug*", "destination": "/api/category?lang=de&slug=:slug*" },
     { "source": "/fr/c/:slug*", "destination": "/api/category?lang=fr&slug=:slug*" },
     { "source": "/es/c/:slug*", "destination": "/api/category?lang=es&slug=:slug*" },
     { "source": "/it/c/:slug*", "destination": "/api/category?lang=it&slug=:slug*" },
+    { "source": "/nl/c/:slug*", "destination": "/api/category?lang=nl&slug=:slug*" },
+    { "source": "/pt/c/:slug*", "destination": "/api/category?lang=pt&slug=:slug*" },
+    { "source": "/pl/c/:slug*", "destination": "/api/category?lang=pl&slug=:slug*" },
     { "source": "/v/:slug*", "destination": "/api/video?slug=:slug*" },
     { "source": "/c/:slug*", "destination": "/api/category?slug=:slug*" }
   ],
@@ -70,14 +76,14 @@
       ]
     },
     {
-      "source": "/(de|fr|es|it)",
+      "source": "/(de|fr|es|it|nl|pt|pl)",
       "has": [{ "type": "query", "key": "q" }],
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, follow" }
       ]
     },
     {
-      "source": "/(de|fr|es|it)",
+      "source": "/(de|fr|es|it|nl|pt|pl)",
       "has": [{ "type": "query", "key": "page" }],
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, follow" }

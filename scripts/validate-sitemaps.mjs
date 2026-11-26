@@ -57,9 +57,12 @@ for (const name of files) {
   }
 }
 
-// Verify EU localized sitemap presence and complete hreflang reciprocity
+// Verify EU localized sitemap + compound sitemap presence and complete hreflang reciprocity
 if (!files.includes('sitemap_eu_locales.xml')) {
   errors.push('Missing sitemaps/sitemap_eu_locales.xml');
+}
+if (!files.includes('sitemap_compound.xml')) {
+  errors.push('Missing sitemaps/sitemap_compound.xml');
 }
 const expectedLocalizedCount = ALL_LOCALES.length * (CURATED_CATEGORIES.length + 1);
 if (hreflangGraph.size !== expectedLocalizedCount) {
@@ -102,5 +105,5 @@ if (errors.length) {
 } else {
   const sizes = await Promise.all(files.map((name) => stat(path.join(DIR, name))));
   const mb = sizes.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024;
-  console.log(`Sitemap validation passed: ${files.length} files, ${seen.size} unique URLs (${hreflangGraph.size} verified 6-way reciprocal hreflang URLs), ${mb.toFixed(2)} MB.`);
+  console.log(`Sitemap validation passed: ${files.length} files, ${seen.size} unique URLs (${hreflangGraph.size} verified ${REQUIRED_HREFLANGS.length}-way reciprocal hreflang URLs), ${mb.toFixed(2)} MB.`);
 }

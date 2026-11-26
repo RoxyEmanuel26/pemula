@@ -29,10 +29,15 @@ async function main() {
   const host = new URL(BASE_URL).hostname;
   const keyLocation = `${BASE_URL}/${KEY_FILENAME}`;
 
-  // Prioritize root, EU localized homepages, RSS feed, static pages, EN hubs, and all 292 EU hubs first
+  // Prioritize root, all 7 EU localized homepages, 5 discovery hubs, RSS feed, compound hubs, EN hubs, and all 511 EU hubs first
   const urls = new Set([
     `${BASE_URL}/`,
     ...EU_LOCALES.map(lang => `${BASE_URL}/${lang}`),
+    `${BASE_URL}/trending`,
+    `${BASE_URL}/top-rated`,
+    `${BASE_URL}/longest`,
+    `${BASE_URL}/jav`,
+    `${BASE_URL}/categories`,
     `${BASE_URL}/feed.xml`,
   ]);
 

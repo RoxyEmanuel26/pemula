@@ -44,30 +44,30 @@ jobs:
       - name: Prune deleted/404 upstream videos from enriched sitemap pool (rolling check)
         run: node scripts/prune-dead-videos.mjs --batch 500
 
-      - name: Build compact O(1) runtime index for Vercel serverless edge
-        run: node scripts/build-runtime-index.mjs
+      - name: Build V2.0 64-shard O(1) runtime store & compound long-tail hubs
+        run: node scripts/build-runtime-shards.mjs
 
       - name: Rebuild static SSR homepage categories, top videos, and schema
         run: node scripts/build-home-ssr.mjs
 
-      - name: Regenerate sitemaps, EU hreflang sitemap, llms.txt, and RSS video feed
+      - name: Regenerate sitemaps, compound hub sitemap, 8-language EU sitemap, llms.txt, and RSS feed
         run: node scripts/generate-sitemaps.mjs --offline
 
-      - name: Validate sitemap limits, hreflang reciprocity, RSS feed, and video metadata
+      - name: Validate sitemap limits, 9-way hreflang reciprocity, RSS feed, and video metadata
         run: node scripts/validate-sitemaps.mjs
 
-      - name: Commit & push updated SEO catalog, runtime index, sitemaps, feed, llms.txt, and homepage
+      - name: Commit & push updated SEO catalog, sharded runtime, compound hubs, sitemaps, feed, llms.txt, and homepage
         shell: bash
         run: |
-          if git diff --quiet -- sitemap.xml sitemap_index.xml feed.xml llms.txt index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enriched-runtime.json data/enrich-quota-state.json; then
+          if git diff --quiet -- sitemap.xml sitemap_index.xml feed.xml llms.txt index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/runtime data/compound-hubs.json data/enrich-quota-state.json; then
             echo "No new changes; skipping commit and Vercel deployment."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A sitemap.xml sitemap_index.xml feed.xml llms.txt index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/enriched-runtime.json data/enrich-quota-state.json
-          git commit -m "chore(seo): refresh daily video sitemap, EU locales, runtime index, feed & enriched metadata"
+          git add -A sitemap.xml sitemap_index.xml feed.xml llms.txt index.html sitemaps data/sitemap-state.json data/enriched-videos.json data/runtime data/compound-hubs.json data/enrich-quota-state.json
+          git commit -m "chore(seo): refresh daily video sitemap, 8-lang EU locales, sharded runtime, compound hubs & feed"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 

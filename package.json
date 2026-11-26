@@ -13,6 +13,8 @@
     "runtime:index": "node scripts/build-runtime-index.mjs",
     "runtime:shards": "node scripts/build-runtime-shards.mjs",
     "home:ssr": "node scripts/build-home-ssr.mjs",
+    "static:pages": "node scripts/build-static-pages.mjs",
+    "build:v2": "node scripts/build-runtime-shards.mjs && node scripts/build-home-ssr.mjs && node scripts/build-static-pages.mjs && node scripts/generate-sitemaps.mjs --offline && node scripts/validate-sitemaps.mjs",
     "indexnow": "node scripts/indexnow-submit.mjs"
   }
 }

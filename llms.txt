@@ -1,9 +1,9 @@
 # lusthub.my.id
 
-> Fast, mobile-first 18+ NSFW streaming gallery and curated viral video platform optimized for instant HD playback across North America, Europe (EN, DE, FR, ES, IT), and global devices without mandatory accounts or app downloads.
+> Fast, mobile-first 18+ NSFW streaming gallery and curated viral video platform optimized for instant HD & 4K playback across North America, Europe (EN, DE, FR, ES, IT, NL, PT, PL), and global devices without mandatory accounts or app downloads.
 
 ## Overview
-lusthub.my.id provides high-definition streaming of trending adult videos, creator leaks, JAV code releases, European & US amateur showcases, and 72 curated international categories across 5 localized portals (`/` English, `/de` Deutsch, `/fr` Français, `/es` Español, `/it` Italiano). The platform combines edge-rendered HTML, global CDN caching, bidirectional `hreflang`, and Schema.org metadata (`VideoObject`, `CollectionPage`, `ItemList`, `FAQPage`, `WebPage`) for rapid discovery across traditional and AI search engines.
+lusthub.my.id provides high-definition streaming of trending adult videos, creator leaks, JAV code releases, European & US amateur showcases, 72 curated core categories, 172+ verified long-tail compound hubs, and 5 discovery charts across 8 localized portals (`/` English, `/de` Deutsch, `/fr` Français, `/es` Español, `/it` Italiano, `/nl` Nederlands, `/pt` Português, `/pl` Polski). The platform combines sharded O(1) edge-rendered HTML, global CDN caching, 9-way bidirectional `hreflang`, and Schema.org metadata (`VideoObject`, `CollectionPage`, `ItemList`, `FAQPage`, `WebPage`) for rapid discovery across traditional and AI search engines.
 
 ## Sitemap, Feed & Technical Endpoints
 <!-- AUTO:SITEMAPS:START -->
@@ -23,12 +23,22 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 - Robots Policy: https://www.lusthub.my.id/robots.txt
 <!-- AUTO:SITEMAPS:END -->
 
-## Multilingual European & International Portals (5 Languages)
-- [English (US / UK / Global)](https://www.lusthub.my.id/): Primary English gallery and 72 curated HD hubs (`/c/:slug`).
+## Multilingual European & International Portals (8 Languages)
+- [English (US / UK / Global)](https://www.lusthub.my.id/): Primary English gallery, 72 core hubs (`/c/:slug`), and 172+ long-tail compound niches.
 - [Deutsch (DE / AT / CH)](https://www.lusthub.my.id/de): German-language portal and 72 native hubs (`/de/c/:slug`).
 - [Français (FR / BE / CH)](https://www.lusthub.my.id/fr): French-language portal and 72 native hubs (`/fr/c/:slug`).
 - [Español (ES / US Hispanic)](https://www.lusthub.my.id/es): Spanish-language portal and 72 native hubs (`/es/c/:slug`).
 - [Italiano (IT / CH)](https://www.lusthub.my.id/it): Italian-language portal and 72 native hubs (`/it/c/:slug`).
+- [Nederlands (NL / BE)](https://www.lusthub.my.id/nl): Dutch-language portal and 72 native hubs (`/nl/c/:slug`).
+- [Português (PT / BR)](https://www.lusthub.my.id/pt): Portuguese-language portal and 72 native hubs (`/pt/c/:slug`).
+- [Polski (PL)](https://www.lusthub.my.id/pl): Polish-language portal and 72 native hubs (`/pl/c/:slug`).
+
+## High-Intent Discovery & Directory Hubs
+- [Trending Now](https://www.lusthub.my.id/trending): Today's fastest-rising verified US, European, and 4K HD releases.
+- [Top Rated](https://www.lusthub.my.id/top-rated): Most viewed and highest-engagement HD videos.
+- [Longest 20m+ Movies](https://www.lusthub.my.id/longest): Full-length 20+ minute uncut adult movies and extended releases.
+- [JAV Studio Code Index](https://www.lusthub.my.id/jav): Uncensored & English-subtitled Japanese JAV releases indexed by studio prefix code.
+- [All Categories Directory](https://www.lusthub.my.id/categories): Visual directory of all 64 core global categories and 172+ verified long-tail compound hubs.
 
 ## US, UK & European Featured Categories (48 Core Hubs)
 - [MILF](https://www.lusthub.my.id/c/milf): Experienced women, stepmoms, and cougars in full 1080p HD.
@@ -39,7 +49,7 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 - [Amateur](https://www.lusthub.my.id/c/amateur): Genuine homemade adult videos and unscripted real couples.
 - [POV](https://www.lusthub.my.id/c/pov): Immersive first-person POV scenes filmed in 1080p and 4K.
 - [OnlyFans](https://www.lusthub.my.id/c/onlyfans): Trending OnlyFans and Fansly creator leaks and solo showcases.
-- [European](https://www.lusthub.my.id/c/european): French, German, Czech, Spanish, UK, and Dutch adult cinema.
+- [European](https://www.lusthub.my.id/c/european): French, German, Czech, Spanish, UK, Polish, and Dutch adult cinema.
 - [British](https://www.lusthub.my.id/c/british): Authentic UK amateurs, London creators, and British glamour stars.
 - [German](https://www.lusthub.my.id/c/german): German (Deutsch) adult cinema, Berlin amateur couples, and Munich castings.
 - [French](https://www.lusthub.my.id/c/french): French (Française) sensual classics, Paris amateurs, and romantic cinema.

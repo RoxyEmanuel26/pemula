@@ -444,17 +444,17 @@ export default async function handler(req, res) {
     const href = `/v/${c.id}-${c.slug}`;
     const dur = formatDurationBadge(c.duration);
     const views = formatCompactViews(c.views);
-    return `<a href="${escapeHtml(href)}" style="display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px;align-items:start;">
-      <div style="position:relative;aspect-ratio:16/9;border-radius:7px;overflow:hidden;background:var(--bg-elev-2);border:1px solid var(--border);">
-        <img src="${escapeHtml(c.thumbnail)}" alt="${escapeHtml(c.title)}" loading="lazy" width="160" height="90" style="width:100%;height:100%;object-fit:cover;">
+    return `<a href="${escapeHtml(href)}" class="lh-upnext-card">
+      <div class="lh-upnext-thumb">
+        <img src="${escapeHtml(c.thumbnail)}" alt="${escapeHtml(c.title)}" loading="lazy" width="160" height="90">
         ${dur ? `<span class="lh-badge-dur" style="font-size:0.65rem;padding:1px 5px;right:4px;bottom:4px;">${escapeHtml(dur)}</span>` : ''}
       </div>
-      <div style="min-width:0;">
-        <div style="font-size:0.82rem;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(c.title)}</div>
-        ${views ? `<div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);margin-top:4px;">${escapeHtml(views)} views</div>` : ''}
+      <div class="lh-upnext-info">
+        <div class="lh-upnext-title">${escapeHtml(c.title)}</div>
+        ${views ? `<div class="lh-upnext-views">${escapeHtml(views)} views</div>` : ''}
       </div>
     </a>`;
-  }).join('\n          ');
+  }).join('');
 
   const relatedGridHtml = relatedCards.map((c, idx) => renderVideoCard(c, idx + 4)).join('\n          ');
 
@@ -502,7 +502,7 @@ export default async function handler(req, res) {
                   ${publishedDay ? `<span class="lh-stat-chip">${escapeHtml(publishedDay)}</span>` : ''}
                 </div>
                 <div class="lh-action-group">
-                  <button type="button" class="lh-btn" id="lhTheaterBtn" aria-pressed="false" title="Toggle Theater Mode (T)">${ICONS.expand}<span>Theater</span></button>
+                  <button type="button" class="lh-btn lh-theater-btn" id="lhTheaterBtn" aria-pressed="false" title="Toggle Theater Mode (T)">${ICONS.expand}<span>Theater</span></button>
                   <button type="button" class="lh-btn" data-save-id="${escapeHtml(videoId)}" data-save-title="${escapeHtml(decodedTitle)}" data-save-href="${escapeHtml(`/v/${videoId}-${videoSlug}`)}" data-save-thumb="${escapeHtml(thumbUrl)}" data-save-duration="${escapeHtml(durationBadge)}" aria-pressed="false">${ICONS.bookmark}<span>Save</span></button>
                   <button type="button" class="lh-btn" id="lhShareCopyBtn" data-copy-url="${escapeHtml(canonicalUrl)}">${ICONS.share}<span>Share</span></button>
                 </div>
@@ -524,7 +524,7 @@ export default async function handler(req, res) {
 
             ${sidebarUpNextHtml ? `<div class="lh-section-card" style="margin-top:0;padding:16px;">
               <h2 style="font-size:0.98rem;margin-bottom:12px;">Up Next in ${escapeHtml(catName)}</h2>
-              <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="lh-upnext-list">
                 ${sidebarUpNextHtml}
               </div>
             </div>` : ''}

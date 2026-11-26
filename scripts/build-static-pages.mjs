@@ -109,7 +109,7 @@ const PAGES = [
     sections: [
       {
         heading: 'Zero Mandatory Accounts & Local Preferences',
-        body: `<p>${SITE_DOMAIN} does not require account registration, names, emails, or payment cards to browse or stream content. Features like Dark/Light theme, Favorites, and Watch History are stored strictly inside your own browser's <code>localStorage</code> and cookies and can be cleared anytime.</p>`,
+        body: `<p>${SITE_DOMAIN} does not require account registration, names, emails, or payment cards to browse or stream content. Features like Favorites and Watch History are stored strictly inside your own browser's <code>localStorage</code> and can be cleared anytime.</p>`,
       },
       {
         heading: 'Cookies, Analytics & Third-Party Advertising',

@@ -12,7 +12,7 @@
  * Result: Cuts Vercel Fast Origin Transfer & Function Invocations by >92% while preserving 100% SEO & Adsterra.
  */
 
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   BASE_URL,
@@ -202,7 +202,7 @@ function buildStaticWatchHtml(videoId, enrichedData, index, orderedPosMap, allCo
   const sidebarUpNextHtml = relatedCards.slice(0, 4).map(c => {
     const dur = formatDurationBadge(c.duration);
     const views = formatCompactViews(c.views);
-    return `<a href="/v/${escapeHtml(c.id)}-${escapeHtml(c.slug)}" style="display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px;align-items:start;"><div style="position:relative;aspect-ratio:16/9;border-radius:7px;overflow:hidden;background:var(--bg-elev-2);border:1px solid var(--border);"><img src="${escapeHtml(c.thumbnail)}" alt="${escapeHtml(c.title)}" loading="lazy" width="160" height="90" style="width:100%;height:100%;object-fit:cover;">${dur ? `<span class="lh-badge-dur" style="font-size:0.65rem;padding:1px 5px;right:4px;bottom:4px;">${escapeHtml(dur)}</span>` : ''}</div><div style="min-width:0;"><div style="font-size:0.82rem;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(c.title)}</div>${views ? `<div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);margin-top:4px;">${escapeHtml(views)} views</div>` : ''}</div></a>`;
+    return `<a href="/v/${escapeHtml(c.id)}-${escapeHtml(c.slug)}" class="lh-upnext-card"><div class="lh-upnext-thumb"><img src="${escapeHtml(c.thumbnail)}" alt="${escapeHtml(c.title)}" loading="lazy" width="160" height="90">${dur ? `<span class="lh-badge-dur" style="font-size:0.65rem;padding:1px 5px;right:4px;bottom:4px;">${escapeHtml(dur)}</span>` : ''}</div><div class="lh-upnext-info"><div class="lh-upnext-title">${escapeHtml(c.title)}</div>${views ? `<div class="lh-upnext-views">${escapeHtml(views)} views</div>` : ''}</div></a>`;
   }).join('');
 
   const relatedGridHtml = relatedCards.map((c, idx) => renderVideoCard(c, idx + 4)).join('');
@@ -236,7 +236,7 @@ function buildStaticWatchHtml(videoId, enrichedData, index, orderedPosMap, allCo
                   ${publishedDay ? `<span class="lh-stat-chip">${escapeHtml(publishedDay)}</span>` : ''}
                 </div>
                 <div class="lh-action-group">
-                  <button type="button" class="lh-btn" id="lhTheaterBtn" aria-pressed="false" title="Toggle Theater Mode (T)">${ICONS.expand}<span>Theater</span></button>
+                  <button type="button" class="lh-btn lh-theater-btn" id="lhTheaterBtn" aria-pressed="false" title="Toggle Theater Mode (T)">${ICONS.expand}<span>Theater</span></button>
                   <button type="button" class="lh-btn" data-save-id="${escapeHtml(videoId)}" data-save-title="${escapeHtml(decodedTitle)}" data-save-href="/v/${escapeHtml(videoId)}-${escapeHtml(videoSlug)}" data-save-thumb="${escapeHtml(thumbUrl)}" data-save-duration="${escapeHtml(durationBadge)}" aria-pressed="false">${ICONS.bookmark}<span>Save</span></button>
                   <button type="button" class="lh-btn" id="lhShareCopyBtn" data-copy-url="${escapeHtml(canonicalUrl)}">${ICONS.share}<span>Share</span></button>
                 </div>
@@ -264,7 +264,7 @@ function buildStaticWatchHtml(videoId, enrichedData, index, orderedPosMap, allCo
           </div>
           <aside class="lh-watch-sidebar" aria-label="Up Next and Sponsored">
             <div class="lh-ad-slot-player-side ad-space" id="playerAdSide"></div>
-            ${sidebarUpNextHtml ? `<div class="lh-section-card" style="margin-top:0;padding:16px;"><h2 style="font-size:0.98rem;margin-bottom:12px;">Up Next in ${escapeHtml(catName)}</h2><div style="display:flex;flex-direction:column;gap:12px;">${sidebarUpNextHtml}</div></div>` : ''}
+            ${sidebarUpNextHtml ? `<div class="lh-section-card" style="margin-top:0;padding:16px;"><h2 style="font-size:0.98rem;margin-bottom:12px;">Up Next in ${escapeHtml(catName)}</h2><div class="lh-upnext-list">${sidebarUpNextHtml}</div></div>` : ''}
             <div class="lh-ad-slot-player-side ad-space" id="adBannerContent"></div>
           </aside>
         </div>
@@ -331,7 +331,8 @@ async function main() {
     })
   );
 
-  // Create target directories
+  // Clean stale generated watch files and create target directories
+  await rm(path.join(ROOT, 'v'), { recursive: true, force: true });
   const dirs = [
     path.join(ROOT, 'assets', 'data'),
     path.join(ROOT, 'c'),

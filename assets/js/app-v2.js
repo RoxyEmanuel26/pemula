@@ -1,15 +1,14 @@
 /**
- * LustHub V2.0 — Deferred Zero-Dependency Interactive Client Engine
- * Handles: Theme persistence, Language switcher, Command Search + Autocomplete,
+ * LustHub V2.2 — Deferred Zero-Dependency Interactive Client Engine
+ * Handles: Pure dark mode lock, Language switcher, Command Search + Autocomplete,
  * Zero-Login Favorites & Watch History (Navboost retention), Quick Filters,
- * Multi-Frame Hover Preview, Cinema Theater Mode & Facade Playback.
+ * Cinema Theater Mode & Facade Playback.
  */
 (function () {
   'use strict';
 
   const FAVORITES_KEY = 'lh_v2_favorites';
   const HISTORY_KEY = 'lh_v2_history';
-  const THEME_KEY = 'lusthub_theme';
 
   const LOCALE_MATCH = window.location.pathname.match(/^\/(de|fr|es|it|nl|pt|pl)(\/|$)/i);
   const LOCALE_PREFIX = LOCALE_MATCH ? '/' + LOCALE_MATCH[1].toLowerCase() : '';
@@ -50,29 +49,11 @@
     return slug.split('-').map(w => upper.has(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
-  // ─── 1. THEME PERSISTENCE ───
-  function getSavedTheme() {
-    try {
-      const ls = localStorage.getItem(THEME_KEY);
-      if (ls === 'light' || ls === 'dark') return ls;
-    } catch {}
-    const m = document.cookie.match(/(?:^|; )lusthub_theme=([^;]+)/);
-    return m && m[1] === 'light' ? 'light' : 'dark';
-  }
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch {}
-    document.cookie = `lusthub_theme=${theme};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
-    document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-      btn.setAttribute('aria-pressed', String(theme === 'light'));
-      const moon = btn.querySelector('[data-icon-dark]');
-      const sun = btn.querySelector('[data-icon-light]');
-      if (moon && sun) {
-        moon.style.display = theme === 'dark' ? 'inline-flex' : 'none';
-        sun.style.display = theme === 'light' ? 'inline-flex' : 'none';
-      }
-    });
+  // ─── 1. ENFORCE PURE DARK MODE (Clean any legacy light preference) ───
+  function enforceDarkMode() {
+    document.documentElement.removeAttribute('data-theme');
+    try { localStorage.removeItem('lusthub_theme'); } catch {}
+    document.cookie = 'lusthub_theme=;path=/;max-age=0;SameSite=Lax';
   }
 
   // ─── 2. ZERO-LOGIN RETENTION STORE (FAVORITES + HISTORY) ───
@@ -177,7 +158,7 @@
     function loadSuggestIndex() {
       if (suggestData) return Promise.resolve(suggestData);
       if (!suggestDataPromise) {
-        suggestDataPromise = fetch('/assets/data/suggest.json?v=204')
+        suggestDataPromise = fetch('/assets/data/suggest.json?v=205')
           .then(r => (r.ok ? r.json() : null))
           .then(d => { suggestData = d; return d; })
           .catch(() => null);
@@ -302,7 +283,7 @@
         <a href="${escapeHtml(href)}"${relAttr} aria-label="${title}">
           <img src="${thumb}" alt="${title}" loading="lazy" decoding="async" width="320" height="180">
         </a>
-        <div class="lh-thumb-badges-top"><span class="lh-badge-hd">HD</span></div>
+        <div class="lh-thumb-badges-top"><span class="lh-badge-hd">${/\b4k\b/i.test(v.title || '') ? '4K' : 'HD'}</span></div>
         ${dur ? `<span class="lh-badge-dur">${dur}</span>` : ''}
         <button type="button" class="lh-save-btn${saved ? ' is-saved' : ''}" data-save-id="${escapeHtml(v.id)}" aria-label="Save video" aria-pressed="${saved}">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="${saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -608,18 +589,12 @@
         if (svg) svg.setAttribute('fill', isNowSaved ? 'currentColor' : 'none');
         return;
       }
-
-      const themeBtn = e.target.closest('[data-theme-toggle]');
-      if (themeBtn) {
-        const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-        applyTheme(cur === 'dark' ? 'light' : 'dark');
-      }
     });
   }
 
   // ─── INIT ───
   function init() {
-    applyTheme(getSavedTheme());
+    enforceDarkMode();
     initLangDropdown();
     initSearch();
     initGlobalDelegates();

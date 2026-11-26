@@ -14,11 +14,10 @@
     { "source": "/video.html", "destination": "/", "permanent": true },
     { "source": "/video", "destination": "/", "permanent": true },
     { "source": "/category.html", "destination": "/categories", "permanent": true },
-    { "source": "/category", "destination": "/categories", "permanent": true }
+    { "source": "/category", "destination": "/categories", "permanent": true },
+    { "source": "/", "has": [{ "type": "query", "key": "q", "value": "(?<term>[^&]+)" }], "destination": "/c/:term", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/", "has": [{ "type": "query", "key": "q" }], "destination": "/api/home?lang=en" },
-    { "source": "/", "has": [{ "type": "query", "key": "page" }], "destination": "/api/home?lang=en" },
     { "source": "/trending", "destination": "/api/discover?view=trending" },
     { "source": "/top-rated", "destination": "/api/discover?view=top-rated" },
     { "source": "/longest", "destination": "/api/discover?view=longest" },

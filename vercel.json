@@ -3,11 +3,14 @@
   "regions": ["iad1"],
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "",
+  "buildCommand": "node build-static.mjs",
   "outputDirectory": ".",
   "functions": {
-    "api/*.js": {
-      "includeFiles": "{lib/**,data/runtime/**,data/category-descriptions.json,data/eu-locales.json}"
+    "api/video.js": {
+      "includeFiles": "{lib/**,data/runtime/**,data/category-descriptions.json}"
+    },
+    "api/category.js": {
+      "includeFiles": "{lib/**,data/runtime/index.json,data/category-descriptions.json,data/eu-locales.json}"
     }
   },
   "redirects": [
@@ -23,20 +26,6 @@
     { "source": "/sitemap_compound.xml", "destination": "/sitemaps/sitemap_compound.xml" },
     { "source": "/sitemap_eu_locales.xml", "destination": "/sitemaps/sitemap_eu_locales.xml" },
     { "source": "/sitemap_videos_:num.xml", "destination": "/sitemaps/sitemap_videos_:num.xml" },
-    { "source": "/trending", "destination": "/api/discover?view=trending" },
-    { "source": "/top-rated", "destination": "/api/discover?view=top-rated" },
-    { "source": "/longest", "destination": "/api/discover?view=longest" },
-    { "source": "/jav", "destination": "/api/discover?view=jav" },
-    { "source": "/categories", "destination": "/api/discover?view=categories" },
-    { "source": "/saved", "destination": "/api/discover?view=saved" },
-    { "source": "/api/suggest", "destination": "/api/discover?view=suggest" },
-    { "source": "/de", "destination": "/api/home?lang=de" },
-    { "source": "/fr", "destination": "/api/home?lang=fr" },
-    { "source": "/es", "destination": "/api/home?lang=es" },
-    { "source": "/it", "destination": "/api/home?lang=it" },
-    { "source": "/nl", "destination": "/api/home?lang=nl" },
-    { "source": "/pt", "destination": "/api/home?lang=pt" },
-    { "source": "/pl", "destination": "/api/home?lang=pl" },
     { "source": "/de/c/:slug*", "destination": "/api/category?lang=de&slug=:slug*" },
     { "source": "/fr/c/:slug*", "destination": "/api/category?lang=fr&slug=:slug*" },
     { "source": "/es/c/:slug*", "destination": "/api/category?lang=es&slug=:slug*" },
@@ -59,7 +48,7 @@
     {
       "source": "/404",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },
+        { "key": "Cache-Control", "value": "public, s-maxage=604800, stale-while-revalidate=2592000" },
         { "key": "X-Robots-Tag", "value": "noindex, follow" }
       ]
     },
@@ -70,7 +59,7 @@
       ]
     },
     {
-      "source": "/(saved|api/suggest)",
+      "source": "/saved",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, follow" }
       ]
@@ -120,8 +109,8 @@
     {
       "source": "/((?!assets/|sitemap[^/]*\\.xml|sitemaps|feed\\.xml|robots\\.txt).*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800" },
-        { "key": "CDN-Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=604800, stale-while-revalidate=2592000" },
+        { "key": "CDN-Cache-Control", "value": "public, s-maxage=604800, stale-while-revalidate=2592000" },
         { "key": "Rating", "value": "RTA-5042-1996-1400-1577-RTA" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
@@ -132,9 +121,9 @@
       "source": "/sitemap(.*)\\.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=21600, must-revalidate" },
+        { "key": "CDN-Cache-Control", "value": "public, s-maxage=21600, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "s-maxage=21600, must-revalidate" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     },
@@ -142,9 +131,9 @@
       "source": "/feed.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=21600, must-revalidate" },
+        { "key": "CDN-Cache-Control", "value": "public, s-maxage=21600, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "s-maxage=21600, must-revalidate" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     },
@@ -152,9 +141,9 @@
       "source": "/sitemaps/(.*)",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=21600, must-revalidate" },
+        { "key": "CDN-Cache-Control", "value": "public, s-maxage=21600, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "s-maxage=21600, must-revalidate" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     },
@@ -162,9 +151,9 @@
       "source": "/robots.txt",
       "headers": [
         { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400, must-revalidate" },
+        { "key": "CDN-Cache-Control", "value": "public, s-maxage=86400, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "s-maxage=86400, must-revalidate" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }

@@ -4,13 +4,36 @@ Panduan lengkap di luar kode sumber (**Cloudflare**, **Google Search Console**, 
 
 ---
 
-## 1. Pengaturan Cloudflare *(Edge Cache `< 40ms` di US & Seluruh Eropa)*
+## 1. Pengaturan Cloudflare *(Hemat 95% Kuota Vercel + Edge Cache `< 40ms` US & Eropa)*
 
-### A. Update 1-Menit Cache Rule (8 Bahasa Eropa + 5 Discovery Hubs)
-Buka [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub.my.id`** → **`Caching > Cache Rules`**:
-1. Edit rule **`Cache SSR Video, Category & Feed`** Anda (klik **Edit expression**).
-2. Ganti ekspresi dengan aturan lengkap V2.0 berikut agar seluruh server edge di US, London, Frankfurt, Paris, Madrid, Milan, Amsterdam, Lisbon, dan Warsawa men-cache seluruh halaman SSR & autocomplete Anda:
+### A. Aktifkan Smart Tiered Cache (1 Klik, GRATIS — Hemat hingga 95% Origin Hits!)
+Tanpa Tiered Cache, setiap halaman video yang dibuka dari 50 negara berbeda akan menembak Vercel Origin 50 kali terpisah!
+1. Di [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub.my.id`** → **`Caching > Tiered Cache`**.
+2. Klik **`Enable Tiered Cache`** → pilih **`Smart Tiered Cache Topology`** (GRATIS di paket Free!). Semua 300+ PoP global Cloudflare kini berbagi 1 cache induk sebelum menyentuh Vercel.
+
+### B. Blokir Scraper Bot Rakus Bandwidth di Cloudflare WAF (1 Menit, GRATIS)
+Bot scraper (`Bytespider`, `AhrefsBot`, `SemrushBot`, `PetalBot`, `Amazonbot`, `MJ12bot`, `DataForSeoBot`, `DotBot`, `BLEXBot`) sering mengabaikan `robots.txt` dan menguras **Fast Origin Transfer** Vercel!
+1. Buka **`Security > WAF > Custom rules`** → klik **`Create rule`** (beri nama **`Block Bad Scrapers`**).
+2. Klik **`Edit expression`** dan tempel:
    ```text
+   (http.user_agent contains "Bytespider") or
+   (http.user_agent contains "AhrefsBot") or
+   (http.user_agent contains "SemrushBot") or
+   (http.user_agent contains "MJ12bot") or
+   (http.user_agent contains "PetalBot") or
+   (http.user_agent contains "DotBot") or
+   (http.user_agent contains "DataForSeoBot") or
+   (http.user_agent contains "Amazonbot") or
+   (http.user_agent contains "BLEXBot")
+   ```
+3. Action: **`Block`** → klik **Deploy** (pastikan berada di bawah rule `Allow Known Bots` jika ada).
+
+### C. Perluasan 1-Menit Cache Rule (8 Bahasa Eropa + 5 Discovery Hubs + Edge TTL 7 Hari)
+Di **`Caching > Cache Rules`**:
+1. Edit rule **`Cache SSR Video, Category & Feed`** Anda (klik **Edit expression**).
+2. Ganti ekspresi dengan aturan lengkap V2.2 berikut agar Cloudflare men-cache seluruh HTML & sitemap langsung di Edge:
+   ```text
+   (http.request.uri.path eq "/") or
    (starts_with(http.request.uri.path, "/v/")) or
    (starts_with(http.request.uri.path, "/c/")) or
    (http.request.uri.path in {"/trending" "/top-rated" "/longest" "/jav" "/categories" "/feed.xml" "/llms.txt"}) or
@@ -21,10 +44,13 @@ Buka [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub
    (http.request.uri.path eq "/nl") or (starts_with(http.request.uri.path, "/nl/c/")) or
    (http.request.uri.path eq "/pt") or (starts_with(http.request.uri.path, "/pt/c/")) or
    (http.request.uri.path eq "/pl") or (starts_with(http.request.uri.path, "/pl/c/")) or
-   (starts_with(http.request.uri.path, "/api/suggest"))
+   (starts_with(http.request.uri.path, "/sitemap"))
    ```
-3. Pastikan **Cache eligibility = `Eligible for cache`** dan **Edge TTL = `Use cache-control header if present, bypass cache if not`**, lalu klik **Save / Deploy**.
-4. Buka **`Caching > Configuration`** → klik **`Purge Everything`** satu kali setelah deploy V2.0 selesai.
+3. Pengaturan Rule:
+   - **Cache eligibility:** `Eligible for cache`
+   - **Edge TTL:** `Use cache-control header if present, bypass cache if not` *(sudah diset 7–30 hari otomatis di server!)*
+   - **Cache Key → Query string:** pilih **`Ignore query string`** untuk rule khusus `/v/` *(agar parameter `?fbclid=`, `?utm_...`, `?ref=` tidak pernah memecah cache & memicu Vercel Function!)*
+4. Klik **Save / Deploy**, lalu buka **`Caching > Configuration`** → klik **`Purge Everything`** satu kali.
 
 ### B. Pengaturan Cloudflare Wajib Tetap Aktif
 1. **`Security > Bots`:** **`Bot Fight Mode` = OFF** (pertahankan WAF Custom Rule `Allow Known Bots`).

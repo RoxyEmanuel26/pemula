@@ -2,8 +2,8 @@ name: Daily SEO sitemap refresh
 
 on:
   schedule:
-    # Runs twice daily (05:15 & 17:15 UTC) to accelerate US/EU & JAV enrichment within quota
-    - cron: "15 5,17 * * *"
+    # Runs every 3 days (10 deploys/month instead of 60) to keep Vercel Edge Cache warm & slash Fast Origin Transfer by >83%
+    - cron: "15 5 */3 * *"
   workflow_dispatch:
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
           GEMINI_BATCH_SIZE: 6
           GEMINI_CONCURRENCY: 2
           GEMINI_TIMEOUT_MS: 50000
-        run: node scripts/seo-enrich.mjs --limit 750
+        run: node scripts/seo-enrich.mjs --limit 900
 
       - name: Prune deleted/404 upstream videos from enriched sitemap pool (rolling check)
         run: node scripts/prune-dead-videos.mjs --batch 500

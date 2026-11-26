@@ -164,14 +164,48 @@
     });
   }
 
-  // ─── 4. COMMAND SEARCH + LIVE AUTOCOMPLETE ───
+  // ─── 4. COMMAND SEARCH + ZERO-INVOCATION STATIC AUTOCOMPLETE ───
   function initSearch() {
     const form = document.getElementById('lhSearchForm');
     const input = document.getElementById('lhSearchInput');
     const dropdown = document.getElementById('lhSearchDropdown');
     if (!form || !input || !dropdown) return;
 
-    let suggestTimer = null;
+    let suggestDataPromise = null;
+    let suggestData = null;
+
+    function loadSuggestIndex() {
+      if (suggestData) return Promise.resolve(suggestData);
+      if (!suggestDataPromise) {
+        suggestDataPromise = fetch('/assets/data/suggest.json?v=204')
+          .then(r => (r.ok ? r.json() : null))
+          .then(d => { suggestData = d; return d; })
+          .catch(() => null);
+      }
+      return suggestDataPromise;
+    }
+
+    function queryLocalSuggest(rawQ) {
+      const q = rawQ.trim().toLowerCase();
+      if (!suggestData || q.length < 2) return null;
+      const hubs = [];
+      for (const h of (suggestData.h || [])) {
+        if (h[0].includes(q) || h[1].toLowerCase().includes(q)) {
+          hubs.push({ title: h[1], href: `${LOCALE_PREFIX && !h[3] ? LOCALE_PREFIX : ''}/c/${h[0]}`, badge: String(h[2] || 'HUB') });
+          if (hubs.length >= 6) break;
+        }
+      }
+      const items = [];
+      const qCompact = q.replace(/[-\s]+/g, '');
+      for (const v of (suggestData.v || [])) {
+        const tLow = v[1].toLowerCase();
+        if (tLow.includes(q) || (qCompact.length >= 4 && tLow.replace(/[-\s]+/g, '').includes(qCompact))) {
+          items.push({ title: v[1], href: `/v/${v[0]}-${v[2]}`, badge: v[3] || 'HD' });
+          if (items.length >= 6) break;
+        }
+      }
+      return { hubs, items };
+    }
 
     function renderSuggestions(query, remoteData) {
       const q = query.trim().toLowerCase();
@@ -214,21 +248,19 @@
       dropdown.classList.add('is-open');
     }
 
+    input.addEventListener('focus', () => { loadSuggestIndex(); }, { once: true });
+
     input.addEventListener('input', () => {
       const val = input.value;
+      if (suggestData) {
+        renderSuggestions(val, queryLocalSuggest(val));
+        return;
+      }
       renderSuggestions(val, null);
-      clearTimeout(suggestTimer);
       if (val.trim().length >= 2) {
-        suggestTimer = setTimeout(() => {
-          fetch(`/api/suggest?q=${encodeURIComponent(val.trim())}`)
-            .then(r => (r.ok ? r.json() : null))
-            .then(data => {
-              if (data && input.value === val) {
-                renderSuggestions(val, data);
-              }
-            })
-            .catch(() => {});
-        }, 160);
+        loadSuggestIndex().then(() => {
+          if (input.value === val) renderSuggestions(val, queryLocalSuggest(val));
+        });
       }
     });
 
@@ -361,6 +393,72 @@
         fetchLiveVideos(activeQuery, activeOrder, currentPage, true).finally(() => {
           loadMoreBtn.disabled = false;
           loadMoreBtn.textContent = origText;
+        });
+      });
+    }
+  }
+
+  // ─── 5B. STATIC CATEGORY ZERO-COST CLIENT LOAD MORE & SORT ───
+  function initStaticCategoryGrid() {
+    const grid = document.getElementById('lhCatGrid');
+    if (!grid) return;
+    const loadBtn = document.getElementById('lhCatLoadMoreBtn');
+    const sortSel = document.getElementById('lhCatSortSelect');
+    const queryTerm = grid.getAttribute('data-cat-query') || 'viral';
+    const initialHtml = grid.innerHTML;
+    let activeOrder = 'most-popular';
+    let currentPage = 1;
+
+    async function fetchCatVideos(order, page, append) {
+      if (!append) {
+        grid.innerHTML = Array.from({ length: 12 }, () => '<div class="lh-skeleton-card"></div>').join('');
+      }
+      try {
+        const url = `https://www.eporner.com/api/v2/video/search/?query=${encodeURIComponent(queryTerm)}&per_page=24&page=${page}&order=${encodeURIComponent(order)}&thumbsize=big&gay=0&lq=1&format=json`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        const items = (data.videos || []).map(v => ({
+          id: v.id,
+          title: v.title || 'Untitled',
+          href: `/v/${encodeURIComponent(v.id)}-${slugify(v.title) || v.id}`,
+          thumb: v.default_thumb?.src || v.thumbs?.[0]?.src || '',
+          duration: v.length_min || '',
+          views: formatCompactViews(v.views),
+          date: (v.added || '').slice(0, 10),
+          nofollow: true,
+        }));
+        const html = items.map(renderCardHtml).join('');
+        if (append) grid.insertAdjacentHTML('beforeend', html);
+        else grid.innerHTML = html || '<div class="lh-empty-box">No videos found.</div>';
+        syncSavedUI();
+      } catch {
+        if (!append) grid.innerHTML = initialHtml;
+      }
+    }
+
+    if (sortSel) {
+      sortSel.addEventListener('change', () => {
+        activeOrder = sortSel.value || 'most-popular';
+        currentPage = 1;
+        if (activeOrder === 'most-popular') {
+          grid.innerHTML = initialHtml;
+          syncSavedUI();
+          return;
+        }
+        fetchCatVideos(activeOrder, 1, false);
+      });
+    }
+
+    if (loadBtn) {
+      loadBtn.addEventListener('click', () => {
+        currentPage += 1;
+        loadBtn.disabled = true;
+        const orig = loadBtn.textContent;
+        loadBtn.textContent = 'Loading...';
+        fetchCatVideos(activeOrder, currentPage, true).finally(() => {
+          loadBtn.disabled = false;
+          loadBtn.textContent = orig;
         });
       });
     }
@@ -526,6 +624,7 @@
     initSearch();
     initGlobalDelegates();
     initHomeFilters();
+    initStaticCategoryGrid();
     initWatchPage();
     initSavedPage();
     syncSavedUI();

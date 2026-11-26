@@ -11,6 +11,13 @@
     }
   },
   "rewrites": [
+    { "source": "/trending", "destination": "/api/discover?view=trending" },
+    { "source": "/top-rated", "destination": "/api/discover?view=top-rated" },
+    { "source": "/longest", "destination": "/api/discover?view=longest" },
+    { "source": "/jav", "destination": "/api/discover?view=jav" },
+    { "source": "/categories", "destination": "/api/discover?view=categories" },
+    { "source": "/saved", "destination": "/api/discover?view=saved" },
+    { "source": "/api/suggest", "destination": "/api/discover?view=suggest" },
     { "source": "/de", "destination": "/api/home?lang=de" },
     { "source": "/fr", "destination": "/api/home?lang=fr" },
     { "source": "/es", "destination": "/api/home?lang=es" },
@@ -40,6 +47,12 @@
       "source": "/(video|category|ad-wrapper)(.html)?",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/(saved|api/suggest)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
       ]
     },
     {

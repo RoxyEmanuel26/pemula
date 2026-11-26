@@ -173,25 +173,34 @@
 
     let suggestTimer = null;
 
-    function renderSuggestions(query, remoteItems) {
+    function renderSuggestions(query, remoteData) {
       const q = query.trim().toLowerCase();
       if (!q) {
         dropdown.classList.remove('is-open');
         dropdown.innerHTML = '';
         return;
       }
-      const catMatches = QUICK_CATEGORIES
-        .filter(s => s.includes(q) || s.replace(/-/g, ' ').includes(q))
-        .slice(0, 5);
+      const remoteHubs = Array.isArray(remoteData?.hubs) ? remoteData.hubs : [];
+      const remoteItems = Array.isArray(remoteData?.items) ? remoteData.items : [];
 
       let html = '';
-      if (catMatches.length > 0) {
-        html += '<div class="lh-suggest-group-label">Categories</div>';
-        html += catMatches.map(s =>
-          `<a class="lh-suggest-item" href="${LOCALE_PREFIX}/c/${encodeURIComponent(s)}"><span>${escapeHtml(formatLabel(s))}</span><span class="lh-suggest-tag">HUB</span></a>`
+      if (remoteHubs.length > 0) {
+        html += '<div class="lh-suggest-group-label">Categories &amp; Niches</div>';
+        html += remoteHubs.slice(0, 6).map(h =>
+          `<a class="lh-suggest-item" href="${escapeHtml(h.href)}"><span>${escapeHtml(h.title)}</span><span class="lh-suggest-tag">${escapeHtml(h.badge || 'HUB')}</span></a>`
         ).join('');
+      } else {
+        const catMatches = QUICK_CATEGORIES
+          .filter(s => s.includes(q) || s.replace(/-/g, ' ').includes(q))
+          .slice(0, 5);
+        if (catMatches.length > 0) {
+          html += '<div class="lh-suggest-group-label">Categories</div>';
+          html += catMatches.map(s =>
+            `<a class="lh-suggest-item" href="${LOCALE_PREFIX}/c/${encodeURIComponent(s)}"><span>${escapeHtml(formatLabel(s))}</span><span class="lh-suggest-tag">HUB</span></a>`
+          ).join('');
+        }
       }
-      if (Array.isArray(remoteItems) && remoteItems.length > 0) {
+      if (remoteItems.length > 0) {
         html += '<div class="lh-suggest-group-label">Videos</div>';
         html += remoteItems.slice(0, 6).map(v =>
           `<a class="lh-suggest-item" href="${escapeHtml(v.href)}"><span>${escapeHtml(v.title)}</span><span class="lh-suggest-tag">${escapeHtml(v.badge || 'HD')}</span></a>`
@@ -214,12 +223,12 @@
           fetch(`/api/suggest?q=${encodeURIComponent(val.trim())}`)
             .then(r => (r.ok ? r.json() : null))
             .then(data => {
-              if (data && Array.isArray(data.items) && input.value === val) {
-                renderSuggestions(val, data.items);
+              if (data && input.value === val) {
+                renderSuggestions(val, data);
               }
             })
             .catch(() => {});
-        }, 180);
+        }, 160);
       }
     });
 
@@ -420,7 +429,68 @@
     }
   }
 
-  // ─── 7. GLOBAL DELEGATED SAVE / BOOKMARK HANDLER ───
+  // ─── 7. SAVED & WATCH HISTORY PAGE (/saved) ───
+  function initSavedPage() {
+    const grid = document.getElementById('lhSavedGrid');
+    if (!grid) return;
+    const tabs = document.getElementById('lhSavedTabs');
+    const clearBtn = document.getElementById('lhClearSavedBtn');
+    let activeTab = 'favorites';
+
+    function renderSavedList() {
+      const favs = Store.getFavorites();
+      const hist = Store.getHistory();
+      document.querySelectorAll('[data-history-count]').forEach(el => { el.textContent = String(hist.length); });
+      const items = activeTab === 'history' ? hist : favs;
+      if (!items.length) {
+        grid.innerHTML = activeTab === 'history'
+          ? '<div class="lh-empty-box" style="grid-column:1/-1;">No watch history yet. Play any video and it will appear here privately for instant resume. <a href="/trending" style="color:var(--accent);font-weight:700;">Browse Trending</a></div>'
+          : '<div class="lh-empty-box" style="grid-column:1/-1;">No saved favorites yet. Tap the bookmark icon on any video card to build your private list — no signup needed. <a href="/trending" style="color:var(--accent);font-weight:700;">Explore Trending</a></div>';
+        return;
+      }
+      grid.innerHTML = items.map(item => renderCardHtml({
+        id: item.id,
+        title: item.title,
+        href: item.href,
+        thumb: item.thumb,
+        duration: item.duration,
+        views: '',
+        date: item.savedAt ? new Date(item.savedAt).toISOString().slice(0, 10) : (item.watchedAt ? new Date(item.watchedAt).toISOString().slice(0, 10) : ''),
+        nofollow: false,
+      })).join('');
+      syncSavedUI();
+    }
+
+    if (tabs) {
+      tabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-saved-tab]');
+        if (!btn) return;
+        tabs.querySelectorAll('.lh-filter-btn').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        activeTab = btn.getAttribute('data-saved-tab') || 'favorites';
+        renderSavedList();
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (activeTab === 'history') writeList(HISTORY_KEY, []);
+        else writeList(FAVORITES_KEY, []);
+        syncSavedUI();
+        renderSavedList();
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-save-id]') && activeTab === 'favorites') {
+        setTimeout(renderSavedList, 10);
+      }
+    });
+
+    renderSavedList();
+  }
+
+  // ─── 8. GLOBAL DELEGATED SAVE / BOOKMARK HANDLER ───
   function initGlobalDelegates() {
     document.addEventListener('click', (e) => {
       const saveBtn = e.target.closest('[data-save-id]');
@@ -457,6 +527,7 @@
     initGlobalDelegates();
     initHomeFilters();
     initWatchPage();
+    initSavedPage();
     syncSavedUI();
   }
 

@@ -22,6 +22,12 @@ import {
   isEnrichedVideoId,
 } from '../lib/runtime-store.js';
 import { renderPageShell, renderVideoCard } from '../lib/ui-shell.js';
+import {
+  COMPOUND_BY_SLUG,
+  COMPOUNDS_BY_PARENT,
+  COMPOUND_HUB_DEFS,
+  buildCompoundEditorial,
+} from '../lib/taxonomy.js';
 
 let cachedDescriptions = null;
 let cachedLocales = null;
@@ -126,11 +132,15 @@ export default async function handler(req, res) {
   ]);
   const localeCfg = lang === 'en' ? null : (euLocales[lang] || null);
   const isCurated = Boolean(descriptions[cleanSlug]);
+  const compoundDef = !isCurated ? (COMPOUND_BY_SLUG.get(cleanSlug) || null) : null;
+  const compoundVerifiedCount = compoundDef ? Number(index?.compoundCounts?.[cleanSlug] || 0) : 0;
+  const isActiveCompound = Boolean(compoundDef && compoundVerifiedCount >= 12);
+  const isKnownHub = isCurated || isActiveCompound;
 
-  const englishName = formatCategoryName(cleanSlug);
+  const englishName = compoundDef?.name || formatCategoryName(cleanSlug);
   const localeCatEntry = localeCfg?.categories?.[cleanSlug] || null;
   const categoryName = localeCatEntry?.name || englishName;
-  const queryTerm = cleanSlug.replace(/-/g, ' ');
+  const queryTerm = compoundDef?.query || cleanSlug.replace(/-/g, ' ');
 
   const pageSuffix = currentPage > 1
     ? (localeCfg ? interpolate(localeCfg.categoryPageSuffix, { page: currentPage }) : ` — Page ${currentPage}`)
@@ -194,7 +204,7 @@ export default async function handler(req, res) {
   const cards = [];
   const seenIds = new Set();
 
-  if (isCurated && currentPage === 1 && order === 'most-popular') {
+  if (isKnownHub && currentPage === 1 && order === 'most-popular') {
     const directIds = (index?.byTag?.[cleanSlug] || []).slice(0, 16);
     const enrichedPicks = await getCardsByIds(directIds);
     for (const v of enrichedPicks) {
@@ -234,8 +244,8 @@ export default async function handler(req, res) {
     });
   }
 
-  // Resilient O(1) fallback if upstream Eporner returned 0 results on a curated hub
-  if (cards.length === 0 && isCurated) {
+  // Resilient O(1) fallback if upstream Eporner returned 0 results on a curated or compound hub
+  if (cards.length === 0 && isKnownHub) {
     const fallbackIds = [...new Set([...(index?.byTag?.[cleanSlug] || []), ...(index?.featured || [])])];
     const start = (currentPage - 1) * 24;
     const picked = await getCardsByIds(fallbackIds.slice(start, start + 24));
@@ -257,7 +267,10 @@ export default async function handler(req, res) {
   }
 
   const hasNoindexParam = Boolean(req.query?.ref || req.query?.q);
-  const isIndexable = currentPage === 1 && order === 'most-popular' && !hasNoindexParam && (isCurated || (lang === 'en' && cards.length >= 4));
+  const isIndexable = currentPage === 1 && order === 'most-popular' && !hasNoindexParam && (
+    isCurated ||
+    (lang === 'en' && (isActiveCompound || cards.length >= 4))
+  );
   const robotsValue = isIndexable
     ? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
     : 'noindex, follow';
@@ -299,7 +312,27 @@ export default async function handler(req, res) {
 
   const schemas = [breadcrumbSchema, collectionSchema, itemListSchema];
 
-  // Editorial & FAQ on Page 1
+  // Editorial, topical silo sub-niches & FAQ on Page 1
+  const compoundCountsMap = index?.compoundCounts || {};
+  const childSubNiches = (COMPOUNDS_BY_PARENT.get(cleanSlug) || [])
+    .filter(c => (compoundCountsMap[c.slug] || 0) >= 12)
+    .sort((a, b) => (compoundCountsMap[b.slug] || 0) - (compoundCountsMap[a.slug] || 0))
+    .slice(0, 14);
+
+  const siblingCompounds = compoundDef
+    ? COMPOUND_HUB_DEFS
+        .filter(c => c.slug !== cleanSlug && c.group === compoundDef.group && (compoundCountsMap[c.slug] || 0) >= 12)
+        .sort((a, b) => (compoundCountsMap[b.slug] || 0) - (compoundCountsMap[a.slug] || 0))
+        .slice(0, 12)
+    : [];
+
+  const subNichePillsHtml = isActiveCompound
+    ? [
+        ...compoundDef.parents.map(p => `<a href="${langPrefix}/c/${escapeHtml(p)}" class="lh-dir-pill" style="border-color:rgba(245,158,11,0.45);color:var(--accent);">${escapeHtml(formatCategoryName(p))} Hub</a>`),
+        ...siblingCompounds.map(c => `<a href="/c/${escapeHtml(c.slug)}" class="lh-dir-pill">${escapeHtml(c.name)}</a>`),
+      ].join('')
+    : childSubNiches.map(c => `<a href="/c/${escapeHtml(c.slug)}" class="lh-dir-pill">${escapeHtml(c.name)} <span style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.72rem;margin-left:3px;">${compoundCountsMap[c.slug]}</span></a>`).join('');
+
   const crossLinksHtml = US_EU_CATEGORIES
     .filter(s => s !== cleanSlug)
     .slice(0, 16)
@@ -312,7 +345,9 @@ export default async function handler(req, res) {
   let editorialSectionHtml = '';
   if (currentPage === 1) {
     let editorial;
-    if (localeCfg) {
+    if (isActiveCompound && !localeCfg) {
+      editorial = buildCompoundEditorial(compoundDef, compoundVerifiedCount);
+    } else if (localeCfg) {
       const topicNote = localeCatEntry?.topic || `${categoryName} HD`;
       editorial = {
         title: interpolate(localeCfg.editorialTitlePattern, { name: categoryName }),
@@ -438,6 +473,11 @@ export default async function handler(req, res) {
         <nav class="lh-rail-scroll" aria-label="Related Categories">
           ${US_EU_CATEGORIES.slice(0, 18).map(s => `<a href="${langPrefix}/c/${escapeHtml(s)}" class="lh-cat-pill${s === cleanSlug ? ' is-active' : ''}">${escapeHtml(localeCfg?.categories?.[s]?.name || formatCategoryName(s))}</a>`).join('')}
         </nav>
+
+        ${subNichePillsHtml ? `<section class="lh-subniche-bar" aria-label="Sub-Niches">
+          <span class="lh-subniche-label">${isActiveCompound ? 'Related Niches:' : `Popular ${escapeHtml(categoryName)} Niches:`}</span>
+          <div class="lh-dir-pills">${subNichePillsHtml}</div>
+        </section>` : ''}
 
         <section aria-label="${escapeHtml(categoryName)} Video Grid">
           ${cardsGridHtml}

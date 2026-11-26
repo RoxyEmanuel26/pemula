@@ -1237,8 +1237,95 @@ img {
 /* ==========================================================================
    RESPONSIVE BREAKPOINTS
    ========================================================================== */
+/* ==========================================================================
+   DISCOVERY VISUAL CATEGORY TILES & SUB-NICHE SILO BAR
+   ========================================================================== */
+.lh-subniche-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: var(--radius-card);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+}
+
+.lh-subniche-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.lh-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.lh-cat-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+}
+
+.lh-cat-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.lh-cat-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.lh-cat-tile:hover img {
+  transform: scale(1.04);
+}
+
+.lh-cat-tile-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(9, 9, 11, 0.05) 30%, rgba(9, 9, 11, 0.92) 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+}
+
+.lh-cat-tile-title {
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #FAFAFA;
+  letter-spacing: -0.01em;
+}
+
+.lh-cat-tile-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.22);
+  color: var(--accent);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  flex-shrink: 0;
+}
+
 @media (max-width: 1180px) {
-  .lh-grid {
+  .lh-grid,
+  .lh-cat-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .lh-watch-layout {
@@ -1265,7 +1352,8 @@ img {
   .lh-container {
     padding: 0 14px;
   }
-  .lh-grid {
+  .lh-grid,
+  .lh-cat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px 10px;
   }

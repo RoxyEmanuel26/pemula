@@ -18,6 +18,7 @@ import {
   slugify,
 } from '../lib/schema.js';
 import { SHARD_COUNT, getShardKey } from '../lib/runtime-store.js';
+import { COMPOUND_HUB_DEFS, MIN_COMPOUND_VIDEOS } from '../lib/taxonomy.js';
 
 const CURATED_SET = new Set(CURATED_CATEGORIES);
 const ROOT = process.cwd();
@@ -26,6 +27,7 @@ const STATE_PATH = path.join(ROOT, 'data', 'sitemap-state.json');
 const RUNTIME_DIR = path.join(ROOT, 'data', 'runtime');
 const SHARDS_DIR = path.join(RUNTIME_DIR, 'shards');
 const INDEX_PATH = path.join(RUNTIME_DIR, 'index.json');
+const COMPOUND_OUT_PATH = path.join(ROOT, 'data', 'compound-hubs.json');
 
 const HUB_SYNONYM_REGEX = {
   '4k-uhd': /\b(4k|uhd|2160p|ultra\s*hd)\b/i,
@@ -92,7 +94,9 @@ async function main() {
 
   const scoredRows = [];
   const byTagDraft = new Map();
+  const compoundDraft = new Map();
   const javRows = [];
+  const javPrefixMap = new Map();
   const allCompactCards = new Map();
 
   for (const [id, entry] of Object.entries(enrichedDb.videos || {})) {
@@ -152,6 +156,11 @@ async function main() {
     scoredRows.push({ id, title, tags, score: qualityScore, views, duration, at: publishedDay, javCode });
     if (javCode) {
       javRows.push({ id, code: javCode, score: qualityScore, at: publishedDay });
+      const prefix = String(javCode).split('-')[0].toUpperCase();
+      if (prefix && /^[A-Z0-9]{2,6}$/.test(prefix)) {
+        if (!javPrefixMap.has(prefix)) javPrefixMap.set(prefix, []);
+        javPrefixMap.get(prefix).push({ id, code: javCode, score: qualityScore });
+      }
     }
 
     const tagKeys = new Set();
@@ -159,7 +168,7 @@ async function main() {
       const tSlug = slugify(tag, 40, '');
       if (tSlug) tagKeys.add(tSlug);
     }
-    const combinedHay = `${title} ${tags.join(' ')} ${stateRec?.keywords || ''}`;
+    const combinedHay = `${title} ${tags.join(' ')} ${stateRec?.keywords || ''} ${entry.seo_title || ''}`;
     for (const [hubSlug, matcher] of CURATED_MATCHERS) {
       if (matcher.test(combinedHay)) tagKeys.add(hubSlug);
     }
@@ -168,6 +177,13 @@ async function main() {
     for (const key of tagKeys) {
       if (!byTagDraft.has(key)) byTagDraft.set(key, []);
       byTagDraft.get(key).push({ id, score: qualityScore });
+    }
+
+    for (const cDef of COMPOUND_HUB_DEFS) {
+      if (cDef.match[0].test(combinedHay) && cDef.match[1].test(combinedHay)) {
+        if (!compoundDraft.has(cDef.slug)) compoundDraft.set(cDef.slug, []);
+        compoundDraft.get(cDef.slug).push({ id, score: qualityScore });
+      }
     }
   }
 
@@ -196,18 +212,56 @@ async function main() {
 
   const byTag = {};
   const tagCounts = {};
+  const hubThumbs = {};
   for (const [key, list] of byTagDraft.entries()) {
     const isCurated = CURATED_SET.has(key);
     if (list.length < 2 && !isCurated) continue;
     list.sort((a, b) => b.score - a.score);
     byTag[key] = list.slice(0, isCurated ? 72 : 48).map(x => x.id);
-    if (isCurated) tagCounts[key] = list.length;
+    if (isCurated) {
+      tagCounts[key] = list.length;
+      const firstThumb = list.map(x => allCompactCards.get(x.id)?.th).find(Boolean);
+      if (firstThumb) hubThumbs[key] = firstThumb;
+    }
   }
 
-  // Only include card preview objects referenced by index buckets (keeps index.json bounded forever!)
+  // Activate ONLY data-verified compound long-tail hubs with >= MIN_COMPOUND_VIDEOS alive videos
+  const compoundCounts = {};
+  const activeCompoundMeta = [];
+  for (const cDef of COMPOUND_HUB_DEFS) {
+    const list = compoundDraft.get(cDef.slug) || [];
+    if (list.length < MIN_COMPOUND_VIDEOS) continue;
+    list.sort((a, b) => b.score - a.score);
+    byTag[cDef.slug] = list.slice(0, 48).map(x => x.id);
+    compoundCounts[cDef.slug] = list.length;
+    const thumb = list.map(x => allCompactCards.get(x.id)?.th).find(Boolean) || '';
+    if (thumb) hubThumbs[cDef.slug] = thumb;
+    activeCompoundMeta.push({
+      slug: cDef.slug,
+      name: cDef.name,
+      group: cDef.group,
+      parents: cDef.parents,
+      count: list.length,
+      thumb,
+    });
+  }
+  activeCompoundMeta.sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug));
+
+  const javPrefixes = [...javPrefixMap.entries()]
+    .map(([prefix, rows]) => {
+      rows.sort((a, b) => b.score - a.score);
+      return { prefix, count: rows.length, ids: rows.slice(0, 12).map(r => r.id) };
+    })
+    .sort((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix))
+    .slice(0, 36);
+
+  // Only include card preview objects referenced by hot buckets (keeps index.json bounded forever!)
   const referencedIds = new Set([...featured, ...topViewed, ...longest, ...javIds]);
   for (const slug of CURATED_CATEGORIES) {
-    for (const id of (byTag[slug] || []).slice(0, 32)) referencedIds.add(id);
+    for (const id of (byTag[slug] || []).slice(0, 24)) referencedIds.add(id);
+  }
+  for (const c of activeCompoundMeta) {
+    for (const id of (byTag[c.slug] || []).slice(0, 8)) referencedIds.add(id);
   }
   const cards = {};
   for (const id of referencedIds) {
@@ -216,7 +270,7 @@ async function main() {
   }
 
   const indexPayload = {
-    v: 4,
+    v: 5,
     at: new Date().toISOString(),
     n: orderedIds.length,
     shardCount: SHARD_COUNT,
@@ -225,12 +279,20 @@ async function main() {
     topViewed,
     longest,
     javIds,
+    javPrefixes,
     tagCounts,
+    compoundCounts,
+    hubThumbs,
     byTag,
     cards,
   };
 
   await writeFile(INDEX_PATH, JSON.stringify(indexPayload), 'utf8');
+  await writeFile(
+    COMPOUND_OUT_PATH,
+    JSON.stringify({ generatedAt: indexPayload.at, minVideos: MIN_COMPOUND_VIDEOS, count: activeCompoundMeta.length, hubs: activeCompoundMeta }, null, 2),
+    'utf8'
+  );
 
   let maxShardBytes = 0;
   let totalShardBytes = 0;
@@ -247,7 +309,7 @@ async function main() {
   const indexStat = await stat(INDEX_PATH);
   const avgShardKb = (totalShardBytes / SHARD_COUNT / 1024).toFixed(1);
   console.log(
-    `Built V2.0 sharded runtime: ${orderedIds.length} alive videos across ${SHARD_COUNT} shards (avg ${avgShardKb} KB, max ${(maxShardBytes / 1024).toFixed(1)} KB/shard) | index.json = ${(indexStat.size / 1024).toFixed(1)} KB (${Object.keys(cards).length} hot cards, ${javIds.length} JAV, ${longest.length} long 20m+).`
+    `Built V2.0 sharded runtime: ${orderedIds.length} alive videos across ${SHARD_COUNT} shards (avg ${avgShardKb} KB, max ${(maxShardBytes / 1024).toFixed(1)} KB/shard) | index.json = ${(indexStat.size / 1024).toFixed(1)} KB (${Object.keys(cards).length} hot cards, ${activeCompoundMeta.length} active compound hubs, ${javIds.length} JAV across ${javPrefixes.length} studios, ${longest.length} long 20m+).`
   );
 }
 

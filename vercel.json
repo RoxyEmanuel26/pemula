@@ -7,14 +7,14 @@
   "outputDirectory": ".",
   "functions": {
     "api/*.js": {
-      "includeFiles": "{index.html,video.html,category.html,404.html,data/enriched-runtime.json,data/category-descriptions.json,data/eu-locales.json}"
+      "includeFiles": "{index.html,video.html,category.html,404.html,lib/**,data/runtime/**,data/enriched-runtime.json,data/category-descriptions.json,data/eu-locales.json}"
     }
   },
   "rewrites": [
-    { "source": "/de", "destination": "/api/locale-home?lang=de" },
-    { "source": "/fr", "destination": "/api/locale-home?lang=fr" },
-    { "source": "/es", "destination": "/api/locale-home?lang=es" },
-    { "source": "/it", "destination": "/api/locale-home?lang=it" },
+    { "source": "/de", "destination": "/api/home?lang=de" },
+    { "source": "/fr", "destination": "/api/home?lang=fr" },
+    { "source": "/es", "destination": "/api/home?lang=es" },
+    { "source": "/it", "destination": "/api/home?lang=it" },
     { "source": "/de/c/:slug*", "destination": "/api/category?lang=de&slug=:slug*" },
     { "source": "/fr/c/:slug*", "destination": "/api/category?lang=fr&slug=:slug*" },
     { "source": "/es/c/:slug*", "destination": "/api/category?lang=es&slug=:slug*" },

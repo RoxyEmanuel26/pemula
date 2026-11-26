@@ -18,6 +18,11 @@
     { "source": "/", "has": [{ "type": "query", "key": "q", "value": "(?<term>[^&]+)" }], "destination": "/c/:term", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/sitemap_pages.xml", "destination": "/sitemaps/sitemap_pages.xml" },
+    { "source": "/sitemap_categories.xml", "destination": "/sitemaps/sitemap_categories.xml" },
+    { "source": "/sitemap_compound.xml", "destination": "/sitemaps/sitemap_compound.xml" },
+    { "source": "/sitemap_eu_locales.xml", "destination": "/sitemaps/sitemap_eu_locales.xml" },
+    { "source": "/sitemap_videos_:num.xml", "destination": "/sitemaps/sitemap_videos_:num.xml" },
     { "source": "/trending", "destination": "/api/discover?view=trending" },
     { "source": "/top-rated", "destination": "/api/discover?view=top-rated" },
     { "source": "/longest", "destination": "/api/discover?view=longest" },
@@ -113,7 +118,7 @@
       ]
     },
     {
-      "source": "/((?!assets/|sitemap_index\\.xml|sitemap\\.xml|sitemaps|feed\\.xml|robots\\.txt).*)",
+      "source": "/((?!assets/|sitemap[^/]*\\.xml|sitemaps|feed\\.xml|robots\\.txt).*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800" },
         { "key": "CDN-Cache-Control", "value": "public, s-maxage=86400, stale-while-revalidate=604800" },
@@ -124,21 +129,9 @@
       ]
     },
     {
-      "source": "/sitemap.xml",
+      "source": "/sitemap(.*)\\.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
-      ]
-    },
-    {
-      "source": "/sitemap_index.xml",
-      "headers": [
-        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" },
         { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
@@ -149,7 +142,6 @@
       "source": "/feed.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" },
         { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },
@@ -160,7 +152,6 @@
       "source": "/sitemaps/(.*)",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" },
         { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "CDN-Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "Vercel-CDN-Cache-Control", "value": "max-age=300, must-revalidate" },

@@ -386,7 +386,8 @@ function buildVideoSitemap(videos, enrichedMap) {
       ? e.tags.map(t => String(t || '').trim()).filter(t => t && t.length <= 32).slice(0, 5)
       : [];
     const tagsXml = tagList.map(t => `\n      <video:tag>${xmlEscape(t)}</video:tag>`).join('');
-    return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/v/${video.id}-${video.slug}`)}</loc>\n    <lastmod>${video.published.slice(0, 10)}</lastmod>\n    <video:video>\n      <video:thumbnail_loc>${xmlEscape(thumb)}</video:thumbnail_loc>\n      <video:title>${xmlEscape(title)}</video:title>\n      <video:description>${xmlEscape(desc)}</video:description>\n      <video:player_loc>${xmlEscape(video.player)}</video:player_loc>${duration}\n      <video:publication_date>${video.published}</video:publication_date>\n      <video:family_friendly>no</video:family_friendly>${tagsXml}\n    </video:video>\n  </url>`;
+    const pubIso = String(video.published || '2026-01-01T00:00:00Z').replace(/\.\d+Z$/, 'Z');
+    return `  <url>\n    <loc>${xmlEscape(`${BASE_URL}/v/${video.id}-${video.slug}`)}</loc>\n    <lastmod>${pubIso.slice(0, 10)}</lastmod>\n    <video:video>\n      <video:thumbnail_loc>${xmlEscape(thumb)}</video:thumbnail_loc>\n      <video:title>${xmlEscape(title)}</video:title>\n      <video:description>${xmlEscape(desc)}</video:description>\n      <video:player_loc>${xmlEscape(video.player)}</video:player_loc>${duration}\n      <video:publication_date>${pubIso}</video:publication_date>\n      <video:family_friendly>no</video:family_friendly>${tagsXml}\n    </video:video>\n  </url>`;
   }), { video: true });
 }
 
@@ -428,7 +429,7 @@ ${latestItems.join('\n')}
 
 function buildIndex(entries) {
   const rows = entries.map(({ file, lastmod }) =>
-    `  <sitemap>\n    <loc>${xmlEscape(`${BASE_URL}/sitemaps/${file}`)}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </sitemap>`);
+    `  <sitemap>\n    <loc>${xmlEscape(`${BASE_URL}/${file}`)}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </sitemap>`);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</sitemapindex>\n`;
 }
 
@@ -445,11 +446,11 @@ async function syncLlmsTxt(videoSitemapFiles, compoundCount = 0) {
     const euCodeList = EU_LOCALES.map(l => l.toUpperCase()).join('/');
     const lines = [
       `- Master Sitemap Index: ${BASE_URL}/sitemap_index.xml`,
-      `- Core Category Sitemap (${EU_LOCALIZED_CATEGORIES.length}+ EN Hubs): ${BASE_URL}/sitemaps/sitemap_categories.xml`,
-      `- Long-Tail Compound Hub Sitemap (${compoundCount} US/EU/JAV Niches): ${BASE_URL}/sitemaps/sitemap_compound.xml`,
-      `- European Localized Sitemap (${euCount} ${euCodeList} Hubs): ${BASE_URL}/sitemaps/sitemap_eu_locales.xml`,
-      ...videoSitemapFiles.map((f, idx) => `- Video Sitemap ${String(idx + 1).padStart(3, '0')}: ${BASE_URL}/sitemaps/${f}`),
-      `- Discovery & Static Pages Sitemap (/trending, /top-rated, /longest, /jav, /categories): ${BASE_URL}/sitemaps/sitemap_pages.xml`,
+      `- Core Category Sitemap (${EU_LOCALIZED_CATEGORIES.length}+ EN Hubs): ${BASE_URL}/sitemap_categories.xml`,
+      `- Long-Tail Compound Hub Sitemap (${compoundCount} US/EU/JAV Niches): ${BASE_URL}/sitemap_compound.xml`,
+      `- European Localized Sitemap (${euCount} ${euCodeList} Hubs): ${BASE_URL}/sitemap_eu_locales.xml`,
+      ...videoSitemapFiles.map((f, idx) => `- Video Sitemap ${String(idx + 1).padStart(3, '0')}: ${BASE_URL}/${f}`),
+      `- Discovery & Static Pages Sitemap (/trending, /top-rated, /longest, /jav, /categories): ${BASE_URL}/sitemap_pages.xml`,
       `- RSS Video Feed: ${BASE_URL}/feed.xml`,
       `- Robots Policy: ${BASE_URL}/robots.txt`,
     ];

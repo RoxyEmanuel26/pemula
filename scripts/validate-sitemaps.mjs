@@ -54,6 +54,10 @@ for (const name of files) {
       if (block.includes('<video:duration>0</video:duration>')) {
         errors.push(`${name}: ${location} has invalid zero video:duration`);
       }
+      const pubDate = block.match(/<video:publication_date>(.*?)<\/video:publication_date>/)?.[1];
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/.test(pubDate || '')) {
+        errors.push(`${name}: ${location} has non-standard video:publication_date (${pubDate})`);
+      }
       const lastmod = block.match(/<lastmod>(.*?)<\/lastmod>/)?.[1];
       if (!/^\d{4}-\d{2}-\d{2}$/.test(lastmod || '')) errors.push(`${name}: ${location} has invalid lastmod`);
     }
@@ -88,7 +92,7 @@ const index = await readFile(path.join(ROOT, 'sitemap_index.xml'), 'utf8');
 const rootSitemap = await readFile(path.join(ROOT, 'sitemap.xml'), 'utf8');
 if (index !== rootSitemap) errors.push('sitemap.xml and sitemap_index.xml have drifted out of sync');
 
-const indexed = captureAll(index, /<loc>https:\/\/www\.lusthub\.my\.id\/sitemaps\/(.*?)<\/loc>/g);
+const indexed = captureAll(index, /<loc>https:\/\/www\.lusthub\.my\.id\/(sitemap_[^<]+\.xml)<\/loc>/g);
 for (const name of indexed) if (!files.includes(name)) errors.push(`sitemap_index.xml references missing ${name}`);
 for (const name of files) if (!indexed.includes(name)) errors.push(`${name} is not referenced by sitemap_index.xml`);
 

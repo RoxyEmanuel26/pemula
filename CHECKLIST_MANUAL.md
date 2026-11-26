@@ -36,14 +36,16 @@ Buka [Cloudflare Dashboard](https://dash.cloudflare.com/) pada domain **`lusthub
 ## 2. Google Search Console (GSC) — Sitemap V2.0 & Validasi Perbaikan
 
 1. Buka [Google Search Console](https://search.google.com/search-console) pada properti **`https://www.lusthub.my.id/`**.
-2. **Kirim / Refresh Master Sitemap:**
-   * Di menu **Peta Situs (Sitemaps)**, pastikan **`sitemap_index.xml`** aktif. Master index V2.0 kini memuat **11 file sitemap** (**7.355+ URL kanonis**):
-     * `sitemaps/sitemap_pages.xml` *(halaman inti + 5 Discovery Hub: `/trending`, `/top-rated`, `/longest`, `/jav`, `/categories`)*
-     * `sitemaps/sitemap_categories.xml` *(72 Core Hub Inggris + 9-way reciprocal `hreflang`)*
-     * `sitemaps/sitemap_compound.xml` *(**172+ Long-Tail Compound Hubs** seperti `/c/german-milf`, `/c/european-amateur`, `/c/english-sub-jav`, `/c/4k-european`, `/c/czech-casting`)*
-     * `sitemaps/sitemap_eu_locales.xml` *(**511 halaman Eropa** di 7 bahasa: `/de`, `/fr`, `/es`, `/it`, `/nl`, `/pt`, `/pl` + 72 kategori per bahasa dengan **9-way `hreflang` resiprokal sempurna**)*
-     * `sitemaps/sitemap_videos_001.xml` s.d. `007.xml` *(6.588+ video AI-enriched non-spam yang lolos cek liveness)*
-   * **Percepat Crawl (Disarankan):** Kirim juga secara eksplisit `sitemaps/sitemap_compound.xml` dan `sitemaps/sitemap_eu_locales.xml` di kolom Peta Situs agar Googlebot langsung memprioritaskan 683 halaman long-tail & Eropa baru!
+2. **Kirim Ulang Master Sitemap dengan Format yang Benar (PENTING — TANPA `/` di Depan!):**
+   * **HAPUS seluruh entri lama yang diawali garis miring `/`** di daftar *"Peta situs yang dikirimkan"* (klik setiap entri → ikon titik tiga kanan atas → **Hapus peta situs**). Karena kotak input GSC sudah berakhir dengan `https://www.lusthub.my.id/`, mengetik `/sitemap_index.xml` membuat GSC menyimpan URL rusak `https://www.lusthub.my.id//sitemap_index.xml`!
+   * Setelah semua entri lama dihapus, cukup ketik **`sitemap_index.xml`** (**TANPA `/` di depan!**) lalu klik **KIRIM**.
+   * Seluruh 11 sub-sitemap kini disajikan langsung di **root domain** (100% patuh aturan scope direktori `sitemaps.org` & tanpa header `X-Robots-Tag: noindex`):
+     * `sitemap_pages.xml` *(halaman inti + 5 Discovery Hub)*
+     * `sitemap_categories.xml` *(67 Core Hub aktif tanpa hub kosong)*
+     * `sitemap_compound.xml` *(**172+ Long-Tail Compound Hubs**)*
+     * `sitemap_eu_locales.xml` *(**455 halaman Eropa murni** di 7 bahasa dengan **9-way `hreflang` resiprokal**)*
+     * `sitemap_videos_001.xml` s.d. `007.xml` *(6.583+ video AI dengan 100% `<video:duration>` dan tanggal W3C ketat)*
+   * **Uji Langsung (Wajib 10 Detik):** Tempel `https://www.lusthub.my.id/sitemap_index.xml` di kotak **Inspeksi URL** (bagian atas GSC) → klik **`Uji URL Aktif`**. Jika muncul `HTTP 200` dan XML terbaca, tetapi tabel Peta Situs belum langsung hijau, cek **Cloudflare → Security → Events** (filter `URI Path contains sitemap`) untuk memastikan Cloudflare tidak menantang/memblokir IP Googlebot!
 3. **Inspeksi URL Prioritas (Request Indexing):**
    * Ajukan indeks cepat untuk: `/trending`, `/categories`, `/jav`, `/longest`, `/nl`, `/pt`, `/pl`, `/c/german-milf`, `/c/european-amateur`, `/c/english-sub-jav`, `/nl/c/milf`.
 4. **Validasi Perbaikan `Di-crawl - saat ini tidak diindeks`:**

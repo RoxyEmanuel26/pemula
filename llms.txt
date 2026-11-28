@@ -9,7 +9,7 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 <!-- AUTO:SITEMAPS:START -->
 - Master Sitemap Index: https://www.lusthub.my.id/sitemap_index.xml
 - Core Category Sitemap (64+ EN Hubs): https://www.lusthub.my.id/sitemap_categories.xml
-- Long-Tail Compound Hub Sitemap (172 US/EU/JAV Niches): https://www.lusthub.my.id/sitemap_compound.xml
+- Long-Tail Compound Hub Sitemap (173 US/EU/JAV Niches): https://www.lusthub.my.id/sitemap_compound.xml
 - European Localized Sitemap (455 DE/FR/ES/IT/NL/PT/PL Hubs): https://www.lusthub.my.id/sitemap_eu_locales.xml
 - Video Sitemap 001: https://www.lusthub.my.id/sitemap_videos_001.xml
 - Video Sitemap 002: https://www.lusthub.my.id/sitemap_videos_002.xml
@@ -18,6 +18,7 @@ lusthub.my.id provides high-definition streaming of trending adult videos, creat
 - Video Sitemap 005: https://www.lusthub.my.id/sitemap_videos_005.xml
 - Video Sitemap 006: https://www.lusthub.my.id/sitemap_videos_006.xml
 - Video Sitemap 007: https://www.lusthub.my.id/sitemap_videos_007.xml
+- Video Sitemap 008: https://www.lusthub.my.id/sitemap_videos_008.xml
 - Discovery & Static Pages Sitemap (/trending, /top-rated, /longest, /jav, /categories): https://www.lusthub.my.id/sitemap_pages.xml
 - RSS Video Feed: https://www.lusthub.my.id/feed.xml
 - Robots Policy: https://www.lusthub.my.id/robots.txt
